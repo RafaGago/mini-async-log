@@ -34,7 +34,9 @@ inline bool silence_warnings() { return true; }
 #ifdef TINY_HAS_CONSTEXPR
 
 template <unsigned N>
-constexpr unsigned tiny_fmt_string_arity (const char (&arr)[N], unsigned i = N - 1)
+constexpr unsigned tiny_fmt_string_arity(
+        const char (&arr)[N], unsigned i = N - 1
+        )
 {
     static_assert (N > 1, "not a literal");
     return (unsigned) (arr[i] == '{' && arr[i + 1] == '}') +
