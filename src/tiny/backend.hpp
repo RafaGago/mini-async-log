@@ -99,6 +99,8 @@ public:
         m_cfg.file.name_suffix                 = ".log";
         m_cfg.file.rotation.file_count         = 0;
         m_cfg.file.rotation.delayed_file_count = 0;
+
+        m_status                               = constructed;
     }
     //--------------------------------------------------------------------------
     ~backend_impl()
