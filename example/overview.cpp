@@ -3,7 +3,6 @@
 #include <string>
 #include <tiny/frontend_def.hpp>
 #include <tiny/tiny.hpp>
-
 //------------------------------------------------------------------------------
 inline tiny::frontend& get_tiny_logger_instance()
 {
@@ -99,6 +98,7 @@ void general_features()
         lit ("param4"),
         hex ((u64) -1)
         );
+#ifndef TINY_HAS_CONSTEXPR
     log_error(
         "message {}, this could be corrected at compile time if all "
         "targeted compilers supported constexpr, now a runtime error "
@@ -108,11 +108,11 @@ void general_features()
     log_error(
         "message {}, this could be corrected at compile time if all "
         "targeted compilers supported constexpr, now a runtime error "
-        "here is the best I can do {}",
+        "here is the best I can do ",
         ++i,
         false
         );
-
+#endif //TINY_HAS_CONSTEXPR
     log_if (true, log_notice ("you should see this conditional entry..."));
     log_if (false, log_notice ("...but not this one"));
 
@@ -144,6 +144,7 @@ void general_features()
 int main (int argc, const char* argv[])
 {
     general_features();
+    return 0;
 }
 //------------------------------------------------------------------------------
 

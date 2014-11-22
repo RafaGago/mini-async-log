@@ -30,7 +30,7 @@ The messages are formatted by printf-style strings, where the formatting string 
 
 log_error ("the value of i is {} and the value of j is  {}", i, j);
 
-The function is type-safe, but without "constexpr" there is no way to parse the formatting string at compile time so format errors are caught at run time.
+The function is type-safe if your compiler supports constexpr, otherwise mismatches between variadic number of arguments and the format string will be caught at runtime.
 
 ## File rotation ##
 

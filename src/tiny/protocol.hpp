@@ -72,6 +72,7 @@ struct str_literal : public delimited_mem
     template <uword N>
     str_literal (const char (&literal)[N])
     {
+        static_assert( N >= 1, "not a string literal");
         mem  = (const void*) literal;
         size = N - 1;
     }
