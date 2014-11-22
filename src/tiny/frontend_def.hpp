@@ -81,7 +81,7 @@ public:
     //--------------------------------------------------------------------------
     frontend::init_status init_backend (const backend_cfg& cfg)
     {
-        state actual = no_init;
+        uword actual = no_init;
         if (m_state.compare_exchange_strong (actual, on_init, mo_relaxed))
         {
             bool ok = m_back.init (cfg);
@@ -92,7 +92,7 @@ public:
         {
         case on_init:
         {
-            state actual = on_init;
+            uword actual = on_init;
             while (actual == on_init);
             {
                 th::this_thread::yield();
@@ -113,7 +113,7 @@ public:
     //--------------------------------------------------------------------------
     void on_termination()
     {
-        state actual = init;
+        uword actual = init;
         if (m_state.compare_exchange_strong (actual, terminated, mo_relaxed))
         {
             m_back.on_termination();
@@ -128,7 +128,7 @@ public:
     //--------------------------------------------------------------------------
     sev::severity severity()
     {
-        return m_severity.load (mo_relaxed);
+        return (sev::severity) m_severity.load (mo_relaxed);
     }
     //--------------------------------------------------------------------------
 private:
@@ -141,9 +141,9 @@ private:
         terminated
     };
 
-    backend_impl              m_back;
-    at::atomic<sev::severity> m_severity;
-    at::atomic<state>         m_state;
+    backend_impl      m_back;
+    at::atomic<uword> m_severity;
+    at::atomic<uword> m_state;
 };
 //------------------------------------------------------------------------------
 frontend::frontend() : m (new frontend::frontend_impl())

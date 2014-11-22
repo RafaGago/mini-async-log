@@ -58,7 +58,7 @@ public:
         return smallest_message_bytesize;
     }
     //--------------------------------------------------------------------------
-    static uword required_bytes (u8 v)           { return bytes_for (v); }
+    static uword required_bytes (u8 v)           { return bytes_for (v); }      //todo: mark the fixed size ones as constexpr, detect if constexpr is available in the system.hpp header and add it as a macro
     static uword required_bytes (u16 v)          { return bytes_for (v); }
     static uword required_bytes (u32 v)          { return bytes_for (v); }
     static uword required_bytes (u64 v)          { return bytes_for (v); }

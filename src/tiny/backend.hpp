@@ -18,6 +18,7 @@
 #include <tiny/util/integer.hpp>
 #include <tiny/util/thread.hpp>
 #include <tiny/util/mpsc.hpp>
+#include <tiny/util/mpsc_hybrid_wait.hpp>
 #include <tiny/util/spmc.hpp>
 #include <tiny/util/atomic.hpp>
 #include <tiny/util/chrono.hpp>
@@ -129,13 +130,11 @@ public:
     //--------------------------------------------------------------------------
     void push_allocated_entry (uint8* entry)
     {
-        node* n = node::from_storage (entry);
-        m_log_queue.push (*n);
-        if (m_signal_required.load (mo_relaxed))
+        node* n             = node::from_storage (entry);
+        bool was_empty_hint = m_log_queue.push (*n);
+        if (was_empty_hint && !m_wait.never_blocks())
         {
-            m_log_thread_mutex.lock();
-            m_log_thread_cond.notify_all();
-            m_log_thread_mutex.unlock();
+            m_wait.unblock();
         }
     }
     //--------------------------------------------------------------------------
@@ -153,7 +152,7 @@ public:
     {
         if (!validate_cfg (c)) { return false; }
 
-        status exp = constructed;
+        uword exp = constructed;
         if (!m_status.compare_exchange_strong (exp, initialized, mo_relaxed))
         {
             assert (false && "log: already initialized");
@@ -268,13 +267,8 @@ private:
     void thread()
     {
         m_status.store (running, mo_relaxed);
-
-        const uword spin_max  = 60000;
-        const uword yield_max = 200;
-        uword spins           = 0;
-        uword yields          = 0;
-        uword overflow_past   = m_overflow.load (mo_relaxed);
-        bool  flush           = true;
+        uword overflow_past = m_overflow.load (mo_relaxed);
+        auto  next_flush    = ch::steady_clock::now() + ch::milliseconds (1000);
 
         while (true)
         {
@@ -286,13 +280,7 @@ private:
                     th::this_thread::sleep_for (ch::milliseconds (1));
                     //how to and when to notify this???
                 }
-                spins  = 0;
-                yields = 0;
-                flush  = true;
-                if (m_signal_required.load (mo_relaxed))
-                {
-                    m_signal_required.store (false, mo_relaxed);
-                }
+                m_wait.reset();
                 write_message (*res.node);
                 m_alloc.deallocate ((void*) res.node);
             }
@@ -302,28 +290,17 @@ private:
                 {
                     break;
                 }
-                else if (spins < spin_max)
-                {
-                    ++spins;
-                }
-                else if (yields < yield_max)
-                {
-                    ++yields;
-                    th::this_thread::yield();
-                }
-                else
+                if (m_wait.would_block_now_hint())
                 {
                     idle_rotate_if();
-                    m_signal_required.store (true, mo_relaxed);
-                    auto status = m_log_thread_cond.wait_for(
-                            m_log_thread_mutex, ch::milliseconds (400)
-                            );
-                    if (flush && status == th::cv_status::timeout)
+                    auto now = ch::steady_clock::now();
+                    if (now >= next_flush)
                     {
-                        flush = false;
+                        next_flush = now + ch::milliseconds (1000);
                         m_out.flush();
                     }
                 }
+                m_wait.block();
             }
             else
             {
@@ -493,22 +470,14 @@ private:
     //--------------------------------------------------------------------------
     output                     m_out;
     proto::decode_and_fwd      m_decoder;
-
     backend_cfg                m_cfg;
     past_executions_file_list  m_past_files;
-
     th::thread                 m_log_thread;
-    th::mutex                  m_log_thread_mutex;
-    th::condition_variable_any m_log_thread_cond;
-
-    at::atomic<status>          m_status;
-
+    at::atomic<uword>          m_status;
+    tiny_allocator             m_alloc;
+    mpsc_hybrid_wait           m_wait;
     mpsc_i_fifo                m_log_queue;
-
-    atomic_uword               m_signal_required;
     atomic_uword               m_overflow;
-
-    tiny_allocator         m_alloc;
  };
 //------------------------------------------------------------------------------
 

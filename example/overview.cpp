@@ -101,13 +101,13 @@ void general_features()
         );
     log_error(
         "message {}, this could be corrected at compile time if all "
-        "targeted compilers supported constexpr, now a runtime error"
+        "targeted compilers supported constexpr, now a runtime error "
         "here is the best I can do {}",
         ++i
         );
     log_error(
         "message {}, this could be corrected at compile time if all "
-        "targeted compilers supported constexpr, now a runtime error"
+        "targeted compilers supported constexpr, now a runtime error "
         "here is the best I can do {}",
         ++i,
         false
@@ -132,14 +132,14 @@ void general_features()
         "now this is above the logged severity, you should see this"
         );
 
-    log_debug ("you shouldn't see this, this entry is stripped at compile "
-             "time");
+    log_debug(
+        "you shouldn't see this, this entry is stripped at compile time"
+        );
 
     log_error(
         log_fileline "this one should have the file and line prepended"
         );
 }
-
 //------------------------------------------------------------------------------
 int main (int argc, const char* argv[])
 {
