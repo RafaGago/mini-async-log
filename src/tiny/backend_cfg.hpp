@@ -12,12 +12,12 @@
 #include <deque>
 #include <string>
 #include <tiny/util/integer.hpp>
+#include <tiny/util/mpsc_hybrid_wait.hpp>
 
 namespace tiny {
 
 //------------------------------------------------------------------------------
 typedef std::deque<std::string> past_executions_file_list;
-
 //------------------------------------------------------------------------------
 //
 // There is no portable way in the C++ standard either planned or developed
@@ -67,6 +67,7 @@ struct backend_cfg
     backend_file_config            file;
     backend_log_entry_alloc_config alloc;
     backend_visualization_config   display;
+    mpsc_hybrid_wait_cfg           blocking;
 }; //class log_backend_cfg
 //------------------------------------------------------------------------------
 } //namespaces

@@ -126,12 +126,12 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-    void fwd_overflow_entry (output& o, u64 t, uword count)
+    void fwd_alloc_fault_entry (output& o, u64 t, uword count)
     {
         start_decoding_common (o, sev::error, t);
         u64 c64       = count;
         output_num (o, c64, "%llu");
-        char str[]    = " entries lost by queue overflow\n";
+        char str[]    = " entries lost by queue allocation faults\n";
         o.write (str, sizeof str - 1);
     }
     //--------------------------------------------------------------------------

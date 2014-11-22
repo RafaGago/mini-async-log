@@ -100,7 +100,10 @@ public:
         m_cfg.file.rotation.file_count         = 0;
         m_cfg.file.rotation.delayed_file_count = 0;
 
+        m_cfg.blocking                         = m_wait.get_cfg();
+
         m_status                               = constructed;
+        m_alloc_fault                          = 0;
     }
     //--------------------------------------------------------------------------
     ~backend_impl()
@@ -119,7 +122,7 @@ public:
             }
             else
             {
-                m_overflow.fetch_add (1, mo_relaxed);
+                m_alloc_fault.fetch_add (1, mo_relaxed);
                 return nullptr;
             }
         }
@@ -199,6 +202,7 @@ private:
         m_cfg = c;
         m_decoder.prints_severity  = m_cfg.display.show_severity;
         m_decoder.prints_timestamp = m_cfg.display.show_timestamp;
+        m_wait.set_cfg (c.blocking);
     }
     //--------------------------------------------------------------------------
     static bool validate_cfg (const backend_cfg& c)
@@ -269,7 +273,7 @@ private:
     void thread()
     {
         m_status.store (running, mo_relaxed);
-        uword overflow_past = m_overflow.load (mo_relaxed);
+        uword alloc_fault = m_alloc_fault.load (mo_relaxed);
         auto  next_flush    = ch::steady_clock::now() + ch::milliseconds (1000);
 
         while (true)
@@ -309,11 +313,11 @@ private:
                 for (uword i = 0; i < 1000; ++i);                               //standard pause instruction to burn cycles without using battery? x86 has it...
                 continue;
             }
-            uword overflow_new = m_overflow.load (mo_relaxed);
-            if (overflow_past != overflow_new)
+            uword allocf_now = m_alloc_fault.load (mo_relaxed);
+            if (alloc_fault != allocf_now)
             {
-                write_overflow (overflow_new - overflow_past);
-                overflow_past = overflow_new;
+                write_alloc_fault (allocf_now - alloc_fault);
+                alloc_fault = allocf_now;
             }
         }
         idle_rotate_if();
@@ -362,9 +366,9 @@ private:
         }
     }
     //--------------------------------------------------------------------------
-    void write_overflow (uword count)
+    void write_alloc_fault (uword count)
     {
-        m_decoder.fwd_overflow_entry (m_out, get_tstamp(), count);
+        m_decoder.fwd_alloc_fault_entry (m_out, get_tstamp(), count);
     }
     //--------------------------------------------------------------------------
     bool slices_files() const
@@ -479,7 +483,7 @@ private:
     tiny_allocator             m_alloc;
     mpsc_hybrid_wait           m_wait;
     mpsc_i_fifo                m_log_queue;
-    atomic_uword               m_overflow;
+    atomic_uword               m_alloc_fault;
  };
 //------------------------------------------------------------------------------
 
