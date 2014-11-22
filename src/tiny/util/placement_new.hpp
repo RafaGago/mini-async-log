@@ -11,7 +11,7 @@
 
 #include <type_traits>
 #include <utility>
-
+#include <util/system.hpp>
 
 //------------------------------------------------------------------------------
 namespace tiny {
@@ -31,7 +31,7 @@ public:
     const T* operator->() const { return ((T*) &m_stor); }
     void destruct()             { get().~T(); }
     //--------------------------------------------------------------------------
-#ifndef TINY_NO_VARIADIC_TEMPLATES
+#ifdef TINY_HAS_VARIADIC_TEMPLATES
     template <class... args>
     void construct (args&&... a)
     {

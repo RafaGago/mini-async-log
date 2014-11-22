@@ -27,7 +27,7 @@ public:
     T* operator->()             { return m_mem.operator->(); };
     const T* operator->() const { return m_mem.operator->(); };
     //--------------------------------------------------------------------------
-#ifndef TINY_NO_VARIADIC_TEMPLATES
+#ifdef TINY_HAS_VARIADIC_TEMPLATES
     //--------------------------------------------------------------------------
     template <class... args>
     aligned_type (args&&... a)

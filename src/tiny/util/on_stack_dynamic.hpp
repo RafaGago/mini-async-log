@@ -96,7 +96,7 @@ public:
         return is_constructed();
     }
     //--------------------------------------------------------------------------
-#ifndef TINY_NO_VARIADIC_TEMPLATES
+#ifdef TINY_HAS_VARIADIC_TEMPLATES
     //--------------------------------------------------------------------------
     template <class... args>
     void construct (args&&... a)

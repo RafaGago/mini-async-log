@@ -13,12 +13,25 @@
     defined (__GNUC__) &&\
     (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
     #define TINY_HAS_CONSTEXPR 1
+    #define TINY_HAS_VARIADIC_TEMPLATES 1
 #endif
 
-#if defined (_MSC_VER) &&\
-    _MSC_VER >= 1600 //1600 >= vs2010
+#if 0 //REMINDER
 
-//no version of VS supports consexpr today
+MSVC++ 12.0 _MSC_VER == 1800 (Visual Studio 2013)
+MSVC++ 11.0 _MSC_VER == 1700 (Visual Studio 2012)
+MSVC++ 10.0 _MSC_VER == 1600 (Visual Studio 2010)
+MSVC++ 9.0  _MSC_VER == 1500 (Visual Studio 2008)
+MSVC++ 8.0  _MSC_VER == 1400 (Visual Studio 2005)
+MSVC++ 7.1  _MSC_VER == 1310 (Visual Studio 2003)
+
+#endif
+
+#if defined (_MSC_VER)
+
+#if _MSC_VER >= 1800 //1600 >= vs2010
+    #define TINY_HAS_VARIADIC_TEMPLATES 1
+#endif
 
 #endif
 
