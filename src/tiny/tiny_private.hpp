@@ -75,9 +75,8 @@ inline bool tiny_fmt_check()
 #define TINY_LOG_EVERY_PRIVATE(line, count, statement)\
     ([&]() -> bool \
     { \
-        namespace mu = ::tiny::macro;\
         static unsigned counter##line = \
-        mu::log_every_needs_values_greater_than<count>::value; \
+            ::tiny::macro::log_every_needs_values_greater_than<count>::value; \
         ++counter##line = (counter##line != count) ? counter##line : 0; \
         return TINY_LOG_IF_PRIVATE (counter##line == 0, statement); \
     }.operator ()());
