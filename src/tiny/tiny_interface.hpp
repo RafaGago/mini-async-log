@@ -63,7 +63,7 @@ proto::byte_stream bytes (const void* mem, uword size)
 //------------------------------------------------------------------------------
 void log_error_call (const char* str)
 {
-
+    //todo
 }
 //------------------------------------------------------------------------------
 template<
@@ -120,8 +120,6 @@ bool new_entry(                                                                 
             (std::is_same<N, null_type>::value ? 0 : 1)
             ;
 
-    //todo: when constexpr is supported, just evaluate fmt as a literal
-
     uword length = proto::encoder::required_bytes_arity1(); //1
     length      += proto::encoder::required_bytes (a);      //2
     length      += proto::encoder::required_bytes (b);      //3
@@ -163,7 +161,7 @@ bool new_entry(                                                                 
 overflow:
     fe.push_encoded (enc);
     log_error_call ("overflow when encoding\n");
-    //shared_ptr capture rollback
+    assert (false && "bug!");                                                   //The size is precomputed, so this should be unreachable.
     return false;
 }
 //------------------------------------------------------------------------------
