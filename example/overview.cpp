@@ -31,7 +31,6 @@ void rotation_test()
 void general_features()
 {
     using namespace tiny;
-    using namespace tiny;
     tiny::frontend& fe              = get_tiny_logger_instance();
     auto be_cfg                     = fe.get_backend_cfg();
     be_cfg.file.name_prefix         = "test-data.";
