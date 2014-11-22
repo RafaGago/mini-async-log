@@ -14,7 +14,7 @@
 
 // this protocol version (if is ever implemented) will try to squeeze more
 // bytes -> reduce heap usage at the expense of some cpu cycles + code
-// complexity
+// complexity, the idea is to e.g. encode uint64 values under 256 in one byte.
 
 namespace tiny { namespace proto {
 

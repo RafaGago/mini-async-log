@@ -1,7 +1,7 @@
 #define TINY_STRIP_LOG_SEVERITY 0
 
 #include <string>
-#include <tiny/frontend_def.hpp>
+#include <tiny/frontend_def.hpp>                                                //compiled in place, but it could be in a separate library
 #include <tiny/tiny.hpp>
 //------------------------------------------------------------------------------
 inline tiny::frontend& get_tiny_logger_instance()

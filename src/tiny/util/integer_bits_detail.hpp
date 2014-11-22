@@ -113,121 +113,114 @@ struct byte_array_write<uint64_t, 8>
 
 };
 
-    template<unsigned bytes>
-    struct byte_array_read
-    {};
+template<unsigned bytes>
+struct byte_array_read
+{};
 
-    template<>
-    struct byte_array_read<2>
+template<>
+struct byte_array_read<2>
+{
+    typedef uint16_t uint_return_type;
+    static inline uint16_t little_endian (const uint8_t* in)
     {
-        typedef uint16_t uint_return_type;
-        static inline uint16_t little_endian (const uint8_t* in)
-        {
-            return byte_array_read_le_16 (in);
-        };
-
-        static inline uint16_t big_endian (const uint8_t* in)
-        {
-            return byte_array_read_be_16 (in);
-        };
-
+        return byte_array_read_le_16 (in);
     };
 
-    template<>
-    struct byte_array_read<3>
+    static inline uint16_t big_endian (const uint8_t* in)
     {
-        typedef uint32_t uint_return_type;
-        static inline uint32_t little_endian (const uint8_t* in)
-        {
-            return byte_array_read_le_24 (in);
-        };
+        return byte_array_read_be_16 (in);
+    };
+};
 
-        static inline uint32_t big_endian (const uint8_t* in)
-        {
-            return byte_array_read_be_24 (in);
-        };
-
+template<>
+struct byte_array_read<3>
+{
+    typedef uint32_t uint_return_type;
+    static inline uint32_t little_endian (const uint8_t* in)
+    {
+        return byte_array_read_le_24 (in);
     };
 
-    template<>
-    struct byte_array_read<4>
+    static inline uint32_t big_endian (const uint8_t* in)
     {
-        typedef uint32_t uint_return_type;
-        static inline uint32_t little_endian (const uint8_t* in)
-        {
-            return byte_array_read_le_32 (in);
-        };
+        return byte_array_read_be_24 (in);
+    };
+};
 
-        static inline uint32_t big_endian (const uint8_t* in)
-        {
-            return byte_array_read_be_32 (in);
-        };
-
+template<>
+struct byte_array_read<4>
+{
+    typedef uint32_t uint_return_type;
+    static inline uint32_t little_endian (const uint8_t* in)
+    {
+        return byte_array_read_le_32 (in);
     };
 
-    template<>
-    struct byte_array_read<5>
+    static inline uint32_t big_endian (const uint8_t* in)
     {
-        typedef uint64_t uint_return_type;
-        static inline uint64_t little_endian (const uint8_t* in)
-        {
-            return byte_array_read_le_40 (in);
-        };
+        return byte_array_read_be_32 (in);
+    };
+};
 
-        static inline uint64_t big_endian (const uint8_t* in)
-        {
-            return byte_array_read_be_40 (in);
-        };
-
+template<>
+struct byte_array_read<5>
+{
+    typedef uint64_t uint_return_type;
+    static inline uint64_t little_endian (const uint8_t* in)
+    {
+        return byte_array_read_le_40 (in);
     };
 
-    template<>
-    struct byte_array_read<6>
+    static inline uint64_t big_endian (const uint8_t* in)
     {
-        typedef uint64_t uint_return_type;
-        static inline uint64_t little_endian (const uint8_t* in)
-        {
-            return byte_array_read_le_48 (in);
-        };
+        return byte_array_read_be_40 (in);
+    };
+};
 
-        static inline uint64_t big_endian (const uint8_t* in)
-        {
-            return byte_array_read_be_48 (in);
-        };
-
+template<>
+struct byte_array_read<6>
+{
+    typedef uint64_t uint_return_type;
+    static inline uint64_t little_endian (const uint8_t* in)
+    {
+        return byte_array_read_le_48 (in);
     };
 
-    template<>
-    struct byte_array_read<7>
+    static inline uint64_t big_endian (const uint8_t* in)
     {
-        typedef uint64_t uint_return_type;
-        static inline uint64_t little_endian (const uint8_t* in)
-        {
-            return byte_array_read_le_56 (in);
-        };
+        return byte_array_read_be_48 (in);
+    };
+};
 
-        static inline uint64_t big_endian (const uint8_t* in)
-        {
-            return byte_array_read_be_56 (in);
-        };
-
+template<>
+struct byte_array_read<7>
+{
+    typedef uint64_t uint_return_type;
+    static inline uint64_t little_endian (const uint8_t* in)
+    {
+        return byte_array_read_le_56 (in);
     };
 
-    template<>
-    struct byte_array_read<8>
+    static inline uint64_t big_endian (const uint8_t* in)
     {
-        typedef uint64_t uint_return_type;
-        static inline uint64_t little_endian (const uint8_t* in)
-        {
-            return byte_array_read_le_64 (in);
-        };
-
-        static inline uint64_t big_endian (const uint8_t* in)
-        {
-            return byte_array_read_be_64 (in);
-        };
-
+        return byte_array_read_be_56 (in);
     };
+};
+
+template<>
+struct byte_array_read<8>
+{
+    typedef uint64_t uint_return_type;
+    static inline uint64_t little_endian (const uint8_t* in)
+    {
+        return byte_array_read_le_64 (in);
+    };
+
+    static inline uint64_t big_endian (const uint8_t* in)
+    {
+        return byte_array_read_be_64 (in);
+    };
+};
 
 }} //namespaces
 
