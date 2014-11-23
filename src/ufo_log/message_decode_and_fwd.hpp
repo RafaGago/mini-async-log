@@ -72,7 +72,7 @@ public:
 
         while (remaining && fits<field>())
         {
-            if (auto next = find_next_type (curr, end))
+            if (auto next = find_next_placeholder (curr, end))
             {
                 o.write (curr, next - curr - fmt_token_char_count);
                 curr         = next;
@@ -100,7 +100,7 @@ public:
             }
         }
 
-        auto next = find_next_type (curr, end);
+        auto next = find_next_placeholder (curr, end);
         if (next == nullptr)                                                    //format remainder or format with no parameters
         {
             o.write (curr, end - curr);
@@ -220,34 +220,16 @@ private:
         output_num (o, t, "[%020llu] ");
     }
     //--------------------------------------------------------------------------
-    const char* find_next_type (const char* curr, const char* end)
+    const char* find_next_placeholder (const char* curr, const char* end)
     {
         assert (curr && end && curr <= end);
-
-        enum parser_state
+        while (curr && (curr < (end - 1)))
         {
-            searching,
-            brace
-        };
-
-        parser_state state = searching;
-        while (curr != end)
-        {
-            switch (state)
+            curr = (const char*) std::memchr (curr, '{', end - curr);
+            if (curr && *++curr == '}')
             {
-            case searching:
-                state = (*curr != '{') ? searching : brace;
-                ++curr;
-                break;
-            case brace:
-                if (*curr == '}') { return ++curr; }
-                else              { state = searching; }
-                break;
-            default:
-                assert (false && "bug!");
-                break;
+                return ++curr;
             }
-
         }
         return nullptr;
     }
