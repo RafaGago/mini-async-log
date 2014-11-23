@@ -108,7 +108,7 @@ private:
     //--------------------------------------------------------------------------
     bool allocate()
     {
-        m_mem = (u8*) ::operator new (m_total_size);
+        m_mem = (u8*) ::operator new (m_total_size, std::nothrow);
         if (m_mem)
         {
             m_tail = m_mem + m_total_size;
