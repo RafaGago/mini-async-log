@@ -2,7 +2,7 @@
 
 UFO (Useful Features Only) Logger
 -----------
-THIS PROJECT IS UNDER DEVELOPMENT AND SHOULDN'T BE CONSIDERED STABLE NOW.
+THIS PROJECT IS UNDER DEVELOPMENT AND SHOULDN'T BE CONSIDERED PRODUCTION-READY NOW.
 
 Another feature reduced asynchronous data logger. Sponsored by my employer **Diadrom AB.**
 
@@ -14,9 +14,9 @@ After having maintained a slightly modified version of glog and given the fact t
 
  - Simple.
  - Asynchronous.
- - Low latency, fast for the caller thread. [This single threaded example](https://github.com/RafaGago/ufo-log/blob/master/example/rotation.cpp) is able to enqueue 10.000.000 million log messages with one parameter in around 1.27 seconds and to write them to disk in 12.8 seconds (using my five yer old AMD Phenon 965 machine under Linux with gcc 7.1). This is an average of 127ns for this specific case.
+ - Low latency, fast for the caller thread. [This single threaded example](https://github.com/RafaGago/ufo-log/blob/master/example/rotation.cpp) is able to enqueue 10.000.000 log messages with one parameter in around 1.27 seconds and to write them to disk in 12.8 seconds (using my five yer old AMD Phenon 965 machine under Linux with gcc 7.1). This is an average of 127ns for this specific case (trivial message, no contention).
  - No string formatting in the calling thread, the data is raw copied. No ostreams (a very ugly part of C++ for my liking).
- - One conditional call overhead when for inactive severities.
+ - One conditional call overhead for inactive severities.
  - No singleton by design, usable from dynamically loaded libraries. You provide the instace either explicitly or by using Koenig lookup.
  - Suitable for soft-realtime work. The fast-path is almost clear from heap allocations.
  - File rotation-slicing
@@ -25,7 +25,9 @@ After having maintained a slightly modified version of glog and given the fact t
 
 ## How does it work ##
 
-When the user is to write a log message, the size is precomputed (in most cases the compiler will deduce it as a constant), then the memory is reclaimed either from the fixed size free-list or the heap (configurable) and then message is serialized and passed to the worker thread queue as an intrusive linked list node. Nothing new here.
+It just borrows ideas from many of the loggers out there.
+
+When the user is to write a log message, the size is precomputed (in most cases, when the user is not deep-copying the compiler will deduce it as a constant), then the memory is reclaimed either from the fixed size free-list or the heap (configurable) and then message is serialized and passed to the worker thread queue as an intrusive linked list node.
 
 The user thread doesn't format strings, just copies built-in type values and whole program duration C string pointers (Deep copies can be done if required too) to the message and appends data for the worker thread to be able to decode it. This is restrictive but gives other benefits too.
 
@@ -36,6 +38,8 @@ log_error ("the value of i is {} and the value of j is  {}", i, j);
 The function is type-safe, when "constexpr" is available, otherwise there is no way to parse the formatting string at compile time, so format errors are caught at run time.
 
 > see this [example](https://github.com/RafaGago/ufo-log/blob/master/example/overview.cpp)
+
+I might work in applying a little "compression" to the integer types like protobuf does (but simpler) to try to pack the messages more in case no use of the heap is allowed.
 
 ## File rotation ##
 
