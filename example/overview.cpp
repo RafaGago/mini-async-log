@@ -1,5 +1,3 @@
-#if 0
-
 #define UFO_STRIP_LOG_SEVERITY 0
 
 #include <ufo_log/frontend_def.hpp>                                                //compiled in place, but it could be in a separate library
@@ -129,5 +127,3 @@ int main (int argc, const char* argv[])
     return 0;
 }
 //------------------------------------------------------------------------------
-
-#endif
