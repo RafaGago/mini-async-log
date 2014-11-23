@@ -35,10 +35,7 @@ public:
     //--------------------------------------------------------------------------
     ~on_stack_dynamic()
     {
-        if (m_constructed)
-        {
-            m_mem.destruct();
-        }
+        destruct_if();
     };
     //--------------------------------------------------------------------------
     T& get()
@@ -77,7 +74,7 @@ public:
         return m_mem.operator->();
     };
     //--------------------------------------------------------------------------
-    void destruct()
+    void destruct_if()
     {
         if (m_constructed)
         {
@@ -279,8 +276,8 @@ public:
 #endif
 
 private:
-    placement_new<T, alignment> m_mem;
     bool                        m_constructed;
+    placement_new<T, alignment> m_mem;
 };
 //------------------------------------------------------------------------------
 template <class T, std::size_t align>

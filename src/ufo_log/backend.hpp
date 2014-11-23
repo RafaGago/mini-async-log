@@ -11,8 +11,6 @@
 
 #include <cstring>
 #include <cassert>
-#include <cstdio>
-#include <fstream>
 #include <new>
 
 #include <ufo_log/util/integer.hpp>
@@ -22,11 +20,13 @@
 #include <ufo_log/util/spmc.hpp>
 #include <ufo_log/util/atomic.hpp>
 #include <ufo_log/util/chrono.hpp>
+
 #include <ufo_log/output.hpp>
 #include <ufo_log/frontend.hpp>
 #include <ufo_log/message_decode_and_fwd.hpp>
 #include <ufo_log/allocator.hpp>
 #include <ufo_log/backend_cfg.hpp>
+#include <ufo_log/log_files.hpp>
 
 namespace ufo {
 
@@ -158,7 +158,7 @@ public:
         if (!validate_cfg (c)) { return false; }
 
         uword exp = constructed;
-        if (!m_status.compare_exchange_strong (exp, initialized, mo_relaxed))
+        if (!m_status.compare_exchange_strong (exp, initializing, mo_relaxed))
         {
             assert (false && "log: already initialized");
             return false;
@@ -170,9 +170,22 @@ public:
             return false;
         }
 
+        if (!m_files.init(
+                c.file.rotation.file_count + c.file.rotation.delayed_file_count,
+                c.file.out_folder,
+                c.file.name_prefix,
+                c.file.name_suffix,
+                c.file.rotation.past_files
+                ))
+        {
+            m_alloc.free();
+            return false;
+        }
+
         auto rollback_cfg = m_cfg;
         set_cfg (c);
 
+        m_status.store (initialized, mo_release);                               // I guess that all Kernels do this for me when launching a thread, just being on the safe side in case is not true
         m_log_thread = th::thread ([this](){ this->thread(); });
 
         while (m_status.load (mo_relaxed) == initialized)
@@ -205,7 +218,7 @@ private:
         m_wait.set_cfg (c.blocking);
     }
     //--------------------------------------------------------------------------
-    static bool validate_cfg (const backend_cfg& c)
+    bool validate_cfg (const backend_cfg& c)
     {
         auto& a = c.alloc;
         if (((!a.fixed_size_entry_count || !a.fixed_size_entry_size)) &&
@@ -215,7 +228,6 @@ private:
             assert (false && "alloc cfg invalid");
             return false;
         }
-
         auto sz      = node::best_effective_size (a.fixed_size_entry_size);
         auto node_sz = node::best_total_size (sz);
         if (node_sz < sz)
@@ -223,37 +235,24 @@ private:
             assert (false && "alloc fixed size entry size would overflow");
             return false;
         }
-
         if (c.file.rotation.file_count != 0 && c.file.aprox_size == 0)
         {
             assert (false && "won't be able to rotate infinite size files");
             return false;
         }
-
+        if (c.file.rotation.file_count == 1)
+        {
+            assert (false && "won't be able to rotate a single file");
+            return false;
+        }
         if (c.file.out_folder.size() == 0)
         {
             assert (false && "log folder can't be empty");
             return false;
         }
-
-        for (uword i = 0; ; ++i)
+        if (!m_files.can_write_in_folder (c.file.out_folder))
         {
-            std::string name = new_file_name (c.file);
-            std::ofstream file (name.c_str());
-            file.write ((const char*) &name, 30);
-            if (file.good())
-            {
-                file.close();
-                erase_file (name.c_str());
-                break;
-            }
-            erase_file (name.c_str());
-            if (i == 5) //FIXME
-            {
-                assert (false && "log: couldn't create or write a test file");
-                return false;
-            }
-            th::this_thread::sleep_for (ch::milliseconds (1));
+            return false;
         }
         return true;
     }
@@ -272,16 +271,21 @@ private:
     //--------------------------------------------------------------------------
     void thread()
     {
+        while (m_status.load (mo_acquire) != initialized)                       // I guess that all Kernels do this for me when launching a thread, just being on the safe side in case is not true
+        {
+            th::this_thread::yield();
+        }
         m_status.store (running, mo_relaxed);
         uword alloc_fault = m_alloc_fault.load (mo_relaxed);
-        auto  next_flush    = ch::steady_clock::now() + ch::milliseconds (1000);
+        auto  next_flush  = ch::steady_clock::now() + ch::milliseconds (1000);
+        new_file_name_to_buffer();
 
         while (true)
         {
             mpsc_result res = m_log_queue.pop();
             if (res.error == mpsc_result::no_error)
             {
-                while (!newfile_if())
+                while (!non_idle_newfile_if())
                 {
                     th::this_thread::sleep_for (ch::milliseconds (1));
                     //how to and when to notify this???
@@ -324,29 +328,14 @@ private:
         m_status.store (thread_stopped, mo_relaxed);
     }
     //--------------------------------------------------------------------------
-    static std::string new_file_name(
-            const backend_file_config& cfg
-            )
+    const char* new_file_name_to_buffer()
     {
         using namespace ch;
-        u64 tstamp   = get_tstamp ();
+        u64 cpu      = get_tstamp ();
         u64 calendar = duration_cast<microseconds>(
                         system_clock::now().time_since_epoch()
                         ).count();
-
-        std::string name (cfg.out_folder);
-        name.append (cfg.name_prefix);                                          //A C++11 reserve is possible
-
-        char buff[16 + 1 + 16 + 1];
-        snprintf (buff, sizeof buff, "%016llx-%016llx", calendar, tstamp);
-        buff[sizeof buff - 1] = 0;
-
-        name.append (buff);
-        if (cfg.name_suffix.size())
-        {
-            name.append (cfg.name_suffix);
-        }
-        return name;
+        return m_files.new_filename_in_buffer (cpu, calendar);
     }
     //--------------------------------------------------------------------------
     static u64 get_tstamp ()
@@ -383,36 +372,24 @@ private:
     //--------------------------------------------------------------------------
     bool rotates() const
     {
-        return (slices_files() && m_cfg.file.rotation.file_count != 0);
+        return (slices_files() && m_files.rotates());
     }
     //--------------------------------------------------------------------------
     bool slice_file()
     {
         assert (slices_files());
         m_out.file_close();
-        auto name = new_file_name (m_cfg.file);
-        if (m_out.file_open (name.c_str()))
-        {
-            m_cfg.file.rotation.past_files.push_back (name);
-            return true;
-        }
-        return false;
+        return m_out.file_open (new_file_name_to_buffer());
     }
     //--------------------------------------------------------------------------
     bool reopen_file()
     {
         assert (!slices_files());
         m_out.file_close();
-
-        auto& pf = m_cfg.file.rotation.past_files;
-        if (!pf.size())
-        {
-            pf.push_back (new_file_name (m_cfg.file));
-        }
-        return m_out.file_open (pf.back().c_str());
+        return m_out.file_open (m_files.filename_in_buffer());
     }
     //--------------------------------------------------------------------------
-    bool newfile_if()
+    bool non_idle_newfile_if()
     {
         bool error = !m_out.file_is_open() || !m_out.file_no_error();
         if (slices_files())
@@ -424,14 +401,11 @@ private:
                 {
                     if (rotates())
                     {
-                        rotate(
+                        m_files.keep_newer_files(
                             m_cfg.file.rotation.file_count +
-                            m_cfg.file.rotation.delayed_file_count
+                            m_cfg.file.rotation.delayed_file_count - 1
                             );
-                    }
-                    else
-                    {
-                        m_cfg.file.rotation.past_files.clear();
+                        m_files.push_filename_in_buffer();
                     }
                 }
                 return success;
@@ -444,30 +418,18 @@ private:
         return true;
     }
     //--------------------------------------------------------------------------
-    void rotate (uword limit)
-    {
-        assert (rotates());
-        auto& pf = m_cfg.file.rotation.past_files;
-        while (pf.size() > limit)
-        {
-            erase_file (pf.front().c_str());
-            pf.pop_front();
-        }
-    }
-    //--------------------------------------------------------------------------
     void idle_rotate_if()
     {
-        if (rotates()) { rotate (m_cfg.file.rotation.file_count); }
-    }
-    //--------------------------------------------------------------------------
-    static void erase_file (const char* file)
-    {
-        std::remove (file);
+        if (rotates())
+        {
+            m_files.keep_newer_files (m_cfg.file.rotation.file_count);
+        }
     }
     //--------------------------------------------------------------------------
     enum status
     {
         constructed,
+        initializing,
         initialized,
         running,
         terminating,
@@ -477,15 +439,17 @@ private:
     output                     m_out;
     proto::decode_and_fwd      m_decoder;
     backend_cfg                m_cfg;
-    past_executions_file_list  m_past_files;
+    log_files                  m_files;
     th::thread                 m_log_thread;
     at::atomic<uword>          m_status;
-    ufo_allocator             m_alloc;
+    ufo_allocator              m_alloc;
     mpsc_hybrid_wait           m_wait;
     mpsc_i_fifo                m_log_queue;
     atomic_uword               m_alloc_fault;
  };
 //------------------------------------------------------------------------------
+
+
 
 } //namespaces
 

@@ -15,6 +15,7 @@
 #include <ufo_log/util/mpsc.hpp>
 #include <ufo_log/util/spmc.hpp>
 #include <ufo_log/util/integer_bits.hpp>
+#include <ufo_log/util/on_stack_dynamic.hpp>
 
 namespace ufo {
 
@@ -41,11 +42,7 @@ public:
     //--------------------------------------------------------------------------
     ~ufo_allocator()
     {
-        if (m_fixed_begin)
-        {
-            ::operator delete (m_fixed_begin);
-            zero();
-        }
+        free();
     };
     //--------------------------------------------------------------------------
     bool init(
@@ -82,12 +79,11 @@ public:
         }
         try
         {
-            new (&m_freelist_storage) free_list (entries);
+            m_list.construct (entries);
         }
         catch (...)
         {
-            ::operator delete (m_fixed_begin);
-            zero();
+            free();
             return false;
         }
         m_fixed_end   = m_fixed_begin + bsz;
@@ -95,9 +91,19 @@ public:
         m_use_heap    = use_heap;
         for (uword i = 0; i < entries; ++i)
         {
-            get_free_list().bounded_push (m_fixed_begin + (i * m_entry_size));
+            m_list->bounded_push (m_fixed_begin + (i * m_entry_size));
         }
         return true;
+    }
+    //--------------------------------------------------------------------------
+    void free()
+    {
+        if (m_fixed_begin)
+        {
+            m_list.destruct_if();
+            ::operator delete (m_fixed_begin);
+            zero();
+        }
     }
     //--------------------------------------------------------------------------
     void* allocate (uword size)
@@ -105,7 +111,7 @@ public:
         if (size)
         {
             void* ret;
-            if ((size <= m_entry_size) && get_free_list().pop (ret))            //TODO: profile if this scenario beats the heap
+            if ((size <= m_entry_size) && m_list->pop (ret))                    //TODO: profile if this scenario beats the heap
             {
                 return ret;
             }
@@ -128,7 +134,7 @@ public:
             addr -= fbeg;
             if ((addr & (m_entry_size - 1)) == 0)
             {
-                get_free_list().bounded_push (p);
+                m_list->bounded_push (p);
                 return true;
             }
             assert (false && "returned pointer misaligned");
@@ -161,11 +167,7 @@ private:
     ufo_allocator (const ufo_allocator& other);
     ufo_allocator& operator= (const ufo_allocator& other);
 
-    typedef spmc_b_fifo<void*>                   free_list;
-    typedef std::aligned_storage<
-            sizeof (free_list),
-            std::alignment_of<free_list>::value
-        >::type                                  free_list_storage;
+    typedef spmc_b_fifo<void*> free_list;
     //--------------------------------------------------------------------------
     void zero()
     {
@@ -174,16 +176,11 @@ private:
         m_use_heap    = false;
     }
     //--------------------------------------------------------------------------
-    free_list& get_free_list()
-    {
-        return *((free_list*) &m_freelist_storage);
-    }
-    //--------------------------------------------------------------------------
-    uword             m_entry_size;
-    uint8*            m_fixed_begin;
-    uint8*            m_fixed_end;
-    free_list_storage m_freelist_storage;
-    bool              m_use_heap;
+    uword                       m_entry_size;
+    uint8*                      m_fixed_begin;
+    uint8*                      m_fixed_end;
+    on_stack_dynamic<free_list> m_list;
+    bool                        m_use_heap;
     //--------------------------------------------------------------------------
 }; //class allocator
 //------------------------------------------------------------------------------

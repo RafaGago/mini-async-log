@@ -1,6 +1,7 @@
+#if 0
+
 #define UFO_STRIP_LOG_SEVERITY 0
 
-#include <string>
 #include <ufo_log/frontend_def.hpp>                                                //compiled in place, but it could be in a separate library
 #include <ufo_log/ufo_log.hpp>
 //------------------------------------------------------------------------------
@@ -10,32 +11,14 @@ inline ufo::frontend& get_ufo_logger_instance()
     return fe;
 }
 //------------------------------------------------------------------------------
-void rotation_test()
-{
-    using namespace ufo;
-    ufo::frontend& fe                      = get_ufo_logger_instance();
-    auto be_cfg                             = fe.get_backend_cfg();
-    be_cfg.file.out_folder                  = "./log_out/";
-    be_cfg.file.aprox_size                  = 512 * 1024;
-    be_cfg.file.rotation.file_count         = 4;
-    be_cfg.file.rotation.delayed_file_count = 1;
-
-    if (fe.init_backend (be_cfg) != frontend::init_ok) { return; }
-
-    for (unsigned i = 0; i < 100000; ++i)
-    {
-        log_error ("message {}", i);
-    }
-}
-//------------------------------------------------------------------------------
 void general_features()
 {
     using namespace ufo;
-    ufo::frontend& fe              = get_ufo_logger_instance();
+    ufo::frontend& fe               = get_ufo_logger_instance();
     auto be_cfg                     = fe.get_backend_cfg();
     be_cfg.file.name_prefix         = "test-data.";
     be_cfg.file.name_suffix         = ".log.txt";
-    be_cfg.file.out_folder          = "./log_out/";
+    be_cfg.file.out_folder          = "./log_out/";                             //this folder has to exist before running
     be_cfg.file.aprox_size          = 512 * 1024;
     be_cfg.file.rotation.file_count = 0;
 
@@ -147,4 +130,4 @@ int main (int argc, const char* argv[])
 }
 //------------------------------------------------------------------------------
 
-
+#endif
