@@ -6,17 +6,17 @@
  */
 
 
-#ifndef TINY_LOG_INTERFACE_HPP_
-#define TINY_LOG_INTERFACE_HPP_
+#ifndef UFO_LOG_INTERFACE_HPP_
+#define UFO_LOG_INTERFACE_HPP_
 
 #include <cassert>
 #include <string>
 #include <type_traits>
-#include <tiny/protocol.hpp>
-#include <tiny/frontend.hpp>
-#include <tiny/message_encoder.hpp>
+#include <ufo_log/protocol.hpp>
+#include <ufo_log/frontend.hpp>
+#include <ufo_log/message_encoder.hpp>
 
-namespace tiny {
+namespace ufo {
 
 //------------------------------------------------------------------------------
 proto::raw_data deep_copy (const std::string& str)
@@ -479,4 +479,4 @@ inline bool new_entry(
 //------------------------------------------------------------------------------
 } //namespace
 
-#endif /* TINY_LOG_INTERFACE_HPP_ */
+#endif /* UFO_LOG_INTERFACE_HPP_ */

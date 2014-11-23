@@ -6,13 +6,13 @@
  */
 
 
-#ifndef TINY_LOG_LOG_FRONTEND_HPP_
-#define TINY_LOG_LOG_FRONTEND_HPP_
+#ifndef UFO_LOG_LOG_FRONTEND_HPP_
+#define UFO_LOG_LOG_FRONTEND_HPP_
 
 #include <memory>
-#include <tiny/message_encoder.hpp>
+#include <ufo_log/message_encoder.hpp>
 
-namespace tiny {
+namespace ufo {
 
 struct backend_cfg;
 
@@ -60,4 +60,4 @@ private:
 //------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* TINY_LOG_LOG_FRONTEND_HPP_ */
+#endif /* UFO_LOG_LOG_FRONTEND_HPP_ */

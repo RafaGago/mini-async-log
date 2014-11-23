@@ -6,14 +6,14 @@
  */
 
 
-#ifndef TINY_LOG_LOG_MESSAGE_ENCODER_HPP_
-#define TINY_LOG_LOG_MESSAGE_ENCODER_HPP_
+#ifndef UFO_LOG_LOG_MESSAGE_ENCODER_HPP_
+#define UFO_LOG_LOG_MESSAGE_ENCODER_HPP_
 
 #include <cassert>
 #include <cstring>
-#include <tiny/protocol.hpp>
+#include <ufo_log/protocol.hpp>
 
-namespace tiny { namespace proto {
+namespace ufo { namespace proto {
 
 //------------------------------------------------------------------------------
 class encoder
@@ -307,4 +307,4 @@ private:
 //------------------------------------------------------------------------------
 
 }} //namespaces
-#endif /* TINY_LOG_LOG_MESSAGE_ENCODER_HPP_ */
+#endif /* UFO_LOG_LOG_MESSAGE_ENCODER_HPP_ */

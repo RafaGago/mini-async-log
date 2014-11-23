@@ -6,17 +6,17 @@
  */
 
 
-#ifndef TINY_LOG_LOG_BYTE_STREAM_CONVERT_HPP_
-#define TINY_LOG_LOG_BYTE_STREAM_CONVERT_HPP_
+#ifndef UFO_LOG_LOG_BYTE_STREAM_CONVERT_HPP_
+#define UFO_LOG_LOG_BYTE_STREAM_CONVERT_HPP_
 
-#include <tiny/output.hpp>
+#include <ufo_log/output.hpp>
 
 // disclaimer: this is an overkill when dealing with files, it's a copy-paste
 //             of some code I had lying around. Then I felt bad, I simplified
 //             it but everything remains the same: it still is a miserable
 //             overkill.
 
-namespace tiny {
+namespace ufo {
 //------------------------------------------------------------------------------
 namespace detail {
 #if 0
@@ -113,4 +113,4 @@ class byte_stream_convert
 //------------------------------------------------------------------------------
 } //namespace
 
-#endif /* TINY_LOG_LOG_BYTE_STREAM_CONVERT_HPP_ */
+#endif /* UFO_LOG_LOG_BYTE_STREAM_CONVERT_HPP_ */

@@ -5,11 +5,11 @@
  *      Author: rafgag
  */
 
-#ifndef TINY_SPMC_HPP_
-#define TINY_SPMC_HPP_
+#ifndef UFO_SPMC_HPP_
+#define UFO_SPMC_HPP_
 
 #include <cassert>
-#include <tiny/util/atomic.hpp>
+#include <ufo_log/util/atomic.hpp>
 
 /*
 
@@ -49,9 +49,9 @@ either expressed or implied, of Dmitry Vyukov.
 
 */
 
-namespace tiny {
+namespace ufo {
 
-namespace at = TINY_ATOMIC_NAMESPACE;
+namespace at = UFO_ATOMIC_NAMESPACE;
 //------------------------------------------------------------------------------
 template<typename T>
 class spmc_b_fifo

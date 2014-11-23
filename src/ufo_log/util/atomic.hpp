@@ -5,24 +5,24 @@
  *      Author: rafgag
  */
 
-#ifndef TINY_ATOMIC_HPP_
-#define TINY_ATOMIC_HPP_
+#ifndef UFO_ATOMIC_HPP_
+#define UFO_ATOMIC_HPP_
 
-#include <tiny/util/integer.hpp>
+#include <ufo_log/util/integer.hpp>
 
-#ifdef TINY_USE_BOOST_ATOMIC
+#ifdef UFO_USE_BOOST_ATOMIC
     #include <boost/atomic.hpp>
-    #define TINY_ATOMIC_NAMESPACE ::boost::atomic
+    #define UFO_ATOMIC_NAMESPACE ::boost::atomic
 
 #else
     #include <atomic>
-    #define TINY_ATOMIC_NAMESPACE ::std
+    #define UFO_ATOMIC_NAMESPACE ::std
 
 #endif
 
-namespace tiny {
+namespace ufo {
 
-namespace at = TINY_ATOMIC_NAMESPACE;
+namespace at = UFO_ATOMIC_NAMESPACE;
 
 typedef at::atomic<u8>     atomic_uint8;
 typedef at::atomic<u16>    atomic_uint16;
@@ -240,4 +240,4 @@ public:
 //------------------------------------------------------------------------------
 } //namespace
 
-#endif /* TINY_ATOMIC_HPP_ */
+#endif /* UFO_ATOMIC_HPP_ */

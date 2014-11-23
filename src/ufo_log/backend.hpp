@@ -6,8 +6,8 @@
  */
 
 
-#ifndef TINY_LOG_BACKEND_HPP_
-#define TINY_LOG_BACKEND_HPP_
+#ifndef UFO_LOG_BACKEND_HPP_
+#define UFO_LOG_BACKEND_HPP_
 
 #include <cstring>
 #include <cassert>
@@ -15,24 +15,24 @@
 #include <fstream>
 #include <new>
 
-#include <tiny/util/integer.hpp>
-#include <tiny/util/thread.hpp>
-#include <tiny/util/mpsc.hpp>
-#include <tiny/util/mpsc_hybrid_wait.hpp>
-#include <tiny/util/spmc.hpp>
-#include <tiny/util/atomic.hpp>
-#include <tiny/util/chrono.hpp>
-#include <tiny/output.hpp>
-#include <tiny/frontend.hpp>
-#include <tiny/message_decode_and_fwd.hpp>
-#include <tiny/allocator.hpp>
-#include <tiny/backend_cfg.hpp>
+#include <ufo_log/util/integer.hpp>
+#include <ufo_log/util/thread.hpp>
+#include <ufo_log/util/mpsc.hpp>
+#include <ufo_log/util/mpsc_hybrid_wait.hpp>
+#include <ufo_log/util/spmc.hpp>
+#include <ufo_log/util/atomic.hpp>
+#include <ufo_log/util/chrono.hpp>
+#include <ufo_log/output.hpp>
+#include <ufo_log/frontend.hpp>
+#include <ufo_log/message_decode_and_fwd.hpp>
+#include <ufo_log/allocator.hpp>
+#include <ufo_log/backend_cfg.hpp>
 
-namespace tiny {
+namespace ufo {
 
-namespace th = TINY_THREAD_NAMESPACE;
-namespace ch = TINY_CHRONO_NAMESPACE;
-namespace at = TINY_ATOMIC_NAMESPACE;
+namespace th = UFO_THREAD_NAMESPACE;
+namespace ch = UFO_CHRONO_NAMESPACE;
+namespace at = UFO_ATOMIC_NAMESPACE;
 
 //------------------------------------------------------------------------------
 struct node : public mpsc_node_hook
@@ -351,7 +351,7 @@ private:
     //--------------------------------------------------------------------------
     static u64 get_tstamp ()
     {
-        using namespace TINY_CHRONO_NAMESPACE;
+        using namespace UFO_CHRONO_NAMESPACE;
         return duration_cast<microseconds>(
                 steady_clock::now().time_since_epoch()
                 ).count();
@@ -480,7 +480,7 @@ private:
     past_executions_file_list  m_past_files;
     th::thread                 m_log_thread;
     at::atomic<uword>          m_status;
-    tiny_allocator             m_alloc;
+    ufo_allocator             m_alloc;
     mpsc_hybrid_wait           m_wait;
     mpsc_i_fifo                m_log_queue;
     atomic_uword               m_alloc_fault;
@@ -489,4 +489,4 @@ private:
 
 } //namespaces
 
-#endif /* TINY_LOG_BACKEND_DEF_HPP_ */
+#endif /* UFO_LOG_BACKEND_DEF_HPP_ */

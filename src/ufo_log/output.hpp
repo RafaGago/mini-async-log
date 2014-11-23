@@ -6,18 +6,18 @@
  */
 
 
-#ifndef TINY_LOG_LOG_OUTPUT_HPP_
-#define TINY_LOG_LOG_OUTPUT_HPP_
+#ifndef UFO_LOG_LOG_OUTPUT_HPP_
+#define UFO_LOG_LOG_OUTPUT_HPP_
 
 #include <cstdio>
 #include <cassert>
 #include <fstream>
 #include <iostream>
-#include <tiny/util/integer.hpp>
-#include <tiny/util/atomic.hpp>
-#include <tiny/protocol.hpp>
+#include <ufo_log/util/integer.hpp>
+#include <ufo_log/util/atomic.hpp>
+#include <ufo_log/protocol.hpp>
 
-namespace tiny {
+namespace ufo {
 //------------------------------------------------------------------------------
 class output
 {
@@ -111,4 +111,4 @@ private:
 //------------------------------------------------------------------------------
 }
 
-#endif /* TINY_LOG_LOG_FILE_SINK_HPP_ */
+#endif /* UFO_LOG_LOG_FILE_SINK_HPP_ */

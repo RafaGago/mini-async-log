@@ -6,16 +6,16 @@
  */
 
 
-#ifndef TINY_LOG_LOG_MESSAGE_DECODER_HPP_
-#define TINY_LOG_LOG_MESSAGE_DECODER_HPP_
+#ifndef UFO_LOG_LOG_MESSAGE_DECODER_HPP_
+#define UFO_LOG_LOG_MESSAGE_DECODER_HPP_
 
 #include <cassert>
 #include <cstring>
-#include <tiny/protocol.hpp>
-#include <tiny/output.hpp>
-#include <tiny/byte_stream_convert.hpp>
+#include <ufo_log/protocol.hpp>
+#include <ufo_log/output.hpp>
+#include <ufo_log/byte_stream_convert.hpp>
 
-namespace tiny { namespace proto {
+namespace ufo { namespace proto {
 
 //------------------------------------------------------------------------------
 class decode_and_fwd
@@ -422,4 +422,4 @@ private:
 //------------------------------------------------------------------------------
 }} //namespaces
 
-#endif /* TINY_LOG_LOG_MESSAGE_DECODER_HPP_ */
+#endif /* UFO_LOG_LOG_MESSAGE_DECODER_HPP_ */

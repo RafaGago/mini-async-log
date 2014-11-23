@@ -6,8 +6,8 @@
  */
 
 
-#ifndef TINY_LOG_PACKED_PROTOCOL_HPP_
-#define TINY_LOG_PACKED_PROTOCOL_HPP_
+#ifndef UFO_LOG_PACKED_PROTOCOL_HPP_
+#define UFO_LOG_PACKED_PROTOCOL_HPP_
 
 #include <type_traits>
 #include <util/integer.hpp>
@@ -16,7 +16,7 @@
 // bytes -> reduce heap usage at the expense of some cpu cycles + code
 // complexity, the idea is to e.g. encode uint64 values under 256 in one byte.
 
-namespace tiny { namespace proto {
+namespace ufo { namespace proto {
 
 //------------------------------------------------------------------------------
 struct header_length_extra_msb
@@ -206,4 +206,4 @@ static_assert (sizeof (field) == sizeof (field_wire_type), "");
 
 } //namespaces
 
-#endif /* TINY_LOG_LOG_MESSAGE_HPP_ */
+#endif /* UFO_LOG_LOG_MESSAGE_HPP_ */

@@ -5,10 +5,10 @@
  *      Author: rafa
  */
 
-#ifndef TINY_SAFE_BOOL_HPP_
-#define TINY_SAFE_BOOL_HPP_
+#ifndef UFO_SAFE_BOOL_HPP_
+#define UFO_SAFE_BOOL_HPP_
 
-namespace tiny {
+namespace ufo {
 //------------------------------------------------------------------------------
 template <typename T>
 struct safe_bool_impl
@@ -41,7 +41,7 @@ public:
     //--------------------------------------------------------------------------
 }; //class safe_bool
 //------------------------------------------------------------------------------
-} //namespace tiny
+} //namespace ufo
 
-#endif /* TINY_SAFE_BOOL_HPP_ */
+#endif /* UFO_SAFE_BOOL_HPP_ */
 

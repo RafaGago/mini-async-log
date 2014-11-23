@@ -6,14 +6,14 @@
  */
 
 
-#ifndef TINY_SYSTEM_HPP_
-#define TINY_SYSTEM_HPP_
+#ifndef UFO_SYSTEM_HPP_
+#define UFO_SYSTEM_HPP_
 
 #if defined (__GXX_EXPERIMENTAL_CXX0X__) &&\
     defined (__GNUC__) &&\
     (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
-    #define TINY_HAS_CONSTEXPR 1
-    #define TINY_HAS_VARIADIC_TEMPLATES 1
+    #define UFO_HAS_CONSTEXPR 1
+    #define UFO_HAS_VARIADIC_TEMPLATES 1
 #endif
 
 #if 0 //REMINDER
@@ -30,29 +30,29 @@ MSVC++ 7.1  _MSC_VER == 1310 (Visual Studio 2003)
 #if defined (_MSC_VER)
 
 #if _MSC_VER >= 1800 //1600 >= vs2010
-    #define TINY_HAS_VARIADIC_TEMPLATES 1
+    #define UFO_HAS_VARIADIC_TEMPLATES 1
 #endif
 
 #endif
 
-#ifndef TINY_DYN_LIB_CALL
+#ifndef UFO_DYN_LIB_CALL
 
 #if defined (_MSC_VER)
-    #define TINY_DYN_LIB_CALL WINAPI
+    #define UFO_DYN_LIB_CALL WINAPI
 #elif __GNUC__ >= 4
-    #define TINY_DYN_LIB_CALL __attribute__ ((visibility ("default")))
+    #define UFO_DYN_LIB_CALL __attribute__ ((visibility ("default")))
 #else
-    #define TINY_DYN_LIB_CALL
+    #define UFO_DYN_LIB_CALL
 #endif
 
-#endif //TINY_DYN_LIB_CALL
+#endif //UFO_DYN_LIB_CALL
 
-namespace tiny {
-#ifndef TINY_CACHE_LINE_SIZE
+namespace ufo {
+#ifndef UFO_CACHE_LINE_SIZE
     const unsigned cache_line_size = 64;
 #else
-    const unsigned cache_line_size = TINY_CACHE_LINE_SIZE;
+    const unsigned cache_line_size = UFO_CACHE_LINE_SIZE;
 #endif
-} //namespace tiny {
+} //namespace ufo {
 
-#endif /* TINY_SYSTEM_HPP_ */
+#endif /* UFO_SYSTEM_HPP_ */

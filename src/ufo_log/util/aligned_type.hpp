@@ -1,78 +1,75 @@
 /*
- * placement_new.hpp
+ * aligned_type.hpp
  *
- *  Created on: Nov 17, 2014
+ *  Created on: Oct 17, 2013
  *      Author: rafgag
  */
 
+#ifndef UFO_ALIGNED_TYPE_HPP_
+#define UFO_ALIGNED_TYPE_HPP_
 
-#ifndef TINY_PLACEMENT_NEW_HPP_
-#define TINY_PLACEMENT_NEW_HPP_
-
-#include <type_traits>
-#include <utility>
-#include <util/system.hpp>
+#include <ufo_log/util/placement_new.hpp>
 
 //------------------------------------------------------------------------------
-namespace tiny {
+namespace ufo {
 //------------------------------------------------------------------------------
 template <class T, std::size_t alignment = std::alignment_of<T>::value>
-class placement_new
+class aligned_type
 {
 public:
     //--------------------------------------------------------------------------
-    placement_new () {};
+    ~aligned_type() { m_mem.destruct(); };
     //--------------------------------------------------------------------------
-    T& get()                    { return *((T*) &m_stor); }
-    const T& get() const        { return *((T*) &m_stor); }
-    T& operator*()              { return get(); }
-    const T& operator*() const  { return get(); }
-    T* operator->()             { return ((T*) &m_stor); }
-    const T* operator->() const { return ((T*) &m_stor); }
-    void destruct()             { get().~T(); }
+    T& get()                    { return m_mem.get(); };
+    const T& get() const        { return m_mem.get(); };
+    T& operator*()              { return m_mem.operator*(); };
+    const T& operator*() const  { return m_mem.operator*(); };
+    T* operator->()             { return m_mem.operator->(); };
+    const T* operator->() const { return m_mem.operator->(); };
     //--------------------------------------------------------------------------
-#ifdef TINY_HAS_VARIADIC_TEMPLATES
+#ifdef UFO_HAS_VARIADIC_TEMPLATES
+    //--------------------------------------------------------------------------
     template <class... args>
-    void construct (args&&... a)
+    aligned_type (args&&... a)
     {
-        new (&m_stor) T (std::forward<args>(a)...);
+        m_mem.construct (std::forward<args>(a)...);
     }
-    //--------------------------------------------------------------------------
+
 #else
     //--------------------------------------------------------------------------
-    void construct()
+    aligned_type()
     {
-        new (&m_stor) T();
+        m_mem.construct();
     };
     //--------------------------------------------------------------------------
     template<class A>
-    void construct (A&& a)
+    aligned_type (A&& a)
     {
         using namespace std;
-        new (&m_stor) T (forward<A> (a));
+        m_mem.construct (forward<A> (a));
     };
     //--------------------------------------------------------------------------
     template<class A, class B>
-    void construct (A&& a, B&& b)
+    aligned_type (A&& a, B&& b)
     {
         using namespace std;
-        new (&m_stor) T (forward<A> (a), forward<B> (b));
+        m_mem.construct (forward<A> (a), forward<B> (b));
     };
     //--------------------------------------------------------------------------
     template<class A, class B, class C, class D>
-    void construct (A&& a, B&& b, C&& c, D&& d)
+    aligned_type (A&& a, B&& b, C&& c, D&& d)
     {
         using namespace std;
-        new (&m_stor) T(
+        m_mem.construct(
             forward<A> (a), forward<B> (b), forward<C> (c), forward<D> (d)
             );
     };
     //--------------------------------------------------------------------------
     template<class A, class B, class C, class D, class E>
-    void construct (A&& a, B&& b, C&& c, D&& d, E&& e)
+    aligned_type (A&& a, B&& b, C&& c, D&& d, E&& e)
     {
         using namespace std;
-        new (&m_stor) T(
+        m_mem.construct(
             forward<A> (a),
             forward<B> (b),
             forward<C> (c),
@@ -82,10 +79,10 @@ public:
     };
     //--------------------------------------------------------------------------
     template<class A, class B, class C, class D, class E, class F>
-    void construct (A&& a, B&& b, C&& c, D&& d, E&& e, F&& f)
+    aligned_type (A&& a, B&& b, C&& c, D&& d, E&& e, F&& f)
     {
         using namespace std;
-        new (&m_stor) T(
+        m_mem.construct(
             forward<A> (a),
             forward<B> (b),
             forward<C> (c),
@@ -96,10 +93,10 @@ public:
     };
     //--------------------------------------------------------------------------
     template<class A, class B, class C, class D, class E, class F, class G>
-    void construct (A&& a, B&& b, C&& c, D&& d, E&& e, F&& f, G&& g)
+    aligned_type (A&& a, B&& b, C&& c, D&& d, E&& e, F&& f, G&& g)
     {
         using namespace std;
-        new (&m_stor) T(
+        m_mem.construct(
             forward<A> (a),
             forward<B> (b),
             forward<C> (c),
@@ -113,10 +110,10 @@ public:
     template<
         class A, class B, class C, class D, class E, class F, class G, class H
         >
-    void construct (A&& a, B&& b, C&& c, D&& d, E&& e, F&& f, G&& g, H&& h)
+    aligned_type (A&& a, B&& b, C&& c, D&& d, E&& e, F&& f, G&& g, H&& h)
     {
         using namespace std;
-        new (&m_stor) T(
+        m_mem.construct(
             forward<A> (a),
             forward<B> (b),
             forward<C> (c),
@@ -139,12 +136,12 @@ public:
         class H,
         class I
         >
-    void construct(
+    aligned_type(
         A&& a, B&& b, C&& c, D&& d, E&& e, F&& f, G&& g, H&& h, I&& i
         )
     {
         using namespace std;
-        new (&m_stor) T(
+        m_mem.construct(
             forward<A> (a),
             forward<B> (b),
             forward<C> (c),
@@ -169,12 +166,12 @@ public:
         class I,
         class J
         >
-    void construct(
+    aligned_type(
         A&& a, B&& b, C&& c, D&& d, E&& e, F&& f, G&& g, H&& h, I&& i, J&& j
         )
     {
         using namespace std;
-        new (&m_stor) T(
+        m_mem.construct(
             forward<A> (a),
             forward<B> (b),
             forward<C> (c),
@@ -191,13 +188,9 @@ public:
 #endif
 
 private:
-    placement_new (const placement_new& other);
-    placement_new& operator= (const placement_new& other);
-
-    typename std::aligned_storage<sizeof (T), alignment>::type m_stor;
-
-}; //class aligned_type
-
+    placement_new<T, alignment> m_mem;
+};
+//------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* TINY_SERVER_PLACEMENT_NEW_HPP_ */
+#endif /* ALIGNED_TYPE_HPP_ */

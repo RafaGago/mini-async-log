@@ -6,18 +6,18 @@
  */
 
 
-#ifndef TINY_LOG_LOG_FRONTEND_DEF_HPP_
-#define TINY_LOG_LOG_FRONTEND_DEF_HPP_
+#ifndef UFO_LOG_LOG_FRONTEND_DEF_HPP_
+#define UFO_LOG_LOG_FRONTEND_DEF_HPP_
 
-#include <tiny/util/atomic.hpp>
-#include <tiny/util/thread.hpp>
-#include <tiny/frontend.hpp>
-#include <tiny/backend.hpp>
+#include <ufo_log/util/atomic.hpp>
+#include <ufo_log/util/thread.hpp>
+#include <ufo_log/frontend.hpp>
+#include <ufo_log/backend.hpp>
 
-namespace tiny {
+namespace ufo {
 
-namespace th = TINY_THREAD_NAMESPACE;
-namespace at = TINY_ATOMIC_NAMESPACE;
+namespace th = UFO_THREAD_NAMESPACE;
+namespace at = UFO_ATOMIC_NAMESPACE;
 
 //------------------------------------------------------------------------------
 class frontend::frontend_impl
@@ -198,4 +198,4 @@ void frontend::on_termination()
 
 } //namespace
 
-#endif /* TINY_LOG_LOG_FRONTEND_DEF_HPP_ */
+#endif /* UFO_LOG_LOG_FRONTEND_DEF_HPP_ */

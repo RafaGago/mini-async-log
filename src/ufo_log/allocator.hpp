@@ -6,17 +6,17 @@
  */
 
 
-#ifndef TINY_LOG_LOG_ALLOCATOR_HPP_
-#define TINY_LOG_LOG_ALLOCATOR_HPP_
+#ifndef UFO_LOG_LOG_ALLOCATOR_HPP_
+#define UFO_LOG_LOG_ALLOCATOR_HPP_
 
 #include <new>
 #include <cassert>
 #include <type_traits>
-#include <tiny/util/mpsc.hpp>
-#include <tiny/util/spmc.hpp>
-#include <tiny/util/integer_bits.hpp>
+#include <ufo_log/util/mpsc.hpp>
+#include <ufo_log/util/spmc.hpp>
+#include <ufo_log/util/integer_bits.hpp>
 
-namespace tiny {
+namespace ufo {
 
 //this is a very specific spmc allocator, just the log backend thread can
 //deallocate!
@@ -30,16 +30,16 @@ namespace tiny {
 //cluttering the log backend implementation.
 
 //------------------------------------------------------------------------------
-class tiny_allocator
+class ufo_allocator
 {
 public:
     //--------------------------------------------------------------------------
-    tiny_allocator()
+    ufo_allocator()
     {
         zero();
     };
     //--------------------------------------------------------------------------
-    ~tiny_allocator()
+    ~ufo_allocator()
     {
         if (m_fixed_begin)
         {
@@ -158,8 +158,8 @@ public:
 private:
 
     //--------------------------------------------------------------------------
-    tiny_allocator (const tiny_allocator& other);
-    tiny_allocator& operator= (const tiny_allocator& other);
+    ufo_allocator (const ufo_allocator& other);
+    ufo_allocator& operator= (const ufo_allocator& other);
 
     typedef spmc_b_fifo<void*>                   free_list;
     typedef std::aligned_storage<
@@ -189,4 +189,4 @@ private:
 //------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* TINY_LOG_LOG_ALLOCATOR_HPP_ */
+#endif /* UFO_LOG_LOG_ALLOCATOR_HPP_ */

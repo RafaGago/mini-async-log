@@ -5,19 +5,19 @@
  *      Author: rafa
  */
 
-#ifndef TINY_MPSC_HYBRID_WAIT_HPP_
-#define TINY_MPSC_HYBRID_WAIT_HPP_
+#ifndef UFO_MPSC_HYBRID_WAIT_HPP_
+#define UFO_MPSC_HYBRID_WAIT_HPP_
 
-#include <tiny/util/integer.hpp>
-#include <tiny/util/atomic.hpp>
-#include <tiny/util/chrono.hpp>
-#include <tiny/util/thread.hpp>
+#include <ufo_log/util/integer.hpp>
+#include <ufo_log/util/atomic.hpp>
+#include <ufo_log/util/chrono.hpp>
+#include <ufo_log/util/thread.hpp>
 
-namespace tiny {
+namespace ufo {
 
-namespace th = TINY_THREAD_NAMESPACE;
-namespace ch = TINY_CHRONO_NAMESPACE;
-namespace at = TINY_ATOMIC_NAMESPACE;
+namespace th = UFO_THREAD_NAMESPACE;
+namespace ch = UFO_CHRONO_NAMESPACE;
+namespace at = UFO_ATOMIC_NAMESPACE;
 
 //------------------------------------------------------------------------------
 struct mpsc_hybrid_wait_cfg
@@ -136,6 +136,6 @@ private:
     at::atomic<uword>          m_state;
 };
  //-----------------------------------------------------------------------------
-} //namespace tiny
+} //namespace ufo
 
-#endif /* TINY_MPSC_HYBRID_WAIT_HPP_ */
+#endif /* UFO_MPSC_HYBRID_WAIT_HPP_ */

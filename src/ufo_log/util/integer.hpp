@@ -6,14 +6,14 @@
  */
 
 
-#ifndef TINY_INTEGER_HPP_
-#define TINY_INTEGER_HPP_
+#ifndef UFO_INTEGER_HPP_
+#define UFO_INTEGER_HPP_
 
-#ifndef TINY_USE_BOOST_CSTDINT
+#ifndef UFO_USE_BOOST_CSTDINT
 
 #include <cstdint>
 
-namespace tiny {
+namespace ufo {
 
 typedef int8_t   int8;
 typedef int16_t  int16;
@@ -30,7 +30,7 @@ typedef uint64_t uint64;
 
 #include <boost/cstdint.hpp>
 
-namespace tiny {
+namespace ufo {
 
 typedef boost::int8_t   int8;
 typedef boost::int16_t  int16;
@@ -45,7 +45,7 @@ typedef boost::uint64_t uint64;
 
 #endif
 
-namespace tiny {
+namespace ufo {
 
 typedef int8   i8;
 typedef int16  i16;
@@ -99,6 +99,6 @@ typedef integer_for_bytes<sizeof (void*)>::signed_type   word;
 typedef integer_for_bytes<sizeof (void*)>::unsigned_type uword;
 //------------------------------------------------------------------------------
 
-} //namespace tiny
+} //namespace ufo
 
-#endif /* TINY_INTEGER_HPP_ */
+#endif /* UFO_INTEGER_HPP_ */

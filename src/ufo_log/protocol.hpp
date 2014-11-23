@@ -6,13 +6,13 @@
  */
 
 
-#ifndef TINY_LOG_PROTOCOL_HPP_
-#define TINY_LOG_PROTOCOL_HPP_
+#ifndef UFO_LOG_PROTOCOL_HPP_
+#define UFO_LOG_PROTOCOL_HPP_
 
 #include <type_traits>
-#include <tiny/util/integer.hpp>
+#include <ufo_log/util/integer.hpp>
 
-namespace tiny { namespace proto {
+namespace ufo { namespace proto {
 
 //------------------------------------------------------------------------------
 struct field
@@ -200,6 +200,6 @@ struct sev
 };
 //------------------------------------------------------------------------------
 
-} //namespace tiny
+} //namespace ufo
 
-#endif /* TINY_LOG_LOG_MESSAGE_HPP_ */
+#endif /* UFO_LOG_LOG_MESSAGE_HPP_ */

@@ -8,7 +8,7 @@
 #ifndef VARIADIC_MACRO_ARG_COUNT_HPP_
 #define VARIADIC_MACRO_ARG_COUNT_HPP_
 
-#define TINY_COUNT_VA_ARGS_PRIVATE(unused,\
+#define UFO_COUNT_VA_ARGS_PRIVATE(unused,\
             a1,a2,a3,a4,a5,a6,a7,a8,a9,\
             a10,a11,a12,a13,a14,a15,a16,a17,a18,a19,\
             a20,a21,a22,a23,a24,a25,a26,a27,a28,a29,\
@@ -22,8 +22,8 @@
             count,...\
             ) count
 
-#define TINY_COUNT_VA_ARGS(...)\
-        TINY_COUNT_VA_ARGS_PRIVATE (,##__VA_ARGS__,\
+#define UFO_COUNT_VA_ARGS(...)\
+        UFO_COUNT_VA_ARGS_PRIVATE (,##__VA_ARGS__,\
             99,98,97,96,95,94,93,92,91,90,\
             89,88,87,86,85,84,83,82,81,80,\
             79,78,77,76,75,74,73,72,71,70,\

@@ -8,7 +8,7 @@
 #ifndef INTEGER_BYTES_DETAIL_HPP_
 #define INTEGER_BYTES_DETAIL_HPP_
 
-namespace tiny { namespace detail {
+namespace ufo { namespace detail {
 
 template<class T, unsigned bytes = sizeof (T)>
 struct byte_array_write

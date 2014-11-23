@@ -1,19 +1,19 @@
-#define TINY_STRIP_LOG_SEVERITY 0
+#define UFO_STRIP_LOG_SEVERITY 0
 
 #include <string>
-#include <tiny/frontend_def.hpp>                                                //compiled in place, but it could be in a separate library
-#include <tiny/tiny.hpp>
+#include <ufo_log/frontend_def.hpp>                                                //compiled in place, but it could be in a separate library
+#include <ufo_log/ufo_log.hpp>
 //------------------------------------------------------------------------------
-inline tiny::frontend& get_tiny_logger_instance()
+inline ufo::frontend& get_ufo_logger_instance()
 {
-    static tiny::frontend fe;
+    static ufo::frontend fe;
     return fe;
 }
 //------------------------------------------------------------------------------
 void rotation_test()
 {
-    using namespace tiny;
-    tiny::frontend& fe                      = get_tiny_logger_instance();
+    using namespace ufo;
+    ufo::frontend& fe                      = get_ufo_logger_instance();
     auto be_cfg                             = fe.get_backend_cfg();
     be_cfg.file.out_folder                  = "./log_out/";
     be_cfg.file.aprox_size                  = 512 * 1024;
@@ -30,8 +30,8 @@ void rotation_test()
 //------------------------------------------------------------------------------
 void general_features()
 {
-    using namespace tiny;
-    tiny::frontend& fe              = get_tiny_logger_instance();
+    using namespace ufo;
+    ufo::frontend& fe              = get_ufo_logger_instance();
     auto be_cfg                     = fe.get_backend_cfg();
     be_cfg.file.name_prefix         = "test-data.";
     be_cfg.file.name_suffix         = ".log.txt";
@@ -97,7 +97,7 @@ void general_features()
         lit ("param4"),
         hex ((u64) -1)
         );
-#ifndef TINY_HAS_CONSTEXPR
+#ifndef UFO_HAS_CONSTEXPR
     log_error(
         "message {}, this could be corrected at compile time if all "
         "targeted compilers supported constexpr, now a runtime error "
@@ -111,7 +111,7 @@ void general_features()
         ++i,
         false
         );
-#endif //TINY_HAS_CONSTEXPR
+#endif //UFO_HAS_CONSTEXPR
     log_if (true, log_notice ("you should see this conditional entry..."));
     log_if (false, log_notice ("...but not this one"));
 

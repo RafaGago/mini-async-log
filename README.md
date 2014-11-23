@@ -1,6 +1,6 @@
 
 
-Tiny Logger
+UFO (Useful Features Only) Logger
 -----------
 THIS PROJECT IS UNDER DEVELOPMENT AND SHOULDN'T BE CONSIDERED STABLE NOW.
 
@@ -33,7 +33,7 @@ log_error ("the value of i is {} and the value of j is  {}", i, j);
 
 The function is type-safe, but without "constexpr" there is no way to parse the formatting string at compile time, so format errors are caught at run time.
 
-> see this [example](https://github.com/RafaGago/tiny-log/blob/master/example/overview.cpp)
+> see this [example](https://github.com/RafaGago/ufo-log/blob/master/example/overview.cpp)
 
 ## File rotation ##
 
@@ -47,9 +47,9 @@ The library isn't a singleton, so the user should provide the front-end instance
 
 There are two methods, one is to provide it explicitly and the other one is by accessing a global function.
 
-If no instance is provided, the global function "get_tiny_logger_instance()" will be called without being namespace qualified, so you can use Koenig lookup/ADL.
+If no instance is provided, the global function "get_ufo_logger_instance()" will be called without being namespace qualified, so you can use Koenig lookup/ADL.
 
-The name of the function can be changed at compile time, by defining TINY_GET_LOGGER_INSTANCE_FUNCNAME.
+The name of the function can be changed at compile time, by defining UFO_GET_LOGGER_INSTANCE_FUNCNAME.
 
 Be aware that it's dangerous to have a dynamic library or executable loaded multiple times logging to the same folder and rotating files each other. Workarounds exists, you can prepend the folder name with the process name and ID, disable rotation and manage rotation externally (e.g. by using logrotate), etc.
 
@@ -65,7 +65,7 @@ It's possible to artificially increment the refcount of a shared_ptr by copying 
 
 ## Using the library ##
 
-Currently you need to compile "frontend_def.hpp" in your project or to a shared library/DLL. You can then include "tiny.hpp", see the example folder.
+Currently you need to compile "frontend_def.hpp" in your project or to a shared library/DLL. You can then include "ufo_log.hpp", see the example folder.
 
 > Written with [StackEdit](https://stackedit.io/).
 

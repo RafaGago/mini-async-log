@@ -1,10 +1,10 @@
-#ifndef TINY_MPSC_HPP_
-#define TINY_MPSC_HPP_
+#ifndef UFO_MPSC_HPP_
+#define UFO_MPSC_HPP_
 
 #include <type_traits>
-#include <tiny/util/system.hpp>
-#include <tiny/util/aligned_type.hpp>
-#include <tiny/util/atomic.hpp>
+#include <ufo_log/util/system.hpp>
+#include <ufo_log/util/aligned_type.hpp>
+#include <ufo_log/util/atomic.hpp>
 
 /*
 
@@ -41,7 +41,7 @@ either expressed or implied, of Dmitry Vyukov.
 
 */
 
-namespace tiny {
+namespace ufo {
 
 //------------------------------------------------------------------------------
 struct mpsc_node_hook
@@ -273,4 +273,4 @@ private:
 
 } //namespace
 
-#endif /* TINY_MPSC_HPP_ */
+#endif /* UFO_MPSC_HPP_ */

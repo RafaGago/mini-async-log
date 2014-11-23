@@ -6,15 +6,15 @@
  */
 
 
-#ifndef TINY_LOG_LOG_BACKEND_CFG_HPP_
-#define TINY_LOG_LOG_BACKEND_CFG_HPP_
+#ifndef UFO_LOG_LOG_BACKEND_CFG_HPP_
+#define UFO_LOG_LOG_BACKEND_CFG_HPP_
 
 #include <deque>
 #include <string>
-#include <tiny/util/integer.hpp>
-#include <tiny/util/mpsc_hybrid_wait.hpp>
+#include <ufo_log/util/integer.hpp>
+#include <ufo_log/util/mpsc_hybrid_wait.hpp>
 
-namespace tiny {
+namespace ufo {
 
 //------------------------------------------------------------------------------
 typedef std::deque<std::string> past_executions_file_list;
@@ -72,4 +72,4 @@ struct backend_cfg
 //------------------------------------------------------------------------------
 } //namespaces
 //------------------------------------------------------------------------------
-#endif /* TINY_LOG_LOG_BACKEND_CFG_HPP_ */
+#endif /* UFO_LOG_LOG_BACKEND_CFG_HPP_ */

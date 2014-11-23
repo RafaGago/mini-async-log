@@ -6,16 +6,16 @@
  */
 
 
-#ifndef TINY_ON_STACK_DYNAMIC_HPP_
-#define TINY_ON_STACK_DYNAMIC_HPP_
+#ifndef UFO_ON_STACK_DYNAMIC_HPP_
+#define UFO_ON_STACK_DYNAMIC_HPP_
 
 #include <utility>
 #include <cassert>
-#include <tiny/util/placement_new.hpp>
-#include <tiny/util/safe_bool.hpp>
+#include <ufo_log/util/placement_new.hpp>
+#include <ufo_log/util/safe_bool.hpp>
 
 //------------------------------------------------------------------------------
-namespace tiny {
+namespace ufo {
 //------------------------------------------------------------------------------
 template <class T, std::size_t align>
 class on_stack_dynamic_scoped_destructor;
@@ -96,7 +96,7 @@ public:
         return is_constructed();
     }
     //--------------------------------------------------------------------------
-#ifdef TINY_HAS_VARIADIC_TEMPLATES
+#ifdef UFO_HAS_VARIADIC_TEMPLATES
     //--------------------------------------------------------------------------
     template <class... args>
     void construct (args&&... a)
@@ -342,4 +342,4 @@ on_stack_dynamic_scoped_destructor<T, align>
 //------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* TINY_ON_STACK_DYNAMIC_HPP_ */
+#endif /* UFO_ON_STACK_DYNAMIC_HPP_ */

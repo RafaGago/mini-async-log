@@ -14,11 +14,11 @@
 
 #include <type_traits>
 #include <cassert>
-#include <tiny/util/integer.hpp>
-#include <tiny/util/integer_bits.h>
-#include <tiny/util/integer_bits_detail.hpp>
+#include <ufo_log/util/integer.hpp>
+#include <ufo_log/util/integer_bits.h>
+#include <ufo_log/util/integer_bits_detail.hpp>
 
-namespace tiny {
+namespace ufo {
 //------------------------------------------------------------------------------
 template <class T>
 inline
