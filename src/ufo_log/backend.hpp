@@ -228,12 +228,15 @@ private:
             assert (false && "alloc cfg invalid");
             return false;
         }
-        auto sz      = node::best_effective_size (a.fixed_size_entry_size);
-        auto node_sz = node::best_total_size (sz);
-        if (node_sz < sz)
+        if (a.fixed_size_entry_count && a.fixed_size_entry_size)
         {
-            assert (false && "alloc fixed size entry size would overflow");
-            return false;
+            auto sz      = node::best_effective_size (a.fixed_size_entry_size);
+            auto node_sz = node::best_total_size (sz);
+            if (node_sz < sz)
+            {
+                assert (false && "alloc fixed size entry size would overflow");
+                return false;
+            }
         }
         if (c.file.rotation.file_count != 0 && c.file.aprox_size == 0)
         {
