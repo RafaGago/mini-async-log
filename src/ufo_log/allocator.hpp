@@ -46,9 +46,9 @@ public:
     };
     //--------------------------------------------------------------------------
     bool init(
-        uint16 fixed_size_entries,
-        uint16 fixed_size_entry_size,
-        bool   use_heap
+        uword fixed_size_entries,
+        uword fixed_size_entry_size,
+        bool  use_heap
         )
     {
         assert ((fixed_size_entries && fixed_size_entry_size) || use_heap);
@@ -60,9 +60,20 @@ public:
 
         if (fixed_size_entries && fixed_size_entry_size)
         {
-            entries  = next_pow2 ((uword) fixed_size_entries);
-            entry_sz = next_pow2 ((uword) fixed_size_entry_size);
-            bsz      = entries * entry_sz;
+            entries  = next_pow2 (fixed_size_entries);
+            entry_sz = next_pow2 (fixed_size_entry_size);
+
+            if ((entries < fixed_size_entries) ||
+                (entry_sz < fixed_size_entry_size)
+                )
+            {
+                return false;
+            }
+            bsz = entries * entry_sz;
+            if ((bsz / entries) != entry_sz)
+            {
+                return false;
+            }
         }
 
         if (!bsz)
