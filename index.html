@@ -1,0 +1,243 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Ufo-log by RafaGago</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Ufo-log</h1>
+        <p>buzzwords: fast asynchronous logger with file rotation low latency c++ lock-free queues multitheaded speed C++11</p>
+
+        <p class="view"><a href="https://github.com/RafaGago/ufo-log">View the Project on GitHub <small>RafaGago/ufo-log</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/RafaGago/ufo-log/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/RafaGago/ufo-log/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/RafaGago/ufo-log">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h2>
+<a id="useful-features-only-ufo-logger" class="anchor" href="#useful-features-only-ufo-logger" aria-hidden="true"><span class="octicon octicon-link"></span></a>Useful Features Only (UFO) Logger</h2>
+
+<p>A feature reduced asynchronous data logger. Sponsored by my employer <strong>Diadrom AB.</strong></p>
+
+<p>We just wanted an asynchronous logger that can be used from many dynamically loaded libraries without doing link-time hacks like linking static and hiding symbols and some other features.</p>
+
+<p>After having maintained a slightly modified version of glog and given the fact that this is a very small project we decided that existing wheels weren't round enough.</p>
+
+<h2>
+<a id="preliminary-benchmarks-with-unoptimized-and-unprofiled-code" class="anchor" href="#preliminary-benchmarks-with-unoptimized-and-unprofiled-code" aria-hidden="true"><span class="octicon octicon-link"></span></a>Preliminary benchmarks with unoptimized and unprofiled code</h2>
+
+<p>Below are some <a href="https://github.com/RafaGago/ufo-log/blob/master/example/benchmark.cpp">throughput tests</a>.</p>
+
+<p>This is a synthetic scenario that has nothing to do with reality. It requires a lot of memory. The file worker can't release memory as fast as the producers enqueue.</p>
+
+<p>Beware that an asynchronous logger is used mostly for latency, not for throughput. These measurements are a lot move involved and left for the profiling/optimizing phase.</p>
+
+<p>The used computer is a Dell(R) Latitude(TM) E6520 laptop with a Intel(R) Core(TM) i5-2520M CPU @ 2.50GHz CPU. It has two cores and Hyperthreading(TM). running on a 3.2.0-70-generic-pae Linux Kernel. The code was compiled with gcc 7.1 -O3.</p>
+
+<p>All the library versions are the latest of today (24 Nov 2014).</p>
+
+<p>This table shows the time that takes to join "n" threads that write a total of 1.600.0000 log entries. Each thread has to send exactly the same amount of entries.</p>
+
+<p>Other libraries as "boost::log" and" g2log" have been tested to be slower by other people, so I didn't include them here.</p>
+
+<table>
+<thead>
+<tr>
+<th>threads</th>
+<th align="center">glog</th>
+<th align="center">spdlog</th>
+<th align="center">ufo heap</th>
+<th align="center">ufo hybrid</th>
+<th align="center">ufo fixed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td align="center">5.387s</td>
+<td align="center">3.272s</td>
+<td align="center">0.147s</td>
+<td align="center">0.135s</td>
+<td align="center">0.094s</td>
+</tr>
+<tr>
+<td>2</td>
+<td align="center">4.814s</td>
+<td align="center">2.851s</td>
+<td align="center">0.116s</td>
+<td align="center">0.131s</td>
+<td align="center">0.089s</td>
+</tr>
+<tr>
+<td>4</td>
+<td align="center">5.346s</td>
+<td align="center">2.573s</td>
+<td align="center">0.146s</td>
+<td align="center">0.097s</td>
+<td align="center">0.122s</td>
+</tr>
+<tr>
+<td>8</td>
+<td align="center">5.898s</td>
+<td align="center">2.678s</td>
+<td align="center">0.121s</td>
+<td align="center">0.102s</td>
+<td align="center">0.115s</td>
+</tr>
+</tbody>
+</table>
+
+<table>
+<thead>
+<tr>
+<th>threads</th>
+<th align="center">glog</th>
+<th align="center">spdlog</th>
+<th align="center">ufo heap</th>
+<th align="center">ufo hybrid</th>
+<th align="center">ufo fixed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td align="center">100%</td>
+<td align="center">60.7%</td>
+<td align="center">2.7%</td>
+<td align="center">2.5%</td>
+<td align="center">1.7%</td>
+</tr>
+<tr>
+<td>2</td>
+<td align="center">100%</td>
+<td align="center">59.2%</td>
+<td align="center">2.4%</td>
+<td align="center">2.7%</td>
+<td align="center">1.8%</td>
+</tr>
+<tr>
+<td>4</td>
+<td align="center">100%</td>
+<td align="center">48.1%</td>
+<td align="center">2.7%</td>
+<td align="center">1.8%</td>
+<td align="center">2.2%</td>
+</tr>
+<tr>
+<td>8</td>
+<td align="center">100%</td>
+<td align="center">45.4%</td>
+<td align="center">2.0%</td>
+<td align="center">1.7%</td>
+<td align="center">1.9%</td>
+</tr>
+</tbody>
+</table>
+
+<h2>
+<a id="design-rationale" class="anchor" href="#design-rationale" aria-hidden="true"><span class="octicon octicon-link"></span></a>Design rationale</h2>
+
+<ul>
+<li>Simple = fast = robust.</li>
+<li>Asynchronous.</li>
+<li>Low latency, fast for the caller thread.</li>
+<li>No string formatting in the calling thread, the data is raw copied. No ostreams (a very ugly part of C++ for my liking).</li>
+<li>One conditional call overhead for inactive severities.</li>
+<li>No singleton by design, usable from dynamically loaded libraries. You provide the instace either explicitly or by using Koenig lookup.</li>
+<li>Suitable for soft-realtime work. The fast-path is almost clear from heap allocations.</li>
+<li>File rotation-slicing</li>
+<li>Targeting g++4.7 and VS 2010</li>
+<li>Boost dependencies just for parts that will eventually go to the C++ standard.</li>
+</ul>
+
+<h2>
+<a id="how-does-it-work" class="anchor" href="#how-does-it-work" aria-hidden="true"><span class="octicon octicon-link"></span></a>How does it work</h2>
+
+<p>It just borrows ideas from many of the loggers out there.</p>
+
+<p>When the user is to write a log message, the size is precomputed (in most cases, when the user is not deep-copying the compiler will deduce it as a constant), then the memory is reclaimed either from the fixed size free-list or the heap (configurable) and then message is serialized and passed to the worker thread queue as an intrusive linked list node.</p>
+
+<p>The user thread doesn't format strings, just copies built-in type values and whole program duration C string pointers (Deep copies can be done if required too) to the message and appends data for the worker thread to be able to decode it. This is restrictive but gives other benefits too.</p>
+
+<p>The messages are formatted by using printf-style strings, where the formatting string is required to be a literal (not a const char*), e.g:</p>
+
+<p>log_error ("the value of i is {} and the value of j is  {}", i, j);</p>
+
+<p>The function is type-safe, when "constexpr" is available, otherwise there is no way to parse the formatting string at compile time, so format errors are caught at run time.</p>
+
+<blockquote>
+<p>see this <a href="https://github.com/RafaGago/ufo-log/blob/master/example/overview.cpp">example</a></p>
+</blockquote>
+
+<p>I might work in applying a little "compression" to the integer types like protobuf does (but simpler) to try to pack the messages more in case no use of the heap is allowed.</p>
+
+<h2>
+<a id="file-rotation" class="anchor" href="#file-rotation" aria-hidden="true"><span class="octicon octicon-link"></span></a>File rotation</h2>
+
+<p>The library can rotate fixed size log files.</p>
+
+<p>Using the current C++11 standard files can just be created, modified and deleted. There is no way to list a directory, so the user is required to pass at start time the list of files generated by previous runs. I may add support for boost::filesystem /std::filesystem, but just as an optional but ready external code, so everyone can skip this heavy dependency.</p>
+
+<h2>
+<a id="initialization" class="anchor" href="#initialization" aria-hidden="true"><span class="octicon octicon-link"></span></a>Initialization</h2>
+
+<p>The library isn't a singleton, so the user should provide the front-end instance.</p>
+
+<p>There are two methods, one is to provide it explicitly and the other one is by accessing a global function.</p>
+
+<p>If no instance is provided, the global function "get_ufo_logger_instance()" will be called without being namespace qualified, so you can use Koenig lookup/ADL.</p>
+
+<p>The name of the function can be changed at compile time, by defining UFO_GET_LOGGER_INSTANCE_FUNCNAME.</p>
+
+<p>Be aware that it's dangerous to have a dynamic library or executable loaded multiple times logging to the same folder and rotating files each other. Workarounds exists, you can prepend the folder name with the process name and ID, disable rotation and manage rotation externally (e.g. by using logrotate), etc.</p>
+
+<h2>
+<a id="weaknesses" class="anchor" href="#weaknesses" aria-hidden="true"><span class="octicon octicon-link"></span></a>Weaknesses</h2>
+
+<ol>
+<li>No C++ ostream support. (not sure if it's a good or a bad thing...)</li>
+<li>Limited formatting abilities for now (to keep the serialized message compact).</li>
+<li>No way to output runtime strings/ memory regions without deep-copying them.</li>
+</ol>
+
+<p>The third point is the most restrictive for my liking, it's just inherent to the asynchronous/non-blocking design, there is no guarantee about the passed data lifetime.</p>
+
+<p>It's possible to artificially increment the refcount of a shared_ptr by copying it to an instance created using "placement_new" and to decrement it in the worker using the same trick, I keep this idea on hold for now.</p>
+
+<h2>
+<a id="using-the-library" class="anchor" href="#using-the-library" aria-hidden="true"><span class="octicon octicon-link"></span></a>Using the library</h2>
+
+<p>Currently you need to compile "frontend_def.hpp" in your project or to a shared library/DLL. You can then include "ufo_log.hpp", see the example folder.</p>
+
+<h2>
+<a id="disclaimer" class="anchor" href="#disclaimer" aria-hidden="true"><span class="octicon octicon-link"></span></a>Disclaimer</h2>
+
+<p>THIS PROJECT IS UNDER DEVELOPMENT AND SHOULDN'T BE CONSIDERED STABLE BY NOW. Even tough it seems to work flawlessly.</p>
+
+<blockquote>
+<p>Written with <a href="https://stackedit.io/">StackEdit</a>.</p>
+</blockquote>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/RafaGago">RafaGago</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
