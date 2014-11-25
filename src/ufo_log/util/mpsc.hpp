@@ -1,16 +1,10 @@
-#ifndef UFO_MPSC_HPP_
-#define UFO_MPSC_HPP_
-
-#include <type_traits>
-#include <ufo_log/util/system.hpp>
-#include <ufo_log/util/aligned_type.hpp>
-#include <ufo_log/util/atomic.hpp>
-
 /*
+--------------------------------------------------------------------------------
+The code as presented here:
+http://www.1024cores.net/home/lock-free-algorithms/queues/intrusive-mpsc-node-based-queue
+is licensed by Dmitry Vyukov under the terms below:
 
-From:
-http://www.1024cores.net/home/lock-free-algorithms/queues/bounded-mpmc-queue
-by Dmitry Vyukov,
+BSD 2-clause license
 
 Copyright (c) 2010-2011 Dmitry Vyukov. All rights reserved.
 
@@ -39,7 +33,51 @@ The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of Dmitry Vyukov.
 
+--------------------------------------------------------------------------------
+The code in its current form adds the license below:
+
+The BSD 3-clause license
+
+Copyright (c) 2013-2014 Diadrom AB. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+ are permitted provided that the following conditions are met:
+
+   1. Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+   3. Neither the name of the copyright holder nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY DIADROM AB "AS IS" AND ANY EXPRESS OR IMPLIED
+WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+SHALL DMITRY VYUKOV OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of Diadrom AB.
+--------------------------------------------------------------------------------
 */
+
+#ifndef UFO_MPSC_HPP_
+#define UFO_MPSC_HPP_
+
+#include <type_traits>
+#include <ufo_log/util/system.hpp>
+#include <ufo_log/util/aligned_type.hpp>
+#include <ufo_log/util/atomic.hpp>
 
 namespace ufo {
 
