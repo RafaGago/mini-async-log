@@ -80,23 +80,23 @@ struct node : public mpsc_node_hook
         return sizeof (node) + effective_size;
     }
 
-    static u16 best_total_size (u16 effective_size)
+    static u16 best_total_size (uword effective_size)
     {
-        static const u16 align = std::alignment_of<node>::value;
+        static const uword align = std::alignment_of<node>::value;
         u16 node_sz = ((sizeof (node) + effective_size + align - 1) / align);
         return node_sz * align;
     }
 
-    static u16 optimize_effective_size (u16 effective_size)
+    static u16 optimize_effective_size (uword effective_size)
     {
         return best_total_size (effective_size) - sizeof (node);
     }
 
-    static u16 best_effective_size (u16 max_total_size)
+    static u16 best_effective_size (uword max_total_size)
     {
-        static const u16 align = std::alignment_of<node>::value;
-        u16 candidate          = max_total_size - sizeof (node);
-        u16 res                = best_total_size (candidate);
+        static const uword align = std::alignment_of<node>::value;
+        uword candidate          = max_total_size - sizeof (node);
+        uword res                = best_total_size (candidate);
         if (res <= max_total_size)
         {
             return candidate;
