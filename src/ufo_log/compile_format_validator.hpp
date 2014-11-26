@@ -127,7 +127,6 @@ private:
         return i >= (l.size() - 1);
     }
     //--------------------------------------------------------------------------
-    //--------------------------------------------------------------------------
     template <class dummy, class T, class... args>
     static constexpr word consume_param_impl (literal l, uword i, word arity)
     {
