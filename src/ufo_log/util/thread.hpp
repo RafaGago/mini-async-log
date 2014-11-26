@@ -46,6 +46,8 @@ either expressed or implied, of Diadrom AB.
 #else
 
 #include <thread>
+#include <condition_variable>
+#include <mutex>
 
 #define UFO_THREAD_NAMESPACE ::std
 

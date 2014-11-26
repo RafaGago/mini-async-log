@@ -42,6 +42,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <string>
 #include <deque>
 #include <fstream>
+#include <vector>
 
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/atomic.hpp>

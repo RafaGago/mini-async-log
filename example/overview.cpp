@@ -1,6 +1,6 @@
 #define UFO_STRIP_LOG_SEVERITY 0
 
-#include <ufo_log/frontend_def.hpp>                                                //compiled in place, but it could be in a separate library
+#include <ufo_log/frontend_def.hpp>                                             //compiled in place, but it could be in a separate library
 #include <ufo_log/ufo_log.hpp>
 //------------------------------------------------------------------------------
 inline ufo::frontend& get_ufo_logger_instance()
