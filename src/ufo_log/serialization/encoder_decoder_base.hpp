@@ -34,22 +34,43 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_FORMAT_TOKENS_HPP_
-#define UFO_LOG_FORMAT_TOKENS_HPP_
+#ifndef UFO_LOG_ENCODER_DECODER_BASE_HPP_
+#define UFO_LOG_ENCODER_DECODER_BASE_HPP_
 
+#include <cassert>
+#include <ufo_log/util/integer.hpp>
 
-namespace ufo { namespace fmt {
+namespace ufo {
+//------------------------------------------------------------------------------
+class encoder_decoder_base
+{
+public:
+    //--------------------------------------------------------------------------
+    template <class T>
+    static u8* encode_type (u8* ptr, u8* end, T val)
+    {
+        assert (ptr && end && (ptr + sizeof val <= end));
+        for (uword i = 0; i < sizeof val; ++i, ++ptr)
+        {
+            *ptr = ((u8*) val)[i];
+        }
+        return ptr;
+    }
+    //--------------------------------------------------------------------------
+    template <class T>
+    static u8* decode_type (T& val, const u8* ptr)
+    {
+        assert (ptr);
+        for (uword i = 0; i < sizeof val; ++i, ++ptr)
+        {
+            ((u8*) val)[i] = *ptr;
+        }
+        return ptr;
+    }
+    //--------------------------------------------------------------------------
+}; //class encoder_decoder_base
 //------------------------------------------------------------------------------
 
-static const char placeholder_open  = '{';
-static const char placeholder_close = '}';
-static const char full_width_zeroes = 'z';
-static const char full_width_spaces = 's';
-static const char hex               = 'x';
-static const char exponential       = 'e';
-static const char pointer           = 'p';
+} //namespaces
 
-//------------------------------------------------------------------------------
-}} //namespaces
-
-#endif /* UFO_LOG_FORMAT_TOKENS_HPP_ */
+#endif /* UFO_LOG_ENCODER_DECODER_BASE_HPP_ */
