@@ -22,8 +22,6 @@
 
 #include <spdlog/spdlog.h>
 
-//namespace ch = UFO_CHRONO_NAMESPACE;
-
 namespace at = UFO_ATOMIC_NAMESPACE;
 namespace th = UFO_THREAD_NAMESPACE;
 namespace ch = UFO_CHRONO_NAMESPACE;
@@ -129,7 +127,7 @@ private:
     print_alloc_faults()
     {
         std::printf(
-            "%u fixed size queue alloc faults\n",
+            "%lu fixed size queue alloc faults\n",
             m_alloc_faults.load (ufo::mo_relaxed)
             );
     }
@@ -174,7 +172,7 @@ private:
                 (m_cummulative_enqueue_ns.load (ufo::mo_relaxed));
 
         std::printf(
-            "%s using %u threads for a total of %u msgs\n",
+            "%s using %lu threads for a total of %lu msgs\n",
             static_cast<derived&> (*this).get_name_impl(),
             thread_count,
             msgs
@@ -319,14 +317,14 @@ private:
     void create_impl()
     {
         //Fixed queue size of few thousands give best results
-        
+
         m_logger = spdlog::rotating_logger_mt(
                     "rotating_mt_async",
                     OUT_FOLDER "/" "spdlog_async",
                     file_size_bytes,
                     1000
                     );
-        
+
     }
     //--------------------------------------------------------------------------
     void destroy_impl()
@@ -347,7 +345,7 @@ private:
         }
     }
     //--------------------------------------------------------------------------
-    void flush_impl()           { //flush is done automatically} 
+    void flush_impl()           { /* flush is done automatically */ }
     //--------------------------------------------------------------------------
     const char* get_name_impl() { return "spdlog"; }
     //--------------------------------------------------------------------------
@@ -367,7 +365,7 @@ private:
                     file_size_bytes,
                     1000
                     );
-        
+
     }
     //--------------------------------------------------------------------------
     void destroy_impl()
@@ -388,7 +386,7 @@ private:
         }
     }
     //--------------------------------------------------------------------------
-    void flush_impl()           { //flush is done automatically} 
+    void flush_impl()           { /* flush is done automatically */ }
     //--------------------------------------------------------------------------
     const char* get_name_impl() { return "spdlog_sync"; }
     //--------------------------------------------------------------------------
@@ -480,7 +478,7 @@ void spdlog_tests (ufo::uword msgs)
 
     spd_async_tester.run (msgs, 8);
     do_a_pause();
-    
+
     std::printf ("spdlog sync ------------------------------------------\n");
     spd_log_sync_tester spd_sync_tester;
 
@@ -530,6 +528,5 @@ int main (int argc, const char* argv[])
     }
     return 0;
 }
+
 //------------------------------------------------------------------------------
-
-

@@ -57,14 +57,14 @@ void rotation_test()
             ((double) msg_count / (double) writer_ns) * 1000000000.;
 
     std::printf(
-            "%u msgs enqueued in %lld ns. %f msgs/sec\n",
+            "%lu msgs enqueued in %ld ns. %f msgs/sec\n",
             msg_count,
             reader_ns,
             reader_msgs_s
             );
 
     std::printf(
-            "%u msgs dispatched in %lld ns. %f msgs/sec\n",
+            "%lu msgs dispatched in %ld ns. %f msgs/sec\n",
             msg_count,
             writer_ns,
             writer_msgs_s
