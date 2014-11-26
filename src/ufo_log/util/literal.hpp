@@ -34,58 +34,37 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_LOG_FRONTEND_HPP_
-#define UFO_LOG_LOG_FRONTEND_HPP_
+#ifndef UFO_LOG_LITERAL_HPP_
+#define UFO_LOG_LITERAL_HPP_
 
-#include <memory>
-#include <ufo_log/message_encoder.hpp>
+#include <ufo_log/util/integer.hpp>
 
 namespace ufo {
 
-struct backend_cfg;
-
 //------------------------------------------------------------------------------
-class frontend
+class literal
 {
 public:
     //--------------------------------------------------------------------------
-    enum init_status
+    template <uword N>
+    constexpr literal (const char(&arr)[N]) :
+        m_lit  (arr),
+        m_size (N - 1)
     {
-        init_ok,
-        init_done_by_other,
-        init_other_failed,
-        init_tried_but_failed,
-        init_was_terminated
-    };
+        static_assert( N >= 1, "not a string literal");
+    }
     //--------------------------------------------------------------------------
-    frontend();
-    //--------------------------------------------------------------------------
-    ~frontend();
-    //--------------------------------------------------------------------------
-    backend_cfg get_backend_cfg();
-    //--------------------------------------------------------------------------
-    init_status init_backend (const backend_cfg& cfg);
-    //--------------------------------------------------------------------------
-    void set_severity (sev::severity s);
-    //--------------------------------------------------------------------------
-    sev::severity severity();
-    //--------------------------------------------------------------------------
-    bool set_console_severity(
-            sev::severity stderr, sev::severity stdout = sev::off
-            );
-    //--------------------------------------------------------------------------
-    proto::encoder get_encoder (uword required_bytes);
-    //--------------------------------------------------------------------------
-    void push_encoded (proto::encoder encoder);
-    //--------------------------------------------------------------------------
-    void on_termination();                                                      //you may want to call this from e.g. SIGTERM handlers, be aware that all the data generators should be stopped before.
+    constexpr operator const char*()    { return m_lit;  }
+    constexpr uword size()              { return m_size; }
+    constexpr char operator[] (uword i) { return m_lit[i]; }
     //--------------------------------------------------------------------------
 private:
-    class frontend_impl;
-    std::unique_ptr<frontend_impl> m;
+    //--------------------------------------------------------------------------
+    const char *const m_lit;
+    const uword       m_size;
+    //--------------------------------------------------------------------------
+};
 
-}; //class log_backed
-//------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* UFO_LOG_LOG_FRONTEND_HPP_ */
+#endif /* UFO_LOG_LITERAL_HPP_ */

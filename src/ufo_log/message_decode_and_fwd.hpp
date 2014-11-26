@@ -1,7 +1,7 @@
 /*
 The BSD 3-clause license
 --------------------------------------------------------------------------------
-Copyright (c) 2013-2014 Rafael Gago Castano. All rights reserved.
+Copyright (c) 2014 Rafael Gago Castano. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
  are permitted provided that the following conditions are met:
@@ -34,7 +34,6 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-
 #ifndef UFO_LOG_LOG_MESSAGE_DECODER_HPP_
 #define UFO_LOG_LOG_MESSAGE_DECODER_HPP_
 
@@ -43,6 +42,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/protocol.hpp>
 #include <ufo_log/output.hpp>
 #include <ufo_log/byte_stream_convert.hpp>
+#include <ufo_log/format_tokens.hpp>
 
 namespace ufo { namespace proto {
 
@@ -254,8 +254,9 @@ private:
         assert (curr && end && curr <= end);
         while (curr && (curr < (end - 1)))
         {
-            curr = (const char*) std::memchr (curr, '{', end - curr);
-            if (curr && *++curr == '}')
+            curr = (const char*)
+                        std::memchr (curr, fmt::placeholder_open, end - curr);
+            if (curr && *++curr == fmt::placeholder_close)
             {
                 return ++curr;
             }

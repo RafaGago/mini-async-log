@@ -1,7 +1,7 @@
 /*
 The BSD 3-clause license
 --------------------------------------------------------------------------------
-Copyright (c) 2013-2014 Rafael Gago Castano. All rights reserved.
+Copyright (c) 2014 Rafael Gago Castano. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
  are permitted provided that the following conditions are met:
@@ -38,6 +38,27 @@ either expressed or implied, of Rafael Gago Castano.
 #define UFO_LOG_LOG_INCLUDE_PRIVATE_HPP_
 
 #include <ufo_log/util/system.hpp>
+#include <ufo_log/decltype_wrap.hpp>
+
+#ifdef UFO_COMPILE_TIME_FMT_CHECK
+
+#include <ufo_log/decltype_wrap.hpp>
+#include <ufo_log/compile_format_validator.hpp>
+
+#define UFO_GET_ARG1_PRIVATE(arg, ...) arg
+#define UFO_GET_FMT_STR_PRIVATE(...) UFO_GET_ARG1_PRIVATE(__VA_ARGS__, dummy)
+
+#define UFO_FMT_STRING_CHECK(...)\
+        ufo::trigger_format_error<\
+            ufo::fmt_validator::execute<\
+                UFO_DECLTYPE_WRAP (__VA_ARGS__)\
+                    > (UFO_GET_FMT_STR_PRIVATE (__VA_ARGS__))>()
+
+#else //Microsoft crippled mode
+
+#define UFO_FMT_STRING_CHECK() true
+
+#endif
 
 namespace ufo { namespace macro {
 
@@ -53,51 +74,6 @@ inline bool silence_warnings() { return true; }
 
 }} //namespaces
 
-#ifdef UFO_HAS_CONSTEXPR
-
-template <unsigned N>
-constexpr unsigned ufo_fmt_string_arity(
-        const char (&arr)[N], unsigned i = N - 1
-        )
-{
-    static_assert (N > 1, "not a literal");
-    return (unsigned) (arr[i] == '{' && arr[i + 1] == '}') +
-            ((i != 0) ? ufo_fmt_string_arity (arr, i - 1) : 0);
-}
-
-namespace ufo { namespace detail {
-
-template <unsigned real_arity, unsigned string_arity>
-constexpr bool ufo_fmt_check()
-{
-    static_assert(
-        real_arity == string_arity,
-        "arity mismatch between the format literal and the number of parameters"
-        );
-    return true;
-}
-
-}} //namespace ufo detail
-
-#else //UFO_HAS_CONSTEXPR
-
-#define ufo_fmt_string_arity(dummy) 0
-
-namespace ufo { namespace detail {
-
-template <unsigned real_arity, unsigned string_arity>
-inline bool ufo_fmt_check()
-{
-    return true;
-}
-
-}} //namespace ufo detail
-
-#endif //UFO_HAS_CONSTEXPR
-
-#define UFO_GET_ARG1_PRIVATE(arg, ...) arg
-#define UFO_GET_FMT_STR_PRIVATE(...) UFO_GET_ARG1_PRIVATE(__VA_ARGS__, dummy)
-
 #define UFO_LOG_IF_PRIVATE(condition, statement)\
     ((condition) ? (statement) : ::ufo::macro::silence_warnings())
 
@@ -112,11 +88,8 @@ inline bool ufo_fmt_check()
 
 #define UFO_LOG_PRIVATE(instance, severity_, ...)\
     UFO_LOG_IF_PRIVATE(\
-        (ufo::detail::ufo_fmt_check<\
-            (UFO_COUNT_VA_ARGS (__VA_ARGS__) - 1),\
-            ufo_fmt_string_arity (UFO_GET_FMT_STR_PRIVATE (__VA_ARGS__))\
-            >() &&\
-        (instance.severity() <= ::ufo::sev::severity_)),\
+        (UFO_FMT_STRING_CHECK (__VA_ARGS__)) &&\
+        (instance.severity() <= ::ufo::sev::severity_),\
         ::ufo::new_entry(\
             instance, ::ufo::sev::severity_, __VA_ARGS__\
             ))
