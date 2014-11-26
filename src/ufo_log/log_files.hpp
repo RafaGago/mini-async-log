@@ -42,6 +42,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <string>
 #include <deque>
 #include <fstream>
+#include <vector>
 
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/atomic.hpp>
@@ -210,7 +211,7 @@ private:
         str      += sz;
 
         sz        = fixed_chars_in_name;
-        snprintf (str, sz + 1, "%016llx-%016llx", calendar, cpu);
+        snprintf (str, sz + 1, "%016lx-%016lx", calendar, cpu);
         str      += sz;
 
         sz        = suffix.size();
