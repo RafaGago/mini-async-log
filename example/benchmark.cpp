@@ -151,7 +151,7 @@ private:
     {
         double sec_ns  = 1000000000.;
         std::printf(
-            "%f seconds spent writting to disk. msg/sec: %f \n",              //this is just reliable in ufo and
+            "%f seconds spent writting to disk. msg/sec: %f \n",                //this is just reliable in ufo and
             ((double) total_ns) / sec_ns,
             ((double) msgs / (double) total_ns) * sec_ns
             );
