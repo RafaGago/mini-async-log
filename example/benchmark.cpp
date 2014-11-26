@@ -319,7 +319,7 @@ private:
     void create_impl()
     {
         //Fixed queue size of few thousands give best results
-        spdlog::set_async_mode (3500);
+        spdlog::set_async_mode (35000);
         m_logger = spdlog::rotating_logger_mt(
                     "rotating_mt_async",
                     OUT_FOLDER "/" "spdlog_async",
@@ -361,6 +361,7 @@ private:
     //--------------------------------------------------------------------------
     void create_impl()
     {
+        spdlog::set_sync_mode ();
         m_logger = spdlog::rotating_logger_mt(
                     "rotating_mt_sync",
                     OUT_FOLDER "/" "spdlog_sync",
