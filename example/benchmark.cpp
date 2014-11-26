@@ -21,8 +21,6 @@
 #include <glog/logging.h>
 
 #include <spdlog/spdlog.h>
-#include <spdlog/async_logger.h>
-#include <spdlog/sinks/file_sinks.h>
 
 //namespace ch = UFO_CHRONO_NAMESPACE;
 
@@ -313,22 +311,22 @@ private:
     //--------------------------------------------------------------------------
 };
 //------------------------------------------------------------------------------
-class spd_log_tester: public perftest<spd_log_tester>
+class spd_log_async_tester: public perftest<spd_log_async_tester>
 {
 private:
-    friend class perftest<spd_log_tester>;
+    friend class perftest<spd_log_async_tester>;
     //--------------------------------------------------------------------------
     void create_impl()
     {
-        spdlog::set_async_mode (10000000);                                      //A queue as big as the number of messages is what the author had in its code, it looks weird, just copy-pasting
+        //Fixed queue size of few thousands give best results
+        spdlog::set_async_mode (3500);
         m_logger = spdlog::rotating_logger_mt(
-                    "rotating_mt",
-                    OUT_FOLDER "/" "spdlog",
+                    "rotating_mt_async",
+                    OUT_FOLDER "/" "spdlog_async",
                     file_size_bytes,
-                    1000,
                     1000
                     );
-        spdlog::set_async_mode (10000000);                                      //A queue as big as the number of messages is what the author had in its code, it looks weird, just copy-pasting
+        
     }
     //--------------------------------------------------------------------------
     void destroy_impl()
@@ -349,9 +347,50 @@ private:
         }
     }
     //--------------------------------------------------------------------------
-    void flush_impl()           { /*HOW?*/ }
+    void flush_impl()           { /*flush is done automatically*/} 
     //--------------------------------------------------------------------------
     const char* get_name_impl() { return "spdlog"; }
+    //--------------------------------------------------------------------------
+    std::shared_ptr<spdlog::logger> m_logger;
+};
+//------------------------------------------------------------------------------
+class spd_log_sync_tester: public perftest<spd_log_sync_tester>
+{
+private:
+    friend class perftest<spd_log_sync_tester>;
+    //--------------------------------------------------------------------------
+    void create_impl()
+    {
+        m_logger = spdlog::rotating_logger_mt(
+                    "rotating_mt_sync",
+                    OUT_FOLDER "/" "spdlog_sync",
+                    file_size_bytes,
+                    1000
+                    );
+        
+    }
+    //--------------------------------------------------------------------------
+    void destroy_impl()
+    {
+        m_logger.reset();
+    }
+    //--------------------------------------------------------------------------
+    bool configure_impl()
+    {
+        return true;
+    }
+    //--------------------------------------------------------------------------
+    void thread_impl (ufo::uword msg_count)
+    {
+        for (unsigned i = 0; i < msg_count; ++i)
+        {
+            m_logger->info (log_fileline TEST_LITERAL, i);
+        }
+    }
+    //--------------------------------------------------------------------------
+    void flush_impl()           { //flush is done automatically} 
+    //--------------------------------------------------------------------------
+    const char* get_name_impl() { return "spdlog_sync"; }
     //--------------------------------------------------------------------------
     std::shared_ptr<spdlog::logger> m_logger;
 };
@@ -427,18 +466,34 @@ void google_tests (ufo::uword msgs)
 //------------------------------------------------------------------------------
 void spdlog_tests (ufo::uword msgs)
 {
-    spd_log_tester spd_tester;                                                  //this one has no way to flush, so I place it the last to avoid affecting the next library measurements
+    std::printf ("spdlog async ------------------------------------------\n");
+    spd_log_async_tester spd_async_tester;                                                  //this one has no way to flush, so I place it the last to avoid affecting the next library measurements
 
-    spd_tester.run (msgs, 1);
+    spd_async_tester.run (msgs, 1);
     do_a_pause();
 
-    spd_tester.run (msgs, 2);
+    spd_async_tester.run (msgs, 2);
     do_a_pause();
 
-    spd_tester.run (msgs, 4);
+    spd_async_tester.run (msgs, 4);
     do_a_pause();
 
-    spd_tester.run (msgs, 8);
+    spd_async_tester.run (msgs, 8);
+    do_a_pause();
+    
+    std::printf ("spdlog sync ------------------------------------------\n");
+    spd_log_sync_tester spd_sync_tester;
+
+    spd_sync_tester.run (msgs, 1);
+    do_a_pause();
+
+    spd_sync_tester.run (msgs, 2);
+    do_a_pause();
+
+    spd_sync_tester.run (msgs, 4);
+    do_a_pause();
+
+    spd_sync_tester.run (msgs, 8);
     do_a_pause();
 
     spdlog::stop();
