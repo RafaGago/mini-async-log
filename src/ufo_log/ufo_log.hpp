@@ -39,7 +39,6 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <ufo_log/ufo_private.hpp>
 #include <ufo_log/ufo_interface.hpp>
-#include <ufo_log/util/variadic_macro_arg_count.hpp>
 
 //------------------------------------------------------------------------------
 #ifndef UFO_GET_LOGGER_INSTANCE_FUNCNAME
