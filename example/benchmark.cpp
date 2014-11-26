@@ -48,10 +48,10 @@ public:
         m_alloc_faults = 0;
         m_data_visible = 0;
 
-        static_cast<derived&> (*this).create_impl();
-        if (!static_cast<derived&> (*this).configure_impl())
+        static_cast<derived&> (*this).create();
+        if (!static_cast<derived&> (*this).configure())
         {
-            static_cast<derived&> (*this).destroy_impl();
+            static_cast<derived&> (*this).destroy();
             return false;
         }
 
@@ -81,13 +81,13 @@ public:
                 ch::steady_clock::now() - init
                 ).count());
 
-        static_cast<derived&> (*this).flush_impl();
+        static_cast<derived&> (*this).wait_until_work_completion();
 
         auto total_ns = (ch::duration_cast<ch::nanoseconds>(
                 ch::steady_clock::now() - init
                 ).count());
 
-        static_cast<derived&> (*this).destroy_impl();
+        static_cast<derived&> (*this).destroy();
 
         print_results (msgs, thread_count, total_ns, join_ns);
 
@@ -107,7 +107,7 @@ private:
     {
         auto init = ch::steady_clock::now();
 
-        static_cast<derived&> (*this).thread_impl (msg_count);
+        static_cast<derived&> (*this).thread (msg_count);
 
         auto elapsed = ch::duration_cast<ch::nanoseconds>(
                 ch::steady_clock::now() - init
@@ -175,7 +175,7 @@ private:
 
         std::printf(
             "%s using %u threads for a total of %u msgs\n",
-            static_cast<derived&> (*this).get_name_impl(),
+            static_cast<derived&> (*this).get_name(),
             thread_count,
             msgs
             );
@@ -224,11 +224,11 @@ public:
 private:
     friend class perftest<ufo_tester>;
     //--------------------------------------------------------------------------
-    void create_impl()  { m_fe.construct(); }
+    void create()  { m_fe.construct(); }
     //--------------------------------------------------------------------------
-    void destroy_impl() {  m_fe.destruct_if(); }
+    void destroy() {  m_fe.destruct_if(); }
     //--------------------------------------------------------------------------
-    bool configure_impl()
+    bool configure()
     {
         using namespace ufo;
         auto be_cfg                             = m_fe->get_backend_cfg();
@@ -244,7 +244,7 @@ private:
         return m_fe->init_backend (be_cfg) == frontend::init_ok;
     }
     //--------------------------------------------------------------------------
-    void thread_impl (ufo::uword msg_count)
+    void thread (ufo::uword msg_count)
     {
         for (unsigned i = 0; i < msg_count; ++i)
         {
@@ -257,9 +257,9 @@ private:
         }
     }
     //--------------------------------------------------------------------------
-    void flush_impl()           { m_fe->on_termination(); }
+    void wait_until_work_completion() { m_fe->on_termination(); }
     //--------------------------------------------------------------------------
-    const char* get_name_impl() { return "ufo log"; }
+    const char* get_name() { return "ufo log"; }
     //--------------------------------------------------------------------------
     ufo::on_stack_dynamic<ufo::frontend> m_fe;
     ufo::uword m_entries, m_entry_size, m_heap;
@@ -271,11 +271,11 @@ class google_tester: public perftest<google_tester>
 private:
     friend class perftest<google_tester>;
     //--------------------------------------------------------------------------
-    void create_impl()  {  }
+    void create()  {  }
     //--------------------------------------------------------------------------
-    void destroy_impl() {  }
+    void destroy() {  }
     //--------------------------------------------------------------------------
-    bool configure_impl()
+    bool configure()
     {
         static bool configured = false;
 
@@ -297,7 +297,7 @@ private:
         return true;
     }
     //--------------------------------------------------------------------------
-    void thread_impl (ufo::uword msg_count)
+    void thread (ufo::uword msg_count)
     {
         for (unsigned i = 0; i < msg_count; ++i)
         {
@@ -305,9 +305,12 @@ private:
         }
     }
     //--------------------------------------------------------------------------
-    void flush_impl()           { google::FlushLogFiles (google::INFO); }
+    void wait_until_work_completion()
+    {
+        google::FlushLogFiles (google::INFO);
+    }
     //--------------------------------------------------------------------------
-    const char* get_name_impl() { return "glog"; }
+    const char* get_name() { return "glog"; }
     //--------------------------------------------------------------------------
 };
 //------------------------------------------------------------------------------
@@ -316,7 +319,7 @@ class spd_log_async_tester: public perftest<spd_log_async_tester>
 private:
     friend class perftest<spd_log_async_tester>;
     //--------------------------------------------------------------------------
-    void create_impl()
+    void create()
     {
         //Fixed queue size of few thousands give best results
         spdlog::set_async_mode (3500);
@@ -329,17 +332,11 @@ private:
         
     }
     //--------------------------------------------------------------------------
-    void destroy_impl()
-    {
-        m_logger.reset();
-    }
+    void destroy()   { m_logger.reset(); }
     //--------------------------------------------------------------------------
-    bool configure_impl()
-    {
-        return true;
-    }
+    bool configure() { return true; }
     //--------------------------------------------------------------------------
-    void thread_impl (ufo::uword msg_count)
+    void thread (ufo::uword msg_count)
     {
         for (unsigned i = 0; i < msg_count; ++i)
         {
@@ -347,9 +344,9 @@ private:
         }
     }
     //--------------------------------------------------------------------------
-    void flush_impl()           { /*flush is done automatically*/} 
+    void wait_until_work_completion() {} //no way to know
     //--------------------------------------------------------------------------
-    const char* get_name_impl() { return "spdlog"; }
+    const char* get_name() { return "spdlog"; }
     //--------------------------------------------------------------------------
     std::shared_ptr<spdlog::logger> m_logger;
 };
@@ -359,7 +356,7 @@ class spd_log_sync_tester: public perftest<spd_log_sync_tester>
 private:
     friend class perftest<spd_log_sync_tester>;
     //--------------------------------------------------------------------------
-    void create_impl()
+    void create()
     {
         m_logger = spdlog::rotating_logger_mt(
                     "rotating_mt_sync",
@@ -370,17 +367,11 @@ private:
         
     }
     //--------------------------------------------------------------------------
-    void destroy_impl()
-    {
-        m_logger.reset();
-    }
+    void destroy()   { m_logger.reset(); }
     //--------------------------------------------------------------------------
-    bool configure_impl()
-    {
-        return true;
-    }
+    bool configure() { return true; }
     //--------------------------------------------------------------------------
-    void thread_impl (ufo::uword msg_count)
+    void thread (ufo::uword msg_count)
     {
         for (unsigned i = 0; i < msg_count; ++i)
         {
@@ -388,9 +379,9 @@ private:
         }
     }
     //--------------------------------------------------------------------------
-    void flush_impl()           { //flush is done automatically} 
+    void wait_until_work_completion() {}
     //--------------------------------------------------------------------------
-    const char* get_name_impl() { return "spdlog_sync"; }
+    const char* get_name() { return "spdlog_sync"; }
     //--------------------------------------------------------------------------
     std::shared_ptr<spdlog::logger> m_logger;
 };
