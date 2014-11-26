@@ -22,8 +22,6 @@
 
 #include <spdlog/spdlog.h>
 
-//namespace ch = UFO_CHRONO_NAMESPACE;
-
 namespace at = UFO_ATOMIC_NAMESPACE;
 namespace th = UFO_THREAD_NAMESPACE;
 namespace ch = UFO_CHRONO_NAMESPACE;
@@ -321,8 +319,7 @@ private:
     //--------------------------------------------------------------------------
     void create()
     {
-        //Fixed queue size of few thousands give best results
-        spdlog::set_async_mode (35000);
+        spdlog::set_async_mode (250000);
         m_logger = spdlog::rotating_logger_mt(
                     "rotating_mt_async",
                     OUT_FOLDER "/" "spdlog_async",
@@ -473,7 +470,7 @@ void spdlog_tests (ufo::uword msgs)
     spd_async_tester.run (msgs, 8);
     do_a_pause();
     
-    std::printf ("spdlog sync ------------------------------------------\n");
+    std::printf ("spdlog sync -------------------------------------------\n");
     spd_log_sync_tester spd_sync_tester;
 
     spd_sync_tester.run (msgs, 1);
