@@ -44,6 +44,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <fstream>
 #include <vector>
 
+#include <ufo_log/util/system.hpp>
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/atomic.hpp>
 #include <ufo_log/util/raw_circular_buffer.hpp>
@@ -211,7 +212,13 @@ private:
         str      += sz;
 
         sz        = fixed_chars_in_name;
+#if defined (UFO_32)
         snprintf (str, sz + 1, "%016llx-%016llx", calendar, cpu);
+#elif defined (UFO_64)
+        snprintf (str, sz + 1, "%016lx-%016lx", calendar, cpu);
+#else
+    #error "fix util/system.hpp"
+#endif
         str      += sz;
 
         sz        = suffix.size();
