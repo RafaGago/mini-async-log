@@ -185,21 +185,6 @@ public:
     //--------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------
-    inline bool is_tagged (mpsc_node_hook* p)
-    {
-        return (((uword) p) & 1) ? true : false;
-    }
-    //--------------------------------------------------------------------------
-    inline mpsc_node_hook* tag (mpsc_node_hook* p)
-    {
-        return (mpsc_node_hook*) ((uword) p | 1);
-    }
-    //--------------------------------------------------------------------------
-    inline mpsc_node_hook* untag (mpsc_node_hook* p)
-    {
-        return (mpsc_node_hook*) ((uword) p & ~1);
-    }
-    //--------------------------------------------------------------------------
     aligned_type<mpsc_node_hook::ptr_type, cache_line_size> m_tail;
     aligned_type<mpsc_node_hook::ptr_type, cache_line_size> m_head;
     aligned_type<mpsc_node_hook, cache_line_size>           m_stable_node;
