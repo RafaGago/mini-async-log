@@ -68,7 +68,7 @@ public:
     //--------------------------------------------------------------------------
     void set_severity (sev::severity s);
     //--------------------------------------------------------------------------
-    sev::severity severity();
+    sev::severity severity(); //todo: this will need to be renamed to lowest severity, and the backend will accept entries that are just destinated to the console
     //--------------------------------------------------------------------------
     bool set_console_severity(
             sev::severity stderr, sev::severity stdout = sev::off

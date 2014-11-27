@@ -37,6 +37,7 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef UFO_LOG_NON_INTEGRAL_HPP_
 #define UFO_LOG_NON_INTEGRAL_HPP_
 
+#include <type_traits>
 #include <cassert>
 #include <ufo_log/util/system.hpp>
 #include <ufo_log/serialization/fields.hpp>
@@ -46,27 +47,36 @@ either expressed or implied, of Rafael Gago Castano.
 namespace ufo { namespace ser {
 
 //------------------------------------------------------------------------------
-class non_integral : public encoder_decoder_base
+template <class T, class ret>
+struct enable_float_double_bool
+{
+    typedef typename std::enable_if<
+            std::is_floating_point<T>::value || std::is_same<T, bool>::value,
+            ret
+            >::type type;
+};
+//------------------------------------------------------------------------------
+class non_integral : public encoder_decoder_base                                //a very relaxed and practical definition, float, double and bool.
 {
 public:
     typedef non_integral_field field;
     //--------------------------------------------------------------------------
-    static uword required_bytes (bool)
+    static uword bytes_required (bool)
     {
         return 0 + sizeof (field);
     }
     //--------------------------------------------------------------------------
-    static uword required_bytes (float)
+    static uword bytes_required (float)
     {
         return sizeof (float) + sizeof (field);
     }
     //--------------------------------------------------------------------------
-    static uword required_bytes (double)
+    static uword bytes_required (double)
     {
         return sizeof (double) + sizeof (field);
     }
     //--------------------------------------------------------------------------
-    field get_field (bool val, uword required_bytes)
+    static field get_field (bool val, uword bytes_required)
     {
         field f;
         f.fclass   = ufo_numeric;
@@ -76,7 +86,7 @@ public:
         return f;
     }
     //--------------------------------------------------------------------------
-    field get_field (float, uword required_bytes)
+    static field get_field (float, uword bytes_required)
     {
         field f;
         f.fclass   = ufo_numeric;
@@ -86,7 +96,7 @@ public:
         return f;
     }
     //--------------------------------------------------------------------------
-    field get_field (double, uword required_bytes)
+    static field get_field (double, uword bytes_required)
     {
         field f;
         f.fclass   = ufo_numeric;
@@ -96,36 +106,40 @@ public:
         return f;
     }
     //--------------------------------------------------------------------------
-    void encode (u8* ptr, u8* end, field f, bool)
+    static u8* encode (u8* ptr, u8* end, field f, bool)
     {
         ptr = encode_type (ptr, end, f);
+        return ptr;
     }
     //--------------------------------------------------------------------------
-    void encode (u8* ptr, u8* end, field f, float v)
+    static u8* encode (u8* ptr, u8* end, field f, float v)
     {
         ptr = encode_type (ptr, end, f);
-        encode_type (ptr, end, v);
+        ptr = encode_type (ptr, end, v);
+        return ptr;
     }
     //--------------------------------------------------------------------------
-    void encode (u8* ptr, u8* end, field f, double v)
+    static u8* encode (u8* ptr, u8* end, field f, double v)
     {
         ptr = encode_type (ptr, end, f);
-        encode_type (ptr, end, v);
+        ptr = encode_type (ptr, end, v);
+        return ptr;
     }
     //--------------------------------------------------------------------------
-    void decode (bool& v, field f, const u8* ptr)
+    static const u8* decode (bool& v, field f, const u8* ptr, const u8* end)
     {
         v = f.bool_val;
+        return ptr;
     }
     //--------------------------------------------------------------------------
-    void decode (float& v, field f, const u8* ptr)
+    static const u8* decode (float& v, field f, const u8* ptr, const u8* end)
     {
-        decode_type (v, ptr);
+        return decode_type (v, ptr, end);
     }
     //--------------------------------------------------------------------------
-    void decode (double& v, field f, const u8* ptr)
+    static const u8* decode (double& v, field f, const u8* ptr, const u8* end)
     {
-        decode_type (v, ptr);
+        return decode_type (v, ptr, end);
     }
     //--------------------------------------------------------------------------
 }; //class integral

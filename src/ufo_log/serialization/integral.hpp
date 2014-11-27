@@ -41,78 +41,62 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/system.hpp>
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/integer_bits.hpp>
+#include <ufo_log/util/integral_enable_if.hpp>
 #include <ufo_log/serialization/fields.hpp>
 #include <ufo_log/serialization/encoder_decoder_base.hpp>
-#include <type_traits>
 
 namespace ufo { namespace ser {
 
 //------------------------------------------------------------------------------
 class integral : public encoder_decoder_base
 {
-private:
-    //--------------------------------------------------------------------------
-    template <class ret, class T>
-    struct enable_signed
-    {
-        typedef typename std::enable_if<
-                std::is_signed<T>::type && !std::is_floating_point<T>::type,
-                ret
-                >::type type;
-    };
-    //--------------------------------------------------------------------------
-    template <class ret, class T>
-    struct enable_unsigned
-    {
-        typedef typename std::enable_if<
-                    std::is_unsigned<T>::type && !std::is_same<T, bool>::type,
-                    uword
-                    >::type type;
-    };
 public:
     //--------------------------------------------------------------------------
     typedef integral_field field;
     //--------------------------------------------------------------------------
     template <class T>
-    typename enable_unsigned<uword, T>::type
-    static required_bytes (T val)
+    static typename enable_if_unsigned<T, uword>::type
+    bytes_required (T val)                                               //todo: make constextr...
     {
-        return highest_used_byte (val) + 1 + sizeof (field);
+        return raw_bytes_required (val) + sizeof (field);
     }
     //--------------------------------------------------------------------------
     template <class T>
-    typename enable_signed<uword, T>::type
-    static required_bytes (T val)
+    static typename enable_if_signed<T, uword>::type
+    bytes_required (T val)                                               //todo make constexpr
     {
         val    = (val >= 0) ? val : prepare_negative (val);
-        return highest_used_byte (val) + 1 + sizeof (field);
+        return raw_bytes_required (val) + sizeof (field);
     }
     //--------------------------------------------------------------------------
-    static uword required_bytes (i8 val) { return 1 + sizeof (field); }
-    //--------------------------------------------------------------------------
-    template <class T>
-    typename enable_unsigned<field, T>::type
-    get_field (T val, uword required_bytes)
+    static uword bytes_required (i8 val)
     {
-        return get_field_impl (val, required_bytes, false);
+        return 1 + sizeof (field);
     }
     //--------------------------------------------------------------------------
     template <class T>
-    typename enable_signed<field, T>::type
-    get_field (T val, uword required_bytes)
+    static typename enable_if_unsigned<T, field>::type
+    get_field (T val, uword bytes_required)
     {
-        return get_field_impl (val, required_bytes, val < 0);
+        return get_field_impl (val, bytes_required, false);
     }
     //--------------------------------------------------------------------------
     template <class T>
-    typename enable_unsigned<void, T>::type
+    static typename enable_if_signed<T, field>::type
+    get_field (T val, uword bytes_required)
+    {
+        return get_field_impl (val, bytes_required, val < 0);
+    }
+    //--------------------------------------------------------------------------
+    template <class T>
+    static typename enable_if_unsigned<T, u8*>::type
     encode (u8* ptr, u8* end, field f, T val)
     {
         return encode_impl (ptr, end, f, val);
     }
     //--------------------------------------------------------------------------
     template <class T>
-    typename enable_signed<void, T>::type
+    static typename enable_if_signed<T, u8*>::type
     encode (u8* ptr, u8* end, field f, T val)
     {
         return encode_impl(
@@ -121,74 +105,108 @@ public:
     }
     //--------------------------------------------------------------------------
     template <class T>
-    typename enable_unsigned<void, T>::type
-    decode (T& val, field f, const u8* ptr)
+    static typename enable_if_unsigned<T, const u8*>::type
+    decode (T& val, field f, const u8* ptr, const u8* end)
     {
-        decode_unsigned_impl (val, f, ptr);
+        return raw_decode_unsigned (val, f.bytes + 1, ptr, end);
     }
     //--------------------------------------------------------------------------
     template <class T>
-    typename enable_signed<void, T>::type
-    decode (T& val, field f, const u8* ptr)
+    static typename enable_if_signed<T, const u8*>::type
+    decode (T& val, field f, const u8* ptr, const u8* end)
     {
-        decode_unsigned_impl (val, f, ptr);
+        ptr = decode_unsigned (val, f, ptr, end);
         val = !f.is_negative ? val : reconstruct_negative (val);
+        return ptr;
+    }
+    //--------------------------------------------------------------------------
+    template <class T>
+    static typename enable_if_unsigned<T, uword>::type
+    raw_bytes_required (T val)
+    {
+        return highest_used_byte (val) + 1;
+    }
+    //--------------------------------------------------------------------------
+    template <class T>
+    static typename enable_if_unsigned<T, u8*>::type
+    raw_encode_unsigned (u8* ptr, u8* end, uword size, T val)
+    {
+        return encode_unsigned (ptr, end, size, val);
+    }
+    //--------------------------------------------------------------------------
+    template <class T>
+    static typename enable_if_unsigned<T, const u8*>::type
+    raw_decode_unsigned (T& val, uword size, const u8* ptr, const u8* end)
+    {
+        return decode_unsigned (ptr, end, size, val);
     }
     //--------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------
     template <class T>
-    void decode_unsigned_impl (T& val, field f, const u8* ptr)
+    static const u8* decode_unsigned(
+            T& val, uword size, const u8* ptr, const u8* end
+            )
     {
+        assert (ptr + size <= end);
         val = 0;
-        for (uword i = 0; i < (f.bytes + 1); ++i, ++ptr)
+        for (uword i = 0; i < size; ++i, ++ptr)
         {
             val |= ((T) *ptr) << (i * 8);
         }
+        return ptr;
     }
     //--------------------------------------------------------------------------
     template <class T>
-    void encode_impl (u8* ptr, u8* end, field f, T val)
+    static u8* encode_unsigned(
+            u8* ptr, u8* end, uword size, T val
+            )
     {
-        uword to_encode = f.bytes + 1;
-
         assert (ptr && end);
-        assert ((ptr + (to_encode+ sizeof f)) < end);
-        assert (to_encode <= sizeof (T));
+        assert (ptr + size <= end);
+        assert (size <= sizeof (T));
 
-        ptr = encode_type (ptr, end, f);
-
-        for (uword i = 0; i < to_encode; ++i, ++ptr)
+        for (uword i = 0; i < size; ++i, ++ptr)
         {
             *ptr = (u8) (val >> (i * 8));
         }
+        return ptr;
     }
     //--------------------------------------------------------------------------
     template <class T>
-    field get_field_impl (T val, uword required_bytes, bool negative)
+    static u8* encode_impl (u8* ptr, u8* end, field f, T val)
+    {
+        ptr = encode_type (ptr, end, f);
+        ptr = encode_unsigned (ptr, end, ((uword) f.bytes) + 1, val);
+        return ptr;
+    }
+    //--------------------------------------------------------------------------
+    template <class T>
+    static field get_field_impl (T val, uword bytes_required, bool negative)
     {
         static_assert(
             sizeof (T) <= 8,
             "f.original type needs a proper compile time log2"
             );
-        assert (required_bytes <= sizeof (T));
+        assert (bytes_required <= sizeof (T));
         field f;
         f.fclass        = ufo_numeric;
         f.nclass        = ufo_integral;
-        f.bytes         = (required_bytes - 1 - sizeof f);
+        f.bytes         = (bytes_required - 1 - sizeof f);
+        assert (f.bytes == (bytes_required - 1 - sizeof f));
         f.original_type = ((sizeof val / 2) == 4) ? 3 : (sizeof val / 2);
         f.is_negative   = negative;
     }
     //--------------------------------------------------------------------------
     template <class T>
-    T prepare_negative (T val)
+    static T prepare_negative (T val)
     {
         static const T sign_mask = ~(1 << ((sizeof val * 8) - 1));
         return ~(val & sign_mask);
     }
     //--------------------------------------------------------------------------
     template <class T>
-    T reconstruct_negative (T val)
+    static T reconstruct_negative (T val)
     {
         static const T sign_mask = (1 << ((sizeof val * 8) - 1));
         return (~val) | sign_mask;

@@ -34,43 +34,76 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_ENCODER_DECODER_BASE_HPP_
-#define UFO_LOG_ENCODER_DECODER_BASE_HPP_
+#ifndef UFO_LOG_FRONTEND_TYPES_HPP_
+#define UFO_LOG_FRONTEND_TYPES_HPP_
 
-#include <cassert>
 #include <ufo_log/util/integer.hpp>
+#include <string>
+#include <cassert>
+#include <cstring>
 
 namespace ufo {
+
 //------------------------------------------------------------------------------
-class encoder_decoder_base
+struct sev
 {
-public:
-    //--------------------------------------------------------------------------
-    template <class T>
-    static u8* encode_type (u8* ptr, u8* end, T val)
+    enum severity
     {
-        assert (ptr && end && (ptr + sizeof val <= end));
-        for (uword i = 0; i < sizeof val; ++i, ++ptr)
-        {
-            *ptr = ((u8*) val)[i];
-        }
-        return ptr;
-    }
-    //--------------------------------------------------------------------------
-    template <class T>
-    static const u8* decode_type (T& val, const u8* ptr, const u8* end)
-    {
-        assert (ptr && end && (ptr + sizeof val) <= end);
-        for (uword i = 0; i < sizeof val; ++i, ++ptr)
-        {
-            ((u8*) val)[i] = *ptr;
-        }
-        return ptr;
-    }
-    //--------------------------------------------------------------------------
-}; //class encoder_decoder_base
+        debug    = 0,
+        trace    = 1,
+        notice   = 2,
+        warning  = 3,
+        error    = 4,
+        critical = 5,
+        off      = 6,
+        invalid  = 7,
+    };
+};
 //------------------------------------------------------------------------------
+struct delimited_mem
+{
+    const void* mem;
+    uword       size;
+};
+//------------------------------------------------------------------------------
+struct deep_copy_bytes : public delimited_mem {};
+//------------------------------------------------------------------------------
+struct deep_copy_string : public delimited_mem {};
+//------------------------------------------------------------------------------
+inline deep_copy_bytes deep_copy (void* mem, uword size)
+{
+    assert (mem && size);
+    deep_copy_bytes b;
+    b.mem  = mem;
+    b.size = size;
+    return b;
+}
+//------------------------------------------------------------------------------
+inline deep_copy_string deep_copy (const char* mem, uword size_no_null_term)
+{
+    assert (mem && size_no_null_term);
+    assert (mem[size_no_null_term - 1] != 0);
+    deep_copy_string s;
+    s.mem  = mem;
+    s.size = size_no_null_term;
+    return s;
+}
+//------------------------------------------------------------------------------
+inline deep_copy_string deep_copy (const char* str)                             //you should be avoiding strlen by taking the overload that takes the size if possible, this function is just written for cases where there really is something better.
+{
+    assert (str);
+    return deep_copy (str, strlen (str));
+}
+//------------------------------------------------------------------------------
+inline deep_copy_bytes deep_copy (const std::string& str)
+{
+    assert (str.size());
+    return (deep_copy (&str[0], str.size()));
+}
+//------------------------------------------------------------------------------
+
+//deep_copy, ptr etc. will end up here.
 
 } //namespaces
 
-#endif /* UFO_LOG_ENCODER_DECODER_BASE_HPP_ */
+#endif /* UFO_LOG_FRONTEND_TYPES_HPP_ */

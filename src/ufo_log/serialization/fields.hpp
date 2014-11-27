@@ -41,45 +41,28 @@ either expressed or implied, of Rafael Gago Castano.
 #include <util/system.hpp>
 
 namespace ufo { namespace ser {
-
+//------------------------------------------------------------------------------
 static const uword arity_bits         = 5;
 static const uword severity_bits      = 3;
 static const uword numeric_bytes_bits = 3;
-
-#ifdef UFO_COMPILE_TIME_FMT_CHECK
-
-//------------------------------------------------------------------------------
-struct header_field
-{
-    typedef u8 raw_type;
-
-    static const uword severity_bits        = 3;
-    static const uword timestamp_bytes_bits = 3;
-
-    raw_type severity        : severity_bits;
-    raw_type timestamp_bytes : numeric_bytes_bits;                              //1 to 8
-};
-//------------------------------------------------------------------------------
-
-#else
-
 //------------------------------------------------------------------------------
 struct header_field
 {
     typedef u16 raw_type;
 
-    static const uword arity_bits           = 10;                               //it could work work with less bits, but 5 were the absolute minimum, the type needed to be a u16 anyways.
+    static const uword arity_bits           = 6;                                //0 = just fmt string
     static const uword severity_bits        = 3;
     static const uword timestamp_bytes_bits = 3;
+    static const uword no_timestamp_bits    = 1;
 
-    raw_type arity           : arity_bits;                                      //arity 0 = just fmt string
+    raw_type arity           : arity_bits;
     raw_type severity        : severity_bits;
     raw_type timestamp_bytes : numeric_bytes_bits;                              //1 to 8
-};
-//------------------------------------------------------------------------------
-
+    raw_type no_timestamp    : no_timestamp_bits;
+#ifndef UFO_COMPILE_TIME_FMT_CHECK
+    raw_type length_bytes    : numeric_bytes_bits;
 #endif
-
+};
 //------------------------------------------------------------------------------
 static_assert (sizeof (header_field) == sizeof (header_field::raw_type), "");
 //------------------------------------------------------------------------------
@@ -145,7 +128,7 @@ static_assert(
 struct non_integral_field
 {
     typedef u8 raw_type;
-    static const uword bool_val_bits      = 1;
+    static const uword bool_val_bits = 1;
 
     raw_type fclass    : field_class_bits;
     raw_type nclass    : numeric_class_bits;
@@ -168,6 +151,34 @@ struct non_numeric_field
 //------------------------------------------------------------------------------
 static_assert(
         sizeof (non_numeric_field) == sizeof (non_numeric_field::raw_type), ""
+        );
+//------------------------------------------------------------------------------
+struct generic_decoder_field
+{
+    typedef u8 raw_type;
+
+    raw_type fclass : field_class_bits;
+    raw_type nclass : numeric_class_bits;
+};
+//------------------------------------------------------------------------------
+static_assert(
+        sizeof (generic_decoder_field) ==
+                sizeof (generic_decoder_field::raw_type),
+        ""
+        );
+//------------------------------------------------------------------------------
+union decoding_field
+{
+    typedef u8 raw_type;
+
+    generic_decoder_field gen;
+    integral_field        num_int;
+    non_integral_field    nom_no_int;
+    non_numeric_field     no_num;
+};
+//------------------------------------------------------------------------------
+static_assert(
+        sizeof (decoding_field) == sizeof (decoding_field::raw_type), ""
         );
 //------------------------------------------------------------------------------
 }} //namespaces

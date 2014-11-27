@@ -78,7 +78,7 @@ private:
         return (f == fmt::hex)               ? true :
                (f == fmt::full_width_spaces) ? true :
                (f == fmt::full_width_zeroes) ? true :
-                            false;
+                                               false;
     }
     //--------------------------------------------------------------------------
     template <class T>
@@ -90,7 +90,7 @@ private:
     {
         return (f == fmt::full_width_spaces) ? true :
                (f == fmt::full_width_zeroes) ? true :
-                            false;
+                                               false;
     }
     //--------------------------------------------------------------------------
     template <class T>
