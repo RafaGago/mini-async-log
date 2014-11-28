@@ -70,10 +70,10 @@ struct u32_modif
     static const char* fwidth;
     static const char* hex;
 };
-const char* u32_modif::norm     = "%hu";
-const char* u32_modif::fwidth_s = "%5hu";
-const char* u32_modif::fwidth   = "%05hu";
-const char* u32_modif::hex      = "0x%04hx";
+const char* u32_modif::norm     = "%lu";
+const char* u32_modif::fwidth_s = "%10lu";
+const char* u32_modif::fwidth   = "%010lu";
+const char* u32_modif::hex      = "0x%08lx";
 //------------------------------------------------------------------------------
 struct u64_modif
 {
@@ -82,10 +82,10 @@ struct u64_modif
     static const char* fwidth;
     static const char* hex;
 };
-const char* u64_modif::norm     = "%hu";
-const char* u64_modif::fwidth_s = "%5hu";
-const char* u64_modif::fwidth   = "%05hu";
-const char* u64_modif::hex      = "0x%04hx";
+const char* u64_modif::norm     = "%llu";
+const char* u64_modif::fwidth_s = "%2ollu";
+const char* u64_modif::fwidth   = "%020llu";
+const char* u64_modif::hex      = "0x%016llx";
 //------------------------------------------------------------------------------
 struct i8_modif
 {
@@ -94,10 +94,10 @@ struct i8_modif
     static const char* fwidth;
     static const char* hex;
 };
-const char* i8_modif::norm     = "%hu";
-const char* i8_modif::fwidth_s = "%5hu";
-const char* i8_modif::fwidth   = "%05hu";
-const char* i8_modif::hex      = "0x%04hx";
+const char* i8_modif::norm     = "%d";
+const char* i8_modif::fwidth_s = "%3d";
+const char* i8_modif::fwidth   = "%03d";
+const char* i8_modif::hex      = "0x%02x";
 //------------------------------------------------------------------------------
 struct i16_modif
 {
@@ -106,9 +106,10 @@ struct i16_modif
     static const char* fwidth;
     static const char* hex;
 };
-const char* i16_modif::norm     = "%hu";
-const char* i16_modif::fwidth_s = "%5hu";
-const char* i16_modif::fwidth   = "%05hu";
+#warning "fix all integer modifiers"
+const char* i16_modif::norm     = "%hd";
+const char* i16_modif::fwidth_s = "% 5hd";
+const char* i16_modif::fwidth   = "%05hd";
 const char* i16_modif::hex      = "0x%04hx";
 //------------------------------------------------------------------------------
 struct i32_modif
@@ -118,10 +119,10 @@ struct i32_modif
     static const char* fwidth;
     static const char* hex;
 };
-const char* i32_modif::norm     = "%hu";
-const char* i32_modif::fwidth_s = "%5hu";
-const char* i32_modif::fwidth   = "%05hu";
-const char* i32_modif::hex      = "0x%04hx";
+const char* i32_modif::norm     = "%ld";
+const char* i32_modif::fwidth_s = "%5ld";
+const char* i32_modif::fwidth   = "%05ld";
+const char* i32_modif::hex      = "0x%08hx";
 //------------------------------------------------------------------------------
 struct i64_modif
 {
@@ -130,10 +131,10 @@ struct i64_modif
     static const char* fwidth;
     static const char* hex;
 };
-const char* i64_modif::norm     = "%hu";
-const char* i64_modif::fwidth_s = "%5hu";
-const char* i64_modif::fwidth   = "%05hu";
-const char* i64_modif::hex      = "0x%04hx";
+const char* i64_modif::norm     = "%lld";
+const char* i64_modif::fwidth_s = "%20lld";
+const char* i64_modif::fwidth   = "%020lld";
+const char* i64_modif::hex      = "0x%016llx";
 //------------------------------------------------------------------------------
 struct float_modif
 {

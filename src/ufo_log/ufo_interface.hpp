@@ -125,12 +125,13 @@ bool new_entry(                                                                 
     hdr.fmt        = fmt;
     hdr.severity   = sv;
     hdr.has_tstamp = true;
-    hdr.tstamp     = get_timestamp();
+#warning "todo, get "
+    //hdr.tstamp     = get_timestamp();
+    hdr.tstamp     = 0;
 
     uword length   = 0;
 #warning "todo, timestamp deactivation"
 
-    decltype (exp::get_field (hdr, 0)) hdr_field;
     decltype (exp::get_field (a, 0))   a_field;
     decltype (exp::get_field (b, 0))   b_field;
     decltype (exp::get_field (c, 0))   c_field;
@@ -145,8 +146,8 @@ bool new_entry(                                                                 
     decltype (exp::get_field (l, 0))   l_field;
     decltype (exp::get_field (m, 0))   m_field;
     decltype (exp::get_field (n, 0))   n_field;
+    decltype (exp::get_field (hdr, 0)) hdr_field;
 
-    if (!prebuild_data (hdr_field, hdr, length)) { return false; }
     if (!prebuild_data (a_field, a, length))     { return false; }
     if (!prebuild_data (b_field, b, length))     { return false; }
     if (!prebuild_data (c_field, c, length))     { return false; }
@@ -161,6 +162,7 @@ bool new_entry(                                                                 
     if (!prebuild_data (l_field, l, length))     { return false; }
     if (!prebuild_data (m_field, m, length))     { return false; }
     if (!prebuild_data (n_field, n, length))     { return false; }
+    if (!prebuild_data (hdr_field, hdr, length)) { return false; }
 
     auto enc = fe.get_encoder (length);
     if (enc.has_memory())

@@ -20,7 +20,7 @@ void rotation_test()
     ufo::frontend fe;
     auto be_cfg                             = fe.get_backend_cfg();
     be_cfg.file.out_folder                  = "./log_out/";                     //this folder has to exist before running
-    be_cfg.file.aprox_size                  = 512 * 1024;
+    be_cfg.file.aprox_size                  = 2048 * 1024;
     be_cfg.file.rotation.file_count         = 4;
     be_cfg.file.rotation.delayed_file_count = 1;                                //we let the logger to have an extra file when there is a lot of workload
 
@@ -31,7 +31,7 @@ void rotation_test()
 
     for (unsigned i = 0; i < msg_count; ++i)
     {
-        log_error_i (fe, "this is a very simple message {}", i);
+        log_error_i (fe, "this is a very simple message {}", i + 65536);
     }
     auto reader_ns = ch::duration_cast<ch::nanoseconds>(
                         ch::steady_clock::now() - init
@@ -39,7 +39,7 @@ void rotation_test()
     auto reader_msgs_s =
             ((double) msg_count / (double) reader_ns) * 1000000000.;
 
-    fe.set_severity (sev::trace);
+    fe.set_file_severity (sev::trace);
 
     log_trace_i(
         fe,

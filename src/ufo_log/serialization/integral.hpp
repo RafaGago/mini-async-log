@@ -66,7 +66,8 @@ public:
     bytes_required (T val)                                               //todo make constexpr
     {
         val    = (val >= 0) ? val : prepare_negative (val);
-        return raw_bytes_required (val) + sizeof (field);
+        typename std::make_unsigned<T>::type v = val;
+        return raw_bytes_required (v) + sizeof (field);
     }
     //--------------------------------------------------------------------------
     static uword bytes_required (i8 val)
@@ -108,7 +109,7 @@ public:
     static typename enable_if_unsigned<T, const u8*>::type
     decode (T& val, field f, const u8* ptr, const u8* end)
     {
-        return raw_decode_unsigned (val, f.bytes + 1, ptr, end);
+        return raw_decode_unsigned (val, ((uword) f.bytes) + 1, ptr, end);
     }
     //--------------------------------------------------------------------------
     template <class T>
@@ -124,7 +125,11 @@ public:
     static typename enable_if_unsigned<T, uword>::type
     raw_bytes_required (T val)
     {
+#ifndef UFO_NO_VARIABLE_INTEGER_WIDTH
         return highest_used_byte (val) + 1;
+#else
+        return sizeof (T);
+#endif
     }
     //--------------------------------------------------------------------------
     template <class T>
@@ -188,7 +193,7 @@ private:
             sizeof (T) <= 8,
             "f.original type needs a proper compile time log2"
             );
-        assert (bytes_required <= sizeof (T));
+        assert (bytes_required <= (sizeof (T) + sizeof (field)));
         field f;
         f.fclass        = ufo_numeric;
         f.nclass        = ufo_integral;
@@ -202,14 +207,14 @@ private:
     template <class T>
     static T prepare_negative (T val)
     {
-        static const T sign_mask = ~(1 << ((sizeof val * 8) - 1));
+        static const T sign_mask = ~(((T) 1) << ((sizeof val * 8) - 1));
         return ~(val & sign_mask);
     }
     //--------------------------------------------------------------------------
     template <class T>
     static T reconstruct_negative (T val)
     {
-        static const T sign_mask = 1 << ((sizeof val * 8) - 1);
+        static const T sign_mask = ((T) 1) << ((sizeof val * 8) - 1);
         return (~val) | sign_mask;
     }
     //--------------------------------------------------------------------------

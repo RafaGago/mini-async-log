@@ -55,20 +55,20 @@ public:
     //--------------------------------------------------------------------------
     static uword bytes_required (header_data v)
     {
-        return v.has_tstamp ? (integral::raw_bytes_required (v.tstamp)) : 0 +
+        return (v.has_tstamp ? integral::raw_bytes_required (v.tstamp) : 0) +
                 sizeof (const char*) +
                 sizeof (field);
     }
     //--------------------------------------------------------------------------
     static field get_field (header_data v, uword bytes_required)
     {
+        uword bytes = bytes_required - (sizeof (const char*) + sizeof (field));
+        assert ((v.has_tstamp && bytes) || !v.has_tstamp);
         field f;
         f.arity           = v.arity;
         f.severity        = v.severity;
         f.no_timestamp    = v.has_tstamp ? 0 : 1;
-        f.timestamp_bytes = v.has_tstamp ?
-                                integral::raw_bytes_required (v.tstamp) - 1 :
-                                0;
+        f.timestamp_bytes = v.has_tstamp ? bytes - 1 : 0;
         return f;
     }
     //--------------------------------------------------------------------------

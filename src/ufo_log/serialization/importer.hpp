@@ -103,6 +103,8 @@ public:
             while (params);
 
         }
+        char newline = '\n';
+        o.write (&newline, sizeof newline);
         return true;
     }
     //--------------------------------------------------------------------------
@@ -138,7 +140,7 @@ private:
     void output_integral (output& o, integral_field f, bool has_placeholder)
     {
         uword type = f.original_type;
-        type      += ((uword) f.is_negative) * 3;
+        type      += ((uword) f.is_negative) * 4;
 
         switch (type)
         {
@@ -328,7 +330,7 @@ private:
                 {
                     m_fmt_modif = 0;
                     ++m_fmt;
-                    o.write (fmt_prev, (found - 1) - fmt_prev);
+                    o.write (fmt_prev, found - fmt_prev);
                     if (remaining_parameters) { return true;  }
                     else                      { goto expected_params_err; }
                 }
@@ -340,7 +342,7 @@ private:
                     if (*(m_fmt + 1) == fmt::placeholder_close)
                     {
                         m_fmt += 2;
-                        o.write (fmt_prev, (found - 1) - fmt_prev);
+                        o.write (fmt_prev, found - fmt_prev);
                         if (remaining_parameters) { return true;  }
                         else                      { goto expected_params_err; }
                     }
@@ -351,7 +353,7 @@ private:
                     if (*(m_fmt + 1) == fmt::placeholder_close)
                     {
                         m_fmt += 2;
-                        o.write (fmt_prev, (found - 1) - fmt_prev);
+                        o.write (fmt_prev, found - fmt_prev);
                         write_invalid_modifier (o);
                         if (remaining_parameters) { return true;  }
                         else                      { goto expected_params_err; }

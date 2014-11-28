@@ -55,13 +55,20 @@ public:
         zero();
     }
     //--------------------------------------------------------------------------
-    void init (ptr_type* mem, uword msg_total_size = (uword) -1)
+    void init (ptr_type* mem, uword msg_total_size)
     {
         assert (mem);
         assert (msg_total_size);
 
         m_pos = m_beg = mem;
         m_end = m_pos + msg_total_size;
+    }
+    //--------------------------------------------------------------------------
+    void init (ptr_type* mem)
+    {
+        assert (mem);
+        uword total_size = ((uword) -1) - ((uword) mem);
+        init (mem, total_size);
     }
     //--------------------------------------------------------------------------
     bool has_memory() const
