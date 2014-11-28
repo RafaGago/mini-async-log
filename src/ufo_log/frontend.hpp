@@ -38,7 +38,7 @@ either expressed or implied, of Rafael Gago Castano.
 #define UFO_LOG_LOG_FRONTEND_HPP_
 
 #include <memory>
-#include <ufo_log/message_encoder.hpp>
+#include <ufo_log/serialization/exporter.hpp>
 
 namespace ufo {
 
@@ -66,17 +66,17 @@ public:
     //--------------------------------------------------------------------------
     init_status init_backend (const backend_cfg& cfg);
     //--------------------------------------------------------------------------
-    void set_severity (sev::severity s);
+    sev::severity min_severity();
     //--------------------------------------------------------------------------
-    sev::severity severity(); //todo: this will need to be renamed to lowest severity, and the backend will accept entries that are just destinated to the console
+    void set_file_severity (sev::severity s);
     //--------------------------------------------------------------------------
     bool set_console_severity(
             sev::severity stderr, sev::severity stdout = sev::off
             );
     //--------------------------------------------------------------------------
-    proto::encoder get_encoder (uword required_bytes);
+    ser::exporter get_encoder (uword required_bytes);
     //--------------------------------------------------------------------------
-    void push_encoded (proto::encoder encoder);
+    void push_encoded (ser::exporter encoder);
     //--------------------------------------------------------------------------
     void on_termination();                                                      //you may want to call this from e.g. SIGTERM handlers, be aware that all the data generators should be stopped before.
     //--------------------------------------------------------------------------

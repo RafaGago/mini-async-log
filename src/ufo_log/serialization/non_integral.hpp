@@ -42,21 +42,20 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/system.hpp>
 #include <ufo_log/serialization/fields.hpp>
 #include <ufo_log/util/integer.hpp>
-#include <ufo_log/serialization/encoder_decoder_base.hpp>
+#include <ufo_log/serialization/basic_encoder_decoder.hpp>
 
 namespace ufo { namespace ser {
 
 //------------------------------------------------------------------------------
 template <class T, class ret>
-struct enable_float_double_bool
-{
-    typedef typename std::enable_if<
-            std::is_floating_point<T>::value || std::is_same<T, bool>::value,
-            ret
-            >::type type;
-};
+struct enable_float_double_bool :
+        public std::enable_if<
+                std::is_floating_point<T>::value || std::is_same<T, bool>::value,
+                ret
+                >
+{};
 //------------------------------------------------------------------------------
-class non_integral : public encoder_decoder_base                                //a very relaxed and practical definition, float, double and bool.
+class non_integral : public basic_encoder_decoder                               //a very relaxed and practical definition, float, double and bool.
 {
 public:
     typedef non_integral_field field;
@@ -145,4 +144,5 @@ public:
 }; //class integral
 //------------------------------------------------------------------------------
 
+}} //namespaces
 #endif /* UFO_LOG_NON_INTEGRAL_HPP_ */

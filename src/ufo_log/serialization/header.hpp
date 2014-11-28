@@ -47,7 +47,7 @@ either expressed or implied, of Rafael Gago Castano.
 namespace ufo { namespace ser {
 
 //------------------------------------------------------------------------------
-class header : public encoder_decoder_base
+class header : public basic_encoder_decoder
 {
 public:
     //--------------------------------------------------------------------------
@@ -55,12 +55,7 @@ public:
     //--------------------------------------------------------------------------
     static uword bytes_required (header_data v)
     {
-        uword sz;
-
         return v.has_tstamp ? (integral::raw_bytes_required (v.tstamp)) : 0 +
-#ifndef UFO_COMPILE_TIME_FMT_CHECK
-                integral::raw_bytes_required (v.msg_bytes) +
-#endif
                 sizeof (const char*) +
                 sizeof (field);
     }
@@ -74,9 +69,6 @@ public:
         f.timestamp_bytes = v.has_tstamp ?
                                 integral::raw_bytes_required (v.tstamp) - 1 :
                                 0;
-#ifndef UFO_COMPILE_TIME_FMT_CHECK
-        f.length_bytes    = integral::raw_bytes_required (v.msg_bytes) - 1;
-#endif
         return f;
     }
     //--------------------------------------------------------------------------
@@ -90,11 +82,6 @@ public:
                     ptr, end, ((uword) f.timestamp_bytes) + 1, hd.tstamp
                     );
         }
-#ifndef UFO_COMPILE_TIME_FMT_CHECK
-        ptr = integral::raw_encode_unsigned(
-                ptr, end, ((uword) f.length_bytes) + 1, hd.msg_bytes
-                );
-#endif
         return ptr;
     }
     //--------------------------------------------------------------------------
@@ -107,7 +94,7 @@ public:
         hd.arity      = f.arity;
         hd.has_tstamp = f.no_timestamp ? 0 : 1;
         hd.tstamp     = 0;
-        hd.severity   = f.severity;
+        hd.severity   = (sev::severity) f.severity;
 
         if (hd.has_tstamp)
         {
@@ -115,11 +102,6 @@ public:
                     hd.tstamp, ((uword) f.timestamp_bytes) + 1 , ptr, end
                     );
         }
-#ifndef UFO_COMPILE_TIME_FMT_CHECK
-        ptr = integral::raw_decode_unsigned(
-                hd.msg_bytes, ((uword) f.length_bytes) + 1, ptr, end
-                );
-#endif
         return ptr;
     }
     //--------------------------------------------------------------------------

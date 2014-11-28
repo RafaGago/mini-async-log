@@ -34,43 +34,61 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_ENCODER_DECODER_BASE_HPP_
-#define UFO_LOG_ENCODER_DECODER_BASE_HPP_
+#ifndef UFO_LOG_IMPORTER_EXPORTER_BASE_HPP_
+#define UFO_LOG_IMPORTER_EXPORTER_BASE_HPP_
 
 #include <cassert>
 #include <ufo_log/util/integer.hpp>
 
-namespace ufo {
+namespace ufo { namespace ser {
+
 //------------------------------------------------------------------------------
-class encoder_decoder_base
+template <class ptr_type>
+class importer_exporter                                                         //could be named vandelay too.. https://www.youtube.com/watch?v=67L0pbneT2w
 {
 public:
     //--------------------------------------------------------------------------
-    template <class T>
-    static u8* encode_type (u8* ptr, u8* end, T val)
+    struct null_type {};
+    //--------------------------------------------------------------------------
+    importer_exporter()
     {
-        assert (ptr && end && (ptr + sizeof val <= end));
-        for (uword i = 0; i < sizeof val; ++i, ++ptr)
-        {
-            *ptr = ((u8*) val)[i];
-        }
-        return ptr;
+        zero();
     }
     //--------------------------------------------------------------------------
-    template <class T>
-    static const u8* decode_type (T& val, const u8* ptr, const u8* end)
+    void init (ptr_type* mem, uword msg_total_size = (uword) -1)
     {
-        assert (ptr && end && (ptr + sizeof val) <= end);
-        for (uword i = 0; i < sizeof val; ++i, ++ptr)
-        {
-            ((u8*) val)[i] = *ptr;
-        }
-        return ptr;
+        assert (mem);
+        assert (msg_total_size);
+
+        m_pos = m_beg = mem;
+        m_end = m_pos + msg_total_size;
     }
+    //--------------------------------------------------------------------------
+    bool has_memory() const
+    {
+        return m_pos != nullptr;
+    }
+    //--------------------------------------------------------------------------
+    u8* get_memory() const
+    {
+        return m_beg;
+    }
+    //--------------------------------------------------------------------------
+protected:
+
+    //--------------------------------------------------------------------------
+    void zero()
+    {
+        m_beg = m_pos = m_end = nullptr;
+    }
+    //--------------------------------------------------------------------------
+    ptr_type* m_pos;
+    ptr_type* m_beg;
+    ptr_type* m_end;
     //--------------------------------------------------------------------------
 }; //class encoder_decoder_base
 //------------------------------------------------------------------------------
 
-} //namespaces
+}} //namespaces
 
-#endif /* UFO_LOG_ENCODER_DECODER_BASE_HPP_ */
+#endif /* UFO_LOG_IMPORTER_EXPORTER_BASE_HPP_ */

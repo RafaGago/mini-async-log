@@ -34,43 +34,41 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_HEADER_DATA_HPP_
-#define UFO_LOG_HEADER_DATA_HPP_
+#ifndef UFO_LOG_BASIC_ENCODER_DECODER_HPP_
+#define UFO_LOG_BASIC_ENCODER_DECODER_HPP_
 
-#include <ufo_log/util/system.hpp>
+#include <cassert>
 #include <ufo_log/util/integer.hpp>
-#include <ufo_log/frontend_types.hpp>
 
 namespace ufo { namespace ser {
-
 //------------------------------------------------------------------------------
-struct header_data
+struct basic_encoder_decoder
 {
-    u64           tstamp;                                                       //timestamps could be disabled on request, I don't know if us resolution would suffice.
-    const char*   fmt;
-    bool          has_tstamp;
-    sev::severity severity;
-    uword         arity;
+    //--------------------------------------------------------------------------
+    template <class T>
+    static u8* encode_type (u8* ptr, u8* end, T val)
+    {
+        assert (ptr && end && (ptr + sizeof val <= end));
+        for (uword i = 0; i < sizeof val; ++i, ++ptr)
+        {
+            *ptr = ((u8*) &val)[i];
+        }
+        return ptr;
+    }
+    //--------------------------------------------------------------------------
+    template <class T>
+    static const u8* decode_type (T& val, const u8* ptr, const u8* end)
+    {
+        assert (ptr && end && (ptr + sizeof val) <= end);
+        for (uword i = 0; i < sizeof val; ++i, ++ptr)
+        {
+            ((u8*) &val)[i] = *ptr;
+        }
+        return ptr;
+    }
 };
-//------------------------------------------------------------------------------
-header_data make_header_data(
-                 sev::severity sev,
-                 const char*   fmt,
-                 uword         arity,
-                 bool          has_tstamp = false,
-                 u64           tstamp     = 0
-                )
-{
-    header_data h;
-    h.severity   = sev;
-    h.fmt        = fmt;
-    h.arity      = arity;
-    h.has_tstamp = has_tstamp;
-    h.tstamp     = tstamp;
-    return h;
-}
 //------------------------------------------------------------------------------
 
 }} //namespaces
 
-#endif /* UFO_LOG_HEADER_DATA_HPP_ */
+#endif /* UFO_LOG_BASIC_ENCODER_DECODER_HPP_ */

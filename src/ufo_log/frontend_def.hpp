@@ -60,46 +60,30 @@ public:
     //--------------------------------------------------------------------------
     ~frontend_impl() {}
     //--------------------------------------------------------------------------
-    proto::encoder get_encoder (uword required_bytes)
+    ser::exporter get_encoder (uword required_bytes)
     {
         assert (m_state.load (mo_relaxed) == init);
-        proto::encoder m;
+        ser::exporter e;
         uint8* mem = m_back.allocate_entry (required_bytes);
         if (mem)
         {
-            m.init (mem, required_bytes);
+            e.init (mem, required_bytes);
         }
-        return m;
+        return e;
     }
     //--------------------------------------------------------------------------
-    void push_encoded (proto::encoder encoder)
+    void push_encoded (ser::exporter encoder)
     {
         assert (m_state.load (mo_relaxed) == init);
-        if (encoder.can_encode())
+        if (encoder.has_memory())
         {
-            uint8* mem = encoder.get_result();
+            uint8* mem = encoder.get_memory();
             m_back.push_allocated_entry (mem);
         }
         else
         {
             assert (false && "bug!");
         }
-    }
-    //--------------------------------------------------------------------------
-    bool set_console_severity (sev::severity stderr, sev::severity stdout)
-    {
-        if ((stdout >= sev::invalid || stderr >= sev::invalid))
-        {
-            assert (false);
-            return false;
-        }
-        else if ((stderr <= stdout) && (stdout != sev::off))
-        {
-            assert (false);
-            return false;
-        }
-        m_back.set_console_severity (stderr, stdout);
-        return true;
     }
     //--------------------------------------------------------------------------
     backend_cfg get_backend_cfg() const
@@ -148,14 +132,31 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-    void set_severity (sev::severity s)
+    bool set_console_severity (sev::severity stderr, sev::severity stdout)
     {
-        assert (severity() < sev::invalid);
-        m_severity.store (s, mo_relaxed);
+        if ((stdout >= sev::invalid || stderr >= sev::invalid))
+        {
+            assert (false);
+            return false;
+        }
+        else if ((stderr <= stdout) && (stdout != sev::off))
+        {
+            assert (false);
+            return false;
+        }
+        m_back.set_console_severity (stderr, stdout);
+        return true;
     }
     //--------------------------------------------------------------------------
-    sev::severity severity()
+    void set_file_severity (sev::severity s)
     {
+        assert (s < sev::invalid);
+#warning "todo, remove severity";
+    }
+    //--------------------------------------------------------------------------
+    sev::severity min_severity()
+    {
+#warning "todo"
         return (sev::severity) m_severity.load (mo_relaxed);
     }
     //--------------------------------------------------------------------------
@@ -182,12 +183,12 @@ frontend::~frontend()
 {
 }
 
-proto::encoder frontend::get_encoder (uword required_bytes)
+ser::exporter  frontend::get_encoder (uword required_bytes)
 {
     return m->get_encoder (required_bytes);
 }
 
-void frontend::push_encoded (proto::encoder encoder)
+void frontend::push_encoded (ser::exporter  encoder)
 {
     m->push_encoded (encoder);
 }
@@ -202,14 +203,14 @@ frontend::init_status frontend::init_backend (const backend_cfg& cfg)
     return m->init_backend (cfg);
 }
 
-void frontend::set_severity (sev::severity s)
+sev::severity frontend::min_severity()
 {
-    return m->set_severity (s);
+    return m->min_severity();
 }
 
-sev::severity frontend::severity()
+void frontend::set_file_severity (sev::severity s)
 {
-    return m->severity();
+    return m->set_file_severity (s);
 }
 
 bool frontend::set_console_severity(

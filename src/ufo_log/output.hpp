@@ -56,6 +56,7 @@ public:
         m_sev_current = sev::off;
         m_stderr_sev  = sev::off;
         m_stdout_sev  = sev::off;
+        m_file_sev    = sev::warning;
     }
     //--------------------------------------------------------------------------
     bool file_open (const char* file)
@@ -89,42 +90,62 @@ public:
         return m_file.tellp();
     }
     //--------------------------------------------------------------------------
-    void set_console_severity (sev::severity stderr, sev::severity stdout)
+    void set_console_severity(
+            sev::severity stderr_sev,
+            sev::severity stdout_sev
+            )
     {
-        assert (stdout < sev::invalid);
-        assert (stderr < sev::invalid);
-        assert ((stdout < stderr) || stdout == sev::off);
-        m_stderr_sev = stderr;
-        m_stdout_sev = stdout;
+        assert (stderr_sev < sev::invalid);
+        assert (stdout_sev < sev::invalid);
+        assert ((stdout_sev < stderr_sev) || stdout_sev == sev::off);
+        m_stderr_sev = stderr_sev;
+        m_stdout_sev = stdout_sev;
     }
     //--------------------------------------------------------------------------
-    void next_writes_severity (sev::severity s)                             //just affects stdout and stderr, everything come to the backend ends up in the files
+    void set_file_severity (sev::severity sev)
+    {
+        assert (sev < sev::invalid);
+        m_file_sev = sev;
+    }
+    //--------------------------------------------------------------------------
+    void set_next_writes_severity (sev::severity s)
     {
         assert (s < sev::invalid);
         m_sev_current = s;
     }
     //--------------------------------------------------------------------------
-    void write (const char* d, uword sz)
+    void write (const void* d, uword sz)
     {
-        m_file.write (d, sz);
+        if (m_sev_current >= m_file_sev)
+        {
+            m_file.write ((const char*) d, sz);
+        }
         if (m_sev_current >= m_stderr_sev)
         {
-            std::cerr.write (d, sz);
+            std::cerr.write ((const char*) d, sz);
         }
         else if (m_sev_current >= m_stdout_sev)
         {
-            std::cout.write (d, sz);
+            std::cout.write ((const char*) d, sz);
         }
     }
     //--------------------------------------------------------------------------
     void write (const char* str)
     {
-        m_file << str;
-        if (m_sev_current >= m_stderr_sev)
+        raw_write (m_sev_current, str);
+    }
+    //--------------------------------------------------------------------------
+    void raw_write (sev::severity s, const char* str)
+    {
+        if (s >= m_file_sev)
+        {
+            m_file << str;
+        }
+        if (s >= m_stderr_sev)
         {
             std::cerr << str;
         }
-        else if (m_sev_current >= m_stdout_sev)
+        else if (s >= m_stdout_sev)
         {
             std::cout << str;
         }
@@ -134,6 +155,7 @@ private:
     sev::severity                    m_sev_current;
     mo_relaxed_atomic<sev::severity> m_stderr_sev;
     mo_relaxed_atomic<sev::severity> m_stdout_sev;
+    mo_relaxed_atomic<sev::severity> m_file_sev;
     std::ofstream                    m_file;
 };
 //------------------------------------------------------------------------------

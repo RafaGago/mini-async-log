@@ -95,7 +95,7 @@ inline deep_copy_string deep_copy (const char* str)                             
     return deep_copy (str, strlen (str));
 }
 //------------------------------------------------------------------------------
-inline deep_copy_bytes deep_copy (const std::string& str)
+inline deep_copy_string deep_copy (const std::string& str)
 {
     assert (str.size());
     return (deep_copy (&str[0], str.size()));

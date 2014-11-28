@@ -40,13 +40,13 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/system.hpp>
 #include <ufo_log/decltype_wrap.hpp>
 
+#define UFO_GET_ARG1_PRIVATE(arg, ...) arg
+#define UFO_GET_FMT_STR_PRIVATE(...) UFO_GET_ARG1_PRIVATE(__VA_ARGS__, dummy)
+
 #ifdef UFO_COMPILE_TIME_FMT_CHECK
 
 #include <ufo_log/decltype_wrap.hpp>
 #include <ufo_log/compile_format_validator.hpp>
-
-#define UFO_GET_ARG1_PRIVATE(arg, ...) arg
-#define UFO_GET_FMT_STR_PRIVATE(...) UFO_GET_ARG1_PRIVATE(__VA_ARGS__, dummy)
 
 #define UFO_FMT_STRING_CHECK(...)\
         ufo::trigger_format_error<\
@@ -56,7 +56,24 @@ either expressed or implied, of Rafael Gago Castano.
 
 #else //Microsoft crippled mode
 
-#define UFO_FMT_STRING_CHECK() true
+namespace ufo { namespace macro {
+
+template <unsigned N>
+inline bool is_literal (const char (&arr)[N])
+{
+    return true;
+}
+
+inline bool is_literal (...)
+{
+    static_assert (true, "format string is not a compile time literal");
+    return false;
+}
+
+}} //ufo macro
+
+#define UFO_FMT_STRING_CHECK(...)\
+    ::ufo::macro::is_literal (UFO_GET_FMT_STR_PRIVATE (__VA_ARGS__))
 
 #endif
 
@@ -74,6 +91,7 @@ inline bool silence_warnings() { return true; }
 
 }} //namespaces
 
+
 #define UFO_LOG_IF_PRIVATE(condition, statement)\
     ((condition) ? (statement) : ::ufo::macro::silence_warnings())
 
@@ -89,7 +107,7 @@ inline bool silence_warnings() { return true; }
 #define UFO_LOG_PRIVATE(instance, severity_, ...)\
     UFO_LOG_IF_PRIVATE(\
         (UFO_FMT_STRING_CHECK (__VA_ARGS__)) &&\
-        (instance.severity() <= ::ufo::sev::severity_),\
+        (instance.min_severity() <= ::ufo::sev::severity_),\
         ::ufo::new_entry(\
             instance, ::ufo::sev::severity_, __VA_ARGS__\
             ))

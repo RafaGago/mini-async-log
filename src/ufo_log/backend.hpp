@@ -51,10 +51,11 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <ufo_log/output.hpp>
 #include <ufo_log/frontend.hpp>
-#include <ufo_log/message_decode_and_fwd.hpp>
+#include <ufo_log/serialization/importer.hpp>
 #include <ufo_log/allocator.hpp>
 #include <ufo_log/backend_cfg.hpp>
 #include <ufo_log/log_files.hpp>
+#include <ufo_log/timestamp.hpp>
 
 namespace ufo {
 
@@ -141,7 +142,7 @@ public:
     //--------------------------------------------------------------------------
     uint8* allocate_entry (uword size)
     {
-        if (size && size <= proto::largest_message_bytesize)
+        if (size)
         {
             void* mem = m_alloc.allocate (node::strict_total_size (size));
             if (mem)
@@ -362,33 +363,30 @@ private:
     const char* new_file_name_to_buffer()
     {
         using namespace ch;
-        u64 cpu      = get_tstamp ();
+        u64 cpu      = get_timestamp();
         u64 calendar = duration_cast<microseconds>(
                         system_clock::now().time_since_epoch()
                         ).count();
         return m_files.new_filename_in_buffer (cpu, calendar);
     }
     //--------------------------------------------------------------------------
-    static u64 get_tstamp ()
-    {
-        using namespace UFO_CHRONO_NAMESPACE;
-        return duration_cast<microseconds>(
-                steady_clock::now().time_since_epoch()
-                ).count();
-    }
-    //--------------------------------------------------------------------------
     void write_message (mpsc_node_hook& hook)
     {
-        m_decoder.new_entry (((node&) hook).storage());
-        if (m_decoder.has_content())
-        {
-            m_decoder.decode_and_fwd_entry (m_out, get_tstamp());
-        }
+        m_decoder.import (m_out, ((node&) hook).storage());
     }
     //--------------------------------------------------------------------------
     void write_alloc_fault (uword count)
     {
-        m_decoder.fwd_alloc_fault_entry (m_out, get_tstamp(), count);
+        char str[96];
+        std::snprintf(
+                str,
+                sizeof str,
+                "[%020llu] [logger_err] %u alloc faults detected",
+                get_timestamp(),
+                count
+                );
+        str[sizeof str - 1] = 0;
+        m_out.raw_write (sev::error, str);
     }
     //--------------------------------------------------------------------------
     bool slices_files() const
@@ -467,21 +465,18 @@ private:
         thread_stopped,
     };
     //--------------------------------------------------------------------------
-    output                     m_out;
-    proto::decode_and_fwd      m_decoder;
-    backend_cfg                m_cfg;
-    log_files                  m_files;
-    th::thread                 m_log_thread;
-    at::atomic<uword>          m_status;
-    ufo_allocator              m_alloc;
-    mpsc_hybrid_wait           m_wait;
-    mpsc_i_fifo                m_log_queue;
-    atomic_uword               m_alloc_fault;
+    output            m_out;
+    ser::importer     m_decoder;
+    backend_cfg       m_cfg;
+    log_files         m_files;
+    th::thread        m_log_thread;
+    at::atomic<uword> m_status;
+    ufo_allocator     m_alloc;
+    mpsc_hybrid_wait  m_wait;
+    mpsc_i_fifo       m_log_queue;
+    atomic_uword      m_alloc_fault;
  };
 //------------------------------------------------------------------------------
-
-
-
 } //namespaces
 
 #endif /* UFO_LOG_BACKEND_DEF_HPP_ */

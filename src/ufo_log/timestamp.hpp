@@ -34,43 +34,23 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_HEADER_DATA_HPP_
-#define UFO_LOG_HEADER_DATA_HPP_
+#ifndef UFO_LOG_TIMESTAMP_HPP_
+#define UFO_LOG_TIMESTAMP_HPP_
 
-#include <ufo_log/util/system.hpp>
 #include <ufo_log/util/integer.hpp>
-#include <ufo_log/frontend_types.hpp>
+#include <ufo_log/util/chrono.hpp>
 
-namespace ufo { namespace ser {
-
-//------------------------------------------------------------------------------
-struct header_data
+namespace ufo {
+//--------------------------------------------------------------------------
+inline u64 get_timestamp()
 {
-    u64           tstamp;                                                       //timestamps could be disabled on request, I don't know if us resolution would suffice.
-    const char*   fmt;
-    bool          has_tstamp;
-    sev::severity severity;
-    uword         arity;
-};
-//------------------------------------------------------------------------------
-header_data make_header_data(
-                 sev::severity sev,
-                 const char*   fmt,
-                 uword         arity,
-                 bool          has_tstamp = false,
-                 u64           tstamp     = 0
-                )
-{
-    header_data h;
-    h.severity   = sev;
-    h.fmt        = fmt;
-    h.arity      = arity;
-    h.has_tstamp = has_tstamp;
-    h.tstamp     = tstamp;
-    return h;
+    using namespace UFO_CHRONO_NAMESPACE;
+    return duration_cast<microseconds>(
+            steady_clock::now().time_since_epoch()
+            ).count();
 }
 //------------------------------------------------------------------------------
 
-}} //namespaces
+} //namespaces
 
-#endif /* UFO_LOG_HEADER_DATA_HPP_ */
+#endif /* UFO_LOG_TIMESTAMP_HPP_ */

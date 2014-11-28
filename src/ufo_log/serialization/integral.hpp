@@ -43,12 +43,12 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/integer_bits.hpp>
 #include <ufo_log/util/integral_enable_if.hpp>
 #include <ufo_log/serialization/fields.hpp>
-#include <ufo_log/serialization/encoder_decoder_base.hpp>
+#include <ufo_log/serialization/basic_encoder_decoder.hpp>
 
 namespace ufo { namespace ser {
 
 //------------------------------------------------------------------------------
-class integral : public encoder_decoder_base
+class integral : public basic_encoder_decoder
 {
 public:
     //--------------------------------------------------------------------------
@@ -115,7 +115,7 @@ public:
     static typename enable_if_signed<T, const u8*>::type
     decode (T& val, field f, const u8* ptr, const u8* end)
     {
-        ptr = decode_unsigned (val, f, ptr, end);
+        ptr = decode_unsigned (val, ((uword) f.bytes) + 1, ptr, end);
         val = !f.is_negative ? val : reconstruct_negative (val);
         return ptr;
     }
@@ -138,7 +138,7 @@ public:
     static typename enable_if_unsigned<T, const u8*>::type
     raw_decode_unsigned (T& val, uword size, const u8* ptr, const u8* end)
     {
-        return decode_unsigned (ptr, end, size, val);
+        return decode_unsigned (val, size, ptr, end);
     }
     //--------------------------------------------------------------------------
 private:
@@ -196,6 +196,7 @@ private:
         assert (f.bytes == (bytes_required - 1 - sizeof f));
         f.original_type = ((sizeof val / 2) == 4) ? 3 : (sizeof val / 2);
         f.is_negative   = negative;
+        return f;
     }
     //--------------------------------------------------------------------------
     template <class T>
@@ -208,7 +209,7 @@ private:
     template <class T>
     static T reconstruct_negative (T val)
     {
-        static const T sign_mask = (1 << ((sizeof val * 8) - 1));
+        static const T sign_mask = 1 << ((sizeof val * 8) - 1);
         return (~val) | sign_mask;
     }
     //--------------------------------------------------------------------------

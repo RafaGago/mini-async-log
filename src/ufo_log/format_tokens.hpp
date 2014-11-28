@@ -43,11 +43,10 @@ namespace ufo { namespace fmt {
 
 static const char placeholder_open  = '{';
 static const char placeholder_close = '}';
-static const char full_width_zeroes = 'z';
-static const char full_width_spaces = 's';
+static const char full_width        = 'w';
+static const char full_width_spaces = 'W';
 static const char hex               = 'x';
-static const char exponential       = 'e';
-static const char pointer           = 'p';
+static const char scientific        = 's';
 
 //------------------------------------------------------------------------------
 }} //namespaces

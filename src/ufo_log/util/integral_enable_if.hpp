@@ -43,33 +43,30 @@ namespace ufo {
 
 //------------------------------------------------------------------------------
 template <class T, class ret>
-struct enable_if_signed
-{
-    typedef typename std::enable_if<
+struct enable_if_signed :
+        public std::enable_if<
             std::is_signed<T>::value && !std::is_floating_point<T>::value,
             ret
-            >::type type;
-};
+            >
+{};
 //------------------------------------------------------------------------------
 template <class T, class ret>
-struct enable_if_unsigned
-{
-    typedef typename std::enable_if<
-                std::is_unsigned<T>::value && !std::is_same<T, bool>::value,
-                uword
-                >::type type;
-};
+struct enable_if_unsigned :
+        public std::enable_if<
+            std::is_unsigned<T>::value && !std::is_same<T, bool>::value,
+            ret
+            >
+{};
 //------------------------------------------------------------------------------
 template <class T, class ret, bool exclude_bool = true>
-struct enable_if_integral                                                       //ad-hoc definition of integral, as bool belongs here too but I exclude it
-{
-    typedef typename std::enable_if<
-                std::is_integral<T>::value &&
-                   (!exclude_bool || (!std::is_same<T, bool>::value))
-                   ,
-                uword
-                >::type type;
-};
+struct enable_if_integral :                                                     //ad-hoc definition of integral, as bool belongs here too but I exclude it
+        public std::enable_if<
+            std::is_integral<T>::value &&
+            (!exclude_bool || (!std::is_same<T, bool>::value))
+            ,
+            ret
+            >
+{};
 //------------------------------------------------------------------------------
 
 } //namespaces

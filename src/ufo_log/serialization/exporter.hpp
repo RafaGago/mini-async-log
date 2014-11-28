@@ -34,142 +34,143 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_NON_NUMERIC_HPP_
-#define UFO_LOG_NON_NUMERIC_HPP_
+#ifndef UFO_LOG_EXPORTER_HPP_
+#define UFO_LOG_EXPORTER_HPP_
 
-#include <ufo_log/util/system.hpp>
-#include <ufo_log/util/integer.hpp>
-#include <ufo_log/frontend_types.hpp>
-#include <ufo_log/serialization/fields.hpp>
+#include <ufo_log/serialization/header.hpp>
 #include <ufo_log/serialization/integral.hpp>
-#include <cstring>
-#include <cassert>
+#include <ufo_log/serialization/non_integral.hpp>
+#include <ufo_log/serialization/non_numeric.hpp>
+#include <ufo_log/serialization/importer_exporter.hpp>
 
 namespace ufo { namespace ser {
 //------------------------------------------------------------------------------
-class non_numeric : public basic_encoder_decoder
+class exporter : public importer_exporter<u8>
 {
 public:
     //--------------------------------------------------------------------------
-    typedef non_numeric_field field;
+    struct null_type {};
     //--------------------------------------------------------------------------
-    static UFO_CONSTEXPR uword bytes_required (const char* str)
+    static uword bytes_required (null_type) { return 0; }
+    //--------------------------------------------------------------------------
+    static uword bytes_required (header_data v)
     {
-        return sizeof (field) + sizeof (str);
+        return header::bytes_required (v);
+    }
+    //--------------------------------------------------------------------------
+    template <class T>
+    static typename enable_if_integral<T, uword>::type
+    bytes_required (T val)
+    {
+        return integral::bytes_required (val);
+    }
+    //--------------------------------------------------------------------------
+    template <class T>
+    static typename enable_float_double_bool<T, uword>::type
+    bytes_required (T val)
+    {
+        return non_integral::bytes_required (val);
+    }
+    //--------------------------------------------------------------------------
+    static uword bytes_required (const char* str)
+    {
+        return non_numeric::bytes_required (str);
     }
     //--------------------------------------------------------------------------
     static uword bytes_required (deep_copy_bytes b)
     {
-        return bytes_required ((delimited_mem) b);
+        return non_numeric::bytes_required (b);
     }
     //--------------------------------------------------------------------------
     static uword bytes_required (deep_copy_string s)
     {
-        return bytes_required ((delimited_mem) s);
+        return non_numeric::bytes_required (s);
     }
     //--------------------------------------------------------------------------
-    static field get_field (deep_copy_bytes b, uword bytes_required)
+    static null_type get_field (null_type, uword)
     {
-        assert (bytes_required > sizeof (field) + b.size);
-        field f;
-        f.fclass                   = ufo_non_numeric;
-        f.nnclass                  = ufo_deep_copied_mem;
-        f.deep_copied_length_bytes = bytes_required - b.size - sizeof (f) - 1;
-        return f;
+        return null_type();
     }
     //--------------------------------------------------------------------------
-    static field get_field (deep_copy_string s, uword bytes_required)
+    static header::field get_field (header_data v, uword bytes_required)
     {
-        assert (bytes_required > sizeof (field) + s.size);
-        field f;
-        f.fclass                   = ufo_non_numeric;
-        f.nnclass                  = ufo_deep_copied_str;
-        f.deep_copied_length_bytes = bytes_required - s.size - sizeof (f) - 1;
-        return f;
+        return header::get_field (v, bytes_required);
     }
     //--------------------------------------------------------------------------
-    static field get_field (const char*, uword bytes_required)
+    template <class T>
+    static typename enable_if_integral<T, integral::field>::type
+    get_field (T val, uword bytes_required)
     {
-        field f;
-        f.fclass                    = ufo_non_numeric;
-        f.nnclass                   = ufo_c_str;
-        f.deep_copied_length_bytes  = 0;
-        return f;
+        return integral::get_field (val, bytes_required);
     }
     //--------------------------------------------------------------------------
-    static u8* encode (u8* ptr, u8* end, field f, const char* str)
+    template <class T>
+    static typename enable_float_double_bool<T, non_integral::field>::type
+    get_field (T val, uword bytes_required)
     {
-        ptr = encode_type (ptr, end, f);
-        ptr = encode_type (ptr, end, str);
-        return ptr;
+        return non_integral::get_field (val, bytes_required);
     }
     //--------------------------------------------------------------------------
-    static u8* encode (u8* ptr, u8* end, field f, deep_copy_bytes b)
+    static non_numeric::field get_field(
+            deep_copy_bytes b, uword bytes_required
+            )
     {
-        return encode (ptr, end, f, (delimited_mem) b);
+        return non_numeric::get_field (b, bytes_required);
     }
     //--------------------------------------------------------------------------
-    static u8* encode (u8* ptr, u8* end, field f, deep_copy_string s)
+    static non_numeric::field get_field(
+            deep_copy_string s, uword bytes_required
+            )
     {
-        return encode (ptr, end, f, (delimited_mem) s);
+        return non_numeric::get_field (s, bytes_required);
     }
     //--------------------------------------------------------------------------
-    static const u8* decode (const char*& str, field, const u8* ptr, const u8* end)
+    static non_numeric::field get_field (const char*, uword bytes_required)
     {
-        ptr = decode_type (str, ptr, end);
-        return ptr;
+        return non_numeric::get_field (nullptr, bytes_required);
     }
     //--------------------------------------------------------------------------
-    static const u8* decode(
-                deep_copy_bytes& b, field f, const u8* ptr, const u8* end
-                )
+    void do_export (null_type, null_type) {}
+    //--------------------------------------------------------------------------
+    void do_export (header::field f, header_data hd)
     {
-        return decode ((delimited_mem&) b, f, ptr, end);
+        assert (m_pos && m_beg && m_end);
+        m_pos = header::encode (m_pos, m_end, f, hd);
     }
     //--------------------------------------------------------------------------
-    static const u8* decode(
-                deep_copy_string& s, field f, const u8* ptr, const u8* end
-                )
+    template <class T>
+    typename enable_if_integral<T, void>::type
+    do_export (integral::field f, T val)
     {
-        return decode ((delimited_mem&) s, f, ptr, end);
-    }
+        m_pos = integral::encode (m_pos, m_end, f, val);
+    };
     //--------------------------------------------------------------------------
-private:
-    //--------------------------------------------------------------------------
-    static uword bytes_required (delimited_mem m)
+    template <class T>
+    typename enable_float_double_bool<T, void>::type
+    do_export (non_integral::field f, T val)
     {
-        return sizeof (field) +
-                integral::raw_bytes_required (m.size) +
-                m.size
-                ;
-    }
+        m_pos = non_integral::encode (m_pos, m_end, f, val);
+    };
     //--------------------------------------------------------------------------
-    static u8* encode (u8* ptr, u8* end, field f, delimited_mem m)
+    void do_export (non_numeric::field f, const char* str)
     {
-        ptr = encode_type (ptr, end, f);
-        ptr = integral::raw_encode_unsigned(
-                ptr, end, m.size, ((uword) f.deep_copied_length_bytes) + 1
-                );
-        assert (ptr + m.size <= end);
-        std::memcpy (ptr, m.mem, m.size);
-        return ptr + m.size;
+        m_pos = non_numeric::encode (m_pos, m_end, f, str);
     }
     //--------------------------------------------------------------------------
-    static const u8* decode(
-                        delimited_mem& m, field f, const u8* ptr, const u8* end
-                        )
+    void do_export (non_numeric::field f, deep_copy_bytes b)
     {
-        ptr   = integral::raw_decode_unsigned(
-                m.size, ((uword) f.deep_copied_length_bytes) + 1, ptr, end
-                );
-        m.mem = ptr;
-        assert (ptr + m.size <= end);
-        return ptr + m.size;
+        m_pos = non_numeric::encode (m_pos, m_end, f, b);
     }
     //--------------------------------------------------------------------------
-}; //class non_numeric
+    void do_export (non_numeric::field f, deep_copy_string s)
+    {
+        m_pos = non_numeric::encode (m_pos, m_end, f, s);
+    }
+    //--------------------------------------------------------------------------
+};
+//------------------------------------------------------------------------------
+}} //namespaces
 //------------------------------------------------------------------------------
 
-}} //namespaces
 
-#endif /* UFO_LOG_NON_NUMERIC_HPP_ */
+#endif /* UFO_LOG_EXPORTER_HPP_ */

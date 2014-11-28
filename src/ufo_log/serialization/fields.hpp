@@ -37,8 +37,8 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef UFO_LOG_FIELDS_HPP_
 #define UFO_LOG_FIELDS_HPP_
 
-#include <util/integer.hpp>
-#include <util/system.hpp>
+#include <ufo_log/util/integer.hpp>
+#include <ufo_log/util/system.hpp>
 
 namespace ufo { namespace ser {
 //------------------------------------------------------------------------------
@@ -59,9 +59,6 @@ struct header_field
     raw_type severity        : severity_bits;
     raw_type timestamp_bytes : numeric_bytes_bits;                              //1 to 8
     raw_type no_timestamp    : no_timestamp_bits;
-#ifndef UFO_COMPILE_TIME_FMT_CHECK
-    raw_type length_bytes    : numeric_bytes_bits;
-#endif
 };
 //------------------------------------------------------------------------------
 static_assert (sizeof (header_field) == sizeof (header_field::raw_type), "");
@@ -143,9 +140,10 @@ static_assert(
 struct non_numeric_field
 {
     typedef u8 raw_type;
+    static const uword nnclass_bits = 2;
 
     raw_type fclass                   : field_class_bits;
-    raw_type nnclass                  : numeric_class_bits;
+    raw_type nnclass                  : nnclass_bits;
     raw_type deep_copied_length_bytes : numeric_bytes_bits;
 };
 //------------------------------------------------------------------------------

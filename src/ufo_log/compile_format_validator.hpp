@@ -77,7 +77,7 @@ private:
     {
         return (f == fmt::hex)               ? true :
                (f == fmt::full_width_spaces) ? true :
-               (f == fmt::full_width_zeroes) ? true :
+               (f == fmt::full_width       ) ? true :
                                                false;
     }
     //--------------------------------------------------------------------------
@@ -88,9 +88,9 @@ private:
         >::type
     is_formatting_valid (char f, T*)
     {
-        return (f == fmt::full_width_spaces) ? true :
-               (f == fmt::full_width_zeroes) ? true :
-                                               false;
+        return (f == fmt::hex)        ? true :
+               (f == fmt::scientific) ? true :
+                                        false;
     }
     //--------------------------------------------------------------------------
     template <class T>

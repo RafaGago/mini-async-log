@@ -103,7 +103,8 @@ namespace ufo {
 
 
 #if defined (UFO_HAS_CONSTEXPR) && defined (UFO_HAS_VARIADIC_TEMPLATES)
-    #define UFO_COMPILE_TIME_FMT_CHECK
+    #warning "uncomment this"
+    //#define UFO_COMPILE_TIME_FMT_CHECK
 #endif
 
 #endif /* UFO_SYSTEM_HPP_ */
