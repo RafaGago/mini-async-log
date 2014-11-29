@@ -132,39 +132,39 @@ public:
     //--------------------------------------------------------------------------
     void do_export (null_type, null_type) {}
     //--------------------------------------------------------------------------
-    void do_export (header::field f, header_data hd)
+    void do_export (header_data hd, header::field f)
     {
         assert (m_pos && m_beg && m_end);
-        m_pos = header::encode (m_pos, m_end, f, hd);
+        m_pos = header::encode (m_pos, m_end, hd, f);
     }
     //--------------------------------------------------------------------------
     template <class T>
     typename enable_if_integral<T, void>::type
-    do_export (integral::field f, T val)
+    do_export (T val, integral::field f)
     {
-        m_pos = integral::encode (m_pos, m_end, f, val);
+        m_pos = integral::encode (m_pos, m_end, val, f);
     };
     //--------------------------------------------------------------------------
     template <class T>
     typename enable_float_double_bool<T, void>::type
-    do_export (non_integral::field f, T val)
+    do_export (T val, non_integral::field f)
     {
-        m_pos = non_integral::encode (m_pos, m_end, f, val);
+        m_pos = non_integral::encode (m_pos, m_end, val, f);
     };
     //--------------------------------------------------------------------------
-    void do_export (non_numeric::field f, const char* str)
+    void do_export (const char* str, non_numeric::field f)
     {
-        m_pos = non_numeric::encode (m_pos, m_end, f, str);
+        m_pos = non_numeric::encode (m_pos, m_end, str, f);
     }
     //--------------------------------------------------------------------------
-    void do_export (non_numeric::field f, deep_copy_bytes b)
+    void do_export (deep_copy_bytes b, non_numeric::field f)
     {
-        m_pos = non_numeric::encode (m_pos, m_end, f, b);
+        m_pos = non_numeric::encode (m_pos, m_end, b, f);
     }
     //--------------------------------------------------------------------------
-    void do_export (non_numeric::field f, deep_copy_string s)
+    void do_export (deep_copy_string s, non_numeric::field f)
     {
-        m_pos = non_numeric::encode (m_pos, m_end, f, s);
+        m_pos = non_numeric::encode (m_pos, m_end, s, f);
     }
     //--------------------------------------------------------------------------
 };

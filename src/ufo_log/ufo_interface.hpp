@@ -53,7 +53,7 @@ void log_error_call (const char* str)
 }
 //------------------------------------------------------------------------------
 template <class T, class field>
-inline bool prebuild_data (field& f, T& v,uword& total_length)
+inline bool prebuild_data (T& v, field& f, uword& total_length)
 {
     typedef ser::exporter exp;
     auto clength   = exp::bytes_required (v);
@@ -148,40 +148,40 @@ bool new_entry(                                                                 
     decltype (exp::get_field (n, 0))   n_field;
     decltype (exp::get_field (hdr, 0)) hdr_field;
 
-    if (!prebuild_data (a_field, a, length))     { return false; }
-    if (!prebuild_data (b_field, b, length))     { return false; }
-    if (!prebuild_data (c_field, c, length))     { return false; }
-    if (!prebuild_data (d_field, d, length))     { return false; }
-    if (!prebuild_data (e_field, e, length))     { return false; }
-    if (!prebuild_data (f_field, f, length))     { return false; }
-    if (!prebuild_data (g_field, g, length))     { return false; }
-    if (!prebuild_data (h_field, h, length))     { return false; }
-    if (!prebuild_data (i_field, i, length))     { return false; }
-    if (!prebuild_data (j_field, j, length))     { return false; }
-    if (!prebuild_data (k_field, k, length))     { return false; }
-    if (!prebuild_data (l_field, l, length))     { return false; }
-    if (!prebuild_data (m_field, m, length))     { return false; }
-    if (!prebuild_data (n_field, n, length))     { return false; }
-    if (!prebuild_data (hdr_field, hdr, length)) { return false; }
+    if (!prebuild_data (a, a_field, length))     { return false; }
+    if (!prebuild_data (b, b_field, length))     { return false; }
+    if (!prebuild_data (c, c_field, length))     { return false; }
+    if (!prebuild_data (d, d_field, length))     { return false; }
+    if (!prebuild_data (e, e_field, length))     { return false; }
+    if (!prebuild_data (f, f_field, length))     { return false; }
+    if (!prebuild_data (g, g_field, length))     { return false; }
+    if (!prebuild_data (h, h_field, length))     { return false; }
+    if (!prebuild_data (i, i_field, length))     { return false; }
+    if (!prebuild_data (j, j_field, length))     { return false; }
+    if (!prebuild_data (k, k_field, length))     { return false; }
+    if (!prebuild_data (l, l_field, length))     { return false; }
+    if (!prebuild_data (m, m_field, length))     { return false; }
+    if (!prebuild_data (n, n_field, length))     { return false; }
+    if (!prebuild_data (hdr, hdr_field, length)) { return false; }
 
     auto enc = fe.get_encoder (length);
     if (enc.has_memory())
     {
-        enc.do_export (hdr_field, hdr);
-        enc.do_export (a_field, a);
-        enc.do_export (b_field, b);
-        enc.do_export (c_field, c);
-        enc.do_export (d_field, d);
-        enc.do_export (e_field, e);
-        enc.do_export (f_field, f);
-        enc.do_export (g_field, g);
-        enc.do_export (h_field, h);
-        enc.do_export (i_field, i);
-        enc.do_export (j_field, j);
-        enc.do_export (k_field, k);
-        enc.do_export (l_field, l);
-        enc.do_export (m_field, m);
-        enc.do_export (n_field, n);
+        enc.do_export (hdr, hdr_field);
+        enc.do_export (a, a_field);
+        enc.do_export (b, b_field);
+        enc.do_export (c, c_field);
+        enc.do_export (d, d_field);
+        enc.do_export (e, e_field);
+        enc.do_export (f, f_field);
+        enc.do_export (g, g_field);
+        enc.do_export (h, h_field);
+        enc.do_export (i, i_field);
+        enc.do_export (j, j_field);
+        enc.do_export (k, k_field);
+        enc.do_export (l, l_field);
+        enc.do_export (m, m_field);
+        enc.do_export (n, n_field);
         fe.push_encoded (enc);
         return true;
     }

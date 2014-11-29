@@ -108,10 +108,28 @@ public:
         m_file_sev = sev;
     }
     //--------------------------------------------------------------------------
-    void set_next_writes_severity (sev::severity s)
+    sev::severity min_severity() const
+    {
+        sev::severity err, out, file;
+        err   = (sev::severity) m_stderr_sev;
+        out   = (sev::severity) m_stdout_sev;
+        file  = (sev::severity) m_file_sev;
+
+        auto min = (err <= out)  ? err : out;
+        min      = (min <= file) ? min : file;
+        return min;
+    }
+    //--------------------------------------------------------------------------
+    void entry_begin (sev::severity s)
     {
         assert (s < sev::invalid);
         m_sev_current = s;
+    }
+    //--------------------------------------------------------------------------
+    void entry_end()
+    {
+        char newline = '\n';
+        write (&newline, sizeof newline);
     }
     //--------------------------------------------------------------------------
     void write (const void* d, uword sz)

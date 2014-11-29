@@ -72,14 +72,14 @@ public:
         return f;
     }
     //--------------------------------------------------------------------------
-    static u8* encode (u8* ptr, u8* end, field f, header_data hd)
+    static u8* encode (u8* ptr, u8* end, header_data hd, field f)
     {
         ptr = encode_type (ptr, end, f);
         ptr = encode_type (ptr, end, hd.fmt);
         if (hd.has_tstamp)
         {
             ptr = integral::raw_encode_unsigned(
-                    ptr, end, ((uword) f.timestamp_bytes) + 1, hd.tstamp
+                    ptr, end, hd.tstamp, ((uword) f.timestamp_bytes) + 1
                     );
         }
         return ptr;

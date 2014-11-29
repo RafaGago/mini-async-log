@@ -97,24 +97,26 @@ public:
         return f;
     }
     //--------------------------------------------------------------------------
-    static u8* encode (u8* ptr, u8* end, field f, const char* str)
+    static u8* encode (u8* ptr, u8* end, const char* str, field f)
     {
         ptr = encode_type (ptr, end, f);
         ptr = encode_type (ptr, end, str);
         return ptr;
     }
     //--------------------------------------------------------------------------
-    static u8* encode (u8* ptr, u8* end, field f, deep_copy_bytes b)
+    static u8* encode (u8* ptr, u8* end, deep_copy_bytes b, field f)
     {
-        return encode (ptr, end, f, (delimited_mem) b);
+        return encode (ptr, end, (delimited_mem) b, f);
     }
     //--------------------------------------------------------------------------
-    static u8* encode (u8* ptr, u8* end, field f, deep_copy_string s)
+    static u8* encode (u8* ptr, u8* end, deep_copy_string s, field f)
     {
-        return encode (ptr, end, f, (delimited_mem) s);
+        return encode (ptr, end, (delimited_mem) s, f);
     }
     //--------------------------------------------------------------------------
-    static const u8* decode (const char*& str, field, const u8* ptr, const u8* end)
+    static const u8* decode(
+            const char*& str, field, const u8* ptr, const u8* end
+            )
     {
         ptr = decode_type (str, ptr, end);
         return ptr;
@@ -144,7 +146,7 @@ private:
                 ;
     }
     //--------------------------------------------------------------------------
-    static u8* encode (u8* ptr, u8* end, field f, delimited_mem m)
+    static u8* encode (u8* ptr, u8* end, delimited_mem m, field f)
     {
         ptr = encode_type (ptr, end, f);
         ptr = integral::raw_encode_unsigned(

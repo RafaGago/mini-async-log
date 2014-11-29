@@ -37,6 +37,7 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef UFO_LOG_LOG_INCLUDE_HPP_
 #define UFO_LOG_LOG_INCLUDE_HPP_
 
+#include <ufo_log/frontend_types.hpp>
 #include <ufo_log/ufo_private.hpp>
 #include <ufo_log/ufo_interface.hpp>
 

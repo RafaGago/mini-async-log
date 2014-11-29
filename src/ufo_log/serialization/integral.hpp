@@ -56,18 +56,18 @@ public:
     //--------------------------------------------------------------------------
     template <class T>
     static typename enable_if_unsigned<T, uword>::type
-    bytes_required (T val)                                               //todo: make constextr...
+    bytes_required (T val)                                                      //todo: make constextr...
     {
         return raw_bytes_required (val) + sizeof (field);
     }
     //--------------------------------------------------------------------------
     template <class T>
     static typename enable_if_signed<T, uword>::type
-    bytes_required (T val)                                               //todo make constexpr
+    bytes_required (T val)                                                      //todo make constexpr
     {
-        val    = (val >= 0) ? val : prepare_negative (val);
-        typename std::make_unsigned<T>::type v = val;
-        return raw_bytes_required (v) + sizeof (field);
+        typedef typename std::make_unsigned<T>::type U;
+        val = (val >= 0) ? val : prepare_negative (val);
+        return raw_bytes_required ((U) val) + sizeof (field);
     }
     //--------------------------------------------------------------------------
     static uword bytes_required (i8 val)
@@ -91,17 +91,17 @@ public:
     //--------------------------------------------------------------------------
     template <class T>
     static typename enable_if_unsigned<T, u8*>::type
-    encode (u8* ptr, u8* end, field f, T val)
+    encode (u8* ptr, u8* end, T val, field f)
     {
-        return encode_impl (ptr, end, f, val);
+        return encode_impl (ptr, end, val, f);
     }
     //--------------------------------------------------------------------------
     template <class T>
     static typename enable_if_signed<T, u8*>::type
-    encode (u8* ptr, u8* end, field f, T val)
+    encode (u8* ptr, u8* end, T val, field f)
     {
         return encode_impl(
-                ptr, end, f, (f.is_negative) ? val : prepare_negative (val)
+                ptr, end, (f.is_negative == 0) ? val : prepare_negative (val), f
                 );
     }
     //--------------------------------------------------------------------------
@@ -117,7 +117,7 @@ public:
     decode (T& val, field f, const u8* ptr, const u8* end)
     {
         ptr = decode_unsigned (val, ((uword) f.bytes) + 1, ptr, end);
-        val = !f.is_negative ? val : reconstruct_negative (val);
+        val = (f.is_negative == 0) ? val : reconstruct_negative (val);
         return ptr;
     }
     //--------------------------------------------------------------------------
@@ -134,9 +134,9 @@ public:
     //--------------------------------------------------------------------------
     template <class T>
     static typename enable_if_unsigned<T, u8*>::type
-    raw_encode_unsigned (u8* ptr, u8* end, uword size, T val)
+    raw_encode_unsigned (u8* ptr, u8* end, T val, uword size)
     {
-        return encode_unsigned (ptr, end, size, val);
+        return encode_unsigned (ptr, end, val, size);
     }
     //--------------------------------------------------------------------------
     template <class T>
@@ -164,7 +164,7 @@ private:
     //--------------------------------------------------------------------------
     template <class T>
     static u8* encode_unsigned(
-            u8* ptr, u8* end, uword size, T val
+            u8* ptr, u8* end, T val, uword size
             )
     {
         assert (ptr && end);
@@ -179,10 +179,11 @@ private:
     }
     //--------------------------------------------------------------------------
     template <class T>
-    static u8* encode_impl (u8* ptr, u8* end, field f, T val)
+    static u8* encode_impl (u8* ptr, u8* end, T val, field f)
     {
+        typedef typename std::make_unsigned<T>::type U;
         ptr = encode_type (ptr, end, f);
-        ptr = encode_unsigned (ptr, end, ((uword) f.bytes) + 1, val);
+        ptr = encode_unsigned (ptr, end, (U) val, ((uword) f.bytes) + 1);
         return ptr;
     }
     //--------------------------------------------------------------------------
@@ -200,15 +201,17 @@ private:
         f.bytes         = (bytes_required - 1 - sizeof f);
         assert (f.bytes == (bytes_required - 1 - sizeof f));
         f.original_type = ((sizeof val / 2) == 4) ? 3 : (sizeof val / 2);
-        f.is_negative   = negative;
+        f.is_negative   = negative ? 1 : 0;
         return f;
     }
     //--------------------------------------------------------------------------
     template <class T>
-    static T prepare_negative (T val)
+    static typename enable_if_signed<T, T>::type
+    prepare_negative (T val)
     {
-        static const T sign_mask = ~(((T) 1) << ((sizeof val * 8) - 1));
-        return ~(val & sign_mask);
+        typedef typename std::make_unsigned<T>::type U;
+        static const U sign_mask = (U) ~(((U) 1) << ((sizeof val * 8) - 1));
+        return (T) ~(((U) val) & sign_mask);
     }
     //--------------------------------------------------------------------------
     template <class T>

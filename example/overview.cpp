@@ -25,7 +25,7 @@ void general_features()
 
     if (fe.init_backend (be_cfg) != frontend::init_ok) { return; }
 
-    fe.set_severity (sev::notice);
+    fe.set_file_severity (sev::notice);
     fe.set_console_severity (sev::notice);
     int i = 0;
 
@@ -39,23 +39,25 @@ void general_features()
     log_error ("message {}, i16 = {}", ++i, (i16) -16);
     log_error ("message {}, i32 = {}", ++i, (i32) -32);
     log_error ("message {}, i64 = {}", ++i, (i64) -64);
-    log_error ("message {}, hex u8  = {}", ++i, hex ((u8) 8));
-    log_error ("message {}, hex u16 = {}", ++i, hex ((u16) 16));
-    log_error ("message {}, hex u32 = {}", ++i, hex ((u32) 32));
-    log_error ("message {}, hex u64 = {}", ++i, hex ((u64) 64));
-    log_error ("message {}, hex i8  = {}", ++i, hex ((i8) -8));
-    log_error ("message {}, hex i16 = {}", ++i, hex ((i16) -16));
-    log_error ("message {}, hex i32 = {}", ++i, hex ((i32) -32));
-    log_error ("message {}, hex i64 = {}", ++i, hex ((i64) -64));
     log_error ("message {}, double = {}", ++i, 12.1234567890123456789);
     log_error ("message {}, float = {}", ++i, 12.1234567890123456789f);
     log_error ("message {}, bool = {}", ++i, true);
-    log_error ("message {}, ptr = {}", ++i, ptr (&fe));
-    log_error ("message {}, l = {}", ++i, lit ("this is a literal"));
+
+    log_error ("message {}, hex u8  = {x}", ++i, (u8) 8);
+    log_error ("message {}, hex u16 = {x}", ++i, (u16) 16);
+    log_error ("message {}, hex u32 = {x}", ++i, (u32) 32);
+    log_error ("message {}, hex u64 = {x}", ++i, (u64) 64);
+    log_error ("message {}, hex i8  = {x}", ++i, (i8) -8);
+    log_error ("message {}, hex i16 = {x}", ++i, (i16) -16);
+    log_error ("message {}, hex i32 = {x}", ++i, (i32) -32);
+    log_error ("message {}, hex i64 = {x}", ++i, (i64) -64);
+
+#warning "todo"
+//    log_error ("message {}, ptr = {}", ++i, ptr (&fe));
     log_error(
         "message {}, c_str = {}",
         ++i,
-        "this is a c_str and has more overhead"
+        "a literal decayed to const char* that has whole-program lifetime"
         );
 
     u8 deep_copied_bytes[] =
@@ -70,19 +72,20 @@ void general_features()
         bytes (deep_copied_bytes, sizeof deep_copied_bytes)
         );
     log_error(
-        "message {}, 1={}, 2={}, 3={}, 4={}, 5={}",
+        "message {}, 1={}, 2={}, 3={}, 4={}, 5={x}",
         ++i,
         true,
         -1231,
         432.12f,
-        lit ("param4"),
-        hex ((u64) -1)
+        "param4",
+        (u64) -1
         );
-#ifndef UFO_HAS_CONSTEXPR
+#ifndef UFO_COMPILE_TIME_FMT_CHECK
     log_error(
         "message {}, this could be corrected at compile time if all "
         "targeted compilers supported constexpr, now a runtime error "
-        "here is the best I can do {}",
+        "here is the best I can do. An error will appear here {} and"
+         " here too {}",
         ++i
         );
     log_error(
@@ -92,7 +95,15 @@ void general_features()
         ++i,
         false
         );
-#endif //UFO_HAS_CONSTEXPR
+    log_error(
+        "message {}, this could be corrected at compile time if all "
+        "targeted compilers supported constexpr, this placeholder has"
+        " an invalid modifier that will be ignored {J}",
+        ++i,
+        32
+        );
+#endif //UFO_COMPILE_TIME_FMT_CHECK
+    log_error ("message {}, this isn't interpreted as a placeholder {ww}", ++i);
     log_if (true, log_notice ("you should see this conditional entry..."));
     log_if (false, log_notice ("...but not this one"));
 
@@ -105,7 +116,7 @@ void general_features()
         "you shouldn't see this, this entry is below logged severity"
         );
 
-    fe.set_severity (sev::debug);
+    fe.set_file_severity (sev::debug);
     fe.set_console_severity (sev::debug);
 
     log_trace(

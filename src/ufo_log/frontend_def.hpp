@@ -54,8 +54,8 @@ public:
     //--------------------------------------------------------------------------
     frontend_impl()
     {
-        m_state    = no_init;
-        m_severity = sev::notice;
+        m_state       = no_init;
+        m_min_severity = sev::notice;
     }
     //--------------------------------------------------------------------------
     ~frontend_impl() {}
@@ -145,19 +145,20 @@ public:
             return false;
         }
         m_back.set_console_severity (stderr, stdout);
+        m_min_severity = m_back.min_severity();
         return true;
     }
     //--------------------------------------------------------------------------
     void set_file_severity (sev::severity s)
     {
         assert (s < sev::invalid);
-#warning "todo, remove severity";
+        m_back.set_file_severity (s);
+        m_min_severity = m_back.min_severity();
     }
     //--------------------------------------------------------------------------
     sev::severity min_severity()
     {
-#warning "todo"
-        return (sev::severity) m_severity.load (mo_relaxed);
+        return (sev::severity) m_min_severity.val();
     }
     //--------------------------------------------------------------------------
 private:
@@ -170,9 +171,9 @@ private:
         terminated
     };
 
-    backend_impl      m_back;
-    at::atomic<uword> m_severity;
-    at::atomic<uword> m_state;
+    backend_impl             m_back;
+    mo_relaxed_atomic<uword> m_min_severity;
+    mo_relaxed_atomic<uword> m_state;
 };
 //------------------------------------------------------------------------------
 frontend::frontend() : m (new frontend::frontend_impl())

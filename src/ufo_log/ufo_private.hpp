@@ -40,6 +40,10 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/system.hpp>
 #include <ufo_log/decltype_wrap.hpp>
 
+#if defined (UFO_HAS_CONSTEXPR) && defined (UFO_HAS_VARIADIC_TEMPLATES)
+    #define UFO_COMPILE_TIME_FMT_CHECK
+#endif
+
 #define UFO_GET_ARG1_PRIVATE(arg, ...) arg
 #define UFO_GET_FMT_STR_PRIVATE(...) UFO_GET_ARG1_PRIVATE(__VA_ARGS__, dummy)
 

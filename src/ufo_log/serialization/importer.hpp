@@ -71,7 +71,7 @@ public:
         header_data h;
         do_import (h);
         set_next_msg_fmt_string (h.fmt);
-        o.set_next_writes_severity (h.severity);
+        o.entry_begin (h.severity);
 
         if (h.has_tstamp && prints_timestamp)
         {
@@ -81,30 +81,48 @@ public:
         {
             write_severity (o, h.severity);
         }
-        uword params = h.arity;
-        while (params && find_param_in_fmt_str (o, true))
+        uword params   = h.arity;
+        bool fmt_param = find_param_in_fmt_str (o, params > 0);
+        while (params && fmt_param)
         {
             consume_next (o, true);
             --params;
+            fmt_param = find_param_in_fmt_str (o, params > 0);
         }
-
-        while (find_param_in_fmt_str (o, false));
 
         if (params)
         {
-            static const char arity_mismatch_str[] =
-                "[[logger err]->lack of placeholders / excess of parameters";
-            o.write (arity_mismatch_str, sizeof arity_mismatch_str - 1);
             do
             {
                 consume_next (o, false);
                 --params;
             }
             while (params);
-
+            static const char excess_params[] =
+                "\n[logger err]->too many parameters in previous log entry. "
+                 "fmt string was: ";
+            o.write (excess_params, sizeof excess_params - 1);
+            o.write (h.fmt);
+            assert (false && "too many parameters, see log output for details");
         }
-        char newline = '\n';
-        o.write (&newline, sizeof newline);
+        if (fmt_param)
+        {
+            do
+            {
+                fmt_param = find_param_in_fmt_str (o, params > 0);
+            }
+            while (fmt_param);
+            static const char excess_placeholders[] =
+                "\n[logger err]->too many placeholders in previous log entry. "
+                  "fmt string was: ";
+            o.write (excess_placeholders, sizeof excess_placeholders - 1);
+            o.write (h.fmt);
+            assert(
+                false && "too many placeholders, see log output for details"
+                );
+        }
+
+        o.entry_end();
         return true;
     }
     //--------------------------------------------------------------------------
@@ -126,7 +144,7 @@ private:
             }
             else
             {
-                assert (d.gen.fclass == ufo_non_integral);
+                assert (d.gen.nclass == ufo_non_integral);
                 output_non_integral (o, d.nom_no_int, has_placeholder);
             }
         }
@@ -215,8 +233,7 @@ private:
         case ufo_deep_copied_mem  :
         {
             deep_copy_bytes bytes;
-            const char* str;
-            do_import (str, f);
+            do_import (bytes, f);
             if (has_placeholder)
             {
                 byte_stream_convert::execute(
@@ -305,8 +322,7 @@ private:
     bool find_param_in_fmt_str (output& o, bool remaining_parameters = true)
     {
         assert (m_fmt);
-        static const char param_error[] =
-                "[[logger err]->a parameter was expected here]";
+        static const char param_error[] = "{a parameter was expected here}";
 
         auto fmt_prev = m_fmt;
         while (m_fmt != nullptr)
@@ -324,48 +340,24 @@ private:
                 return false;
             }
 
-            switch (m_fmt_modif)
+            if (*m_fmt == fmt::placeholder_close)
             {
-                case fmt::placeholder_close:
-                {
-                    m_fmt_modif = 0;
-                    ++m_fmt;
-                    o.write (fmt_prev, found - fmt_prev);
-                    if (remaining_parameters) { return true;  }
-                    else                      { goto expected_params_err; }
-                }
-                case fmt::full_width       :
-                case fmt::full_width_spaces:
-                case fmt::hex              :
-                case fmt::scientific       :
-                {
-                    if (*(m_fmt + 1) == fmt::placeholder_close)
-                    {
-                        m_fmt += 2;
-                        o.write (fmt_prev, found - fmt_prev);
-                        if (remaining_parameters) { return true;  }
-                        else                      { goto expected_params_err; }
-                    }
-                    m_fmt_modif = 0;
-                    break;
-                }
-                default                    :
-                    if (*(m_fmt + 1) == fmt::placeholder_close)
-                    {
-                        m_fmt += 2;
-                        o.write (fmt_prev, found - fmt_prev);
-                        write_invalid_modifier (o);
-                        if (remaining_parameters) { return true;  }
-                        else                      { goto expected_params_err; }
-                    }
-                    m_fmt_modif = 0;
-                    m_fmt_modif = 0;
-                    break;
+                m_fmt_modif = 0;
+                ++m_fmt;
+                o.write (fmt_prev, found - fmt_prev);
             }
-        expected_params_err:
-            o.write (param_error, sizeof param_error - 1);
-            fmt_prev = m_fmt;
-            assert (false && "unexpected parameter");
+            else if (*(m_fmt + 1) == fmt::placeholder_close)
+            {
+                m_fmt += 2;
+                o.write (fmt_prev, found - fmt_prev);
+            }
+            else { continue; }
+
+            if (!remaining_parameters)
+            {
+                o.write (param_error, sizeof param_error - 1);
+            }
+            return true;
         }
         m_fmt_modif = 0;
         return false;
@@ -434,7 +426,7 @@ private:
     static void write_invalid_modifier (output& o)
     {
         static const char invalid_modif_str[] =
-                "[[logger err]->invalid modifier for parameter, ignored] ";
+                "([logger err]->invalid modifier for next parameter, ignored) ";
         o.write (invalid_modif_str, sizeof invalid_modif_str - 1);
         assert (false && "invalid modifier");
     }

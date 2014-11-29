@@ -105,20 +105,20 @@ public:
         return f;
     }
     //--------------------------------------------------------------------------
-    static u8* encode (u8* ptr, u8* end, field f, bool)
+    static u8* encode (u8* ptr, u8* end, bool, field f)
     {
         ptr = encode_type (ptr, end, f);
         return ptr;
     }
     //--------------------------------------------------------------------------
-    static u8* encode (u8* ptr, u8* end, field f, float v)
+    static u8* encode (u8* ptr, u8* end, float v, field f)
     {
         ptr = encode_type (ptr, end, f);
         ptr = encode_type (ptr, end, v);
         return ptr;
     }
     //--------------------------------------------------------------------------
-    static u8* encode (u8* ptr, u8* end, field f, double v)
+    static u8* encode (u8* ptr, u8* end, double v, field f)
     {
         ptr = encode_type (ptr, end, f);
         ptr = encode_type (ptr, end, v);

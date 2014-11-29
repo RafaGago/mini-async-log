@@ -45,6 +45,34 @@ either expressed or implied, of Rafael Gago Castano.
 
 namespace ufo {
 
+namespace fmt_error {
+//------------------------------------------------------------------------------
+static const uword pars        = 1 << ((sizeof (uword) * 8) - 1);
+static const uword pchs        = 1 << ((sizeof (uword) * 8) - 2);
+static const uword modif       = 1 << ((sizeof (uword) * 8) - 3);
+static const uword error_mask  = modif - 1;
+//------------------------------------------------------------------------------
+constexpr bool is_arity (uword arity, uword val)
+{
+    return (val & error_mask) == arity;
+}
+//------------------------------------------------------------------------------
+constexpr bool parameter (uword arity, uword val)
+{
+    return !(((val & pars) == pars) && (is_arity (arity, val) || arity == 0));
+}
+//------------------------------------------------------------------------------
+constexpr bool placeholder (uword arity, uword val)
+{
+    return !(((val & pchs) == pchs) && (is_arity (arity, val) || arity == 0));
+}
+//------------------------------------------------------------------------------
+constexpr bool modifier (uword arity, uword val)
+{
+    return !(((val & modif) == modif) && (is_arity (arity, val) || arity == 0));
+}
+//------------------------------------------------------------------------------
+} //namespace fmt_error
 //------------------------------------------------------------------------------
 struct fmt_validator
 {
@@ -99,21 +127,12 @@ private:
         return false;
     }
     //--------------------------------------------------------------------------
-#if NEW_FORMATS_UNDER_DEVELOPMENT
-    //--------------------------------------------------------------------------
     static constexpr bool token_with_fmt (literal l, uword i)
     {
         return (i <= (l.size() - 3)) &&
                (l[i]     == fmt::placeholder_open) &&
-               (l[i + 1] == fmt::placeholder_close);
+               (l[i + 2] == fmt::placeholder_close);
     }
-#else
-    //--------------------------------------------------------------------------
-    static constexpr bool token_with_fmt (literal l, uword i)
-    {
-        return false;
-    }
-#endif
     //--------------------------------------------------------------------------
     static constexpr bool token (literal l, uword i)
     {
@@ -129,45 +148,45 @@ private:
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
     template <class dummy, class T, class... args>
-    static constexpr word consume_param_impl (literal l, uword i, word arity)
+    static constexpr word consume_param_impl (literal l, uword i, uword arity)
     {
         return scan<args...> (l, i + 2, arity + 1);
     }
     //--------------------------------------------------------------------------
     template <class dummy>
-    static constexpr word consume_param_impl (literal l, uword i, word arity)
+    static constexpr word consume_param_impl (literal l, uword i, uword arity)
     {
-        return -(arity + 1);
+        return (arity + 1) | fmt_error::pchs;
     }
     //--------------------------------------------------------------------------
     template <class... args>
-    static constexpr word consume_param (literal l, uword i, word arity)
+    static constexpr word consume_param (literal l, uword i, uword arity)
     {
         return consume_param_impl<at_least_one<>, args...> (l, i, arity);
     }
     //--------------------------------------------------------------------------
     template <class dummy, class T, class... args>
     static constexpr word consume_param_with_fmt_impl(
-                            literal l, uword i, word arity
+                            literal l, uword i, uword arity
                             )
     {
         typedef typename fmt_check_adapt<T>::type type;
         return is_formatting_valid<type> (l[i + 1], (type*) nullptr) ?
                 scan<args...> (l, i + 3, arity + 1) :
-                -(arity + 1);
+                (arity + 1) | fmt_error::modif;
     }
     //--------------------------------------------------------------------------
     template <class dummy>
     static constexpr word consume_param_with_fmt_impl(
-                            literal l, uword i, word arity
+                            literal l, uword i, uword arity
                             )
     {
-        return -(arity + 1);
+        return (arity + 1) | fmt_error::pchs;
     }
     //--------------------------------------------------------------------------
     template <class... args>
     static constexpr word consume_param_with_fmt(
-                            literal l, uword i, word arity
+                            literal l, uword i, uword arity
                             )
     {
         return consume_param_with_fmt_impl<
@@ -176,13 +195,13 @@ private:
     }
     //--------------------------------------------------------------------------
     template <class... args>
-    static constexpr word check_arity_match (word arity)
+    static constexpr word check_arity_match (uword arity)
     {
-        return (sizeof... (args) == 0) ? arity : -(arity + 1);
+        return (sizeof... (args) == 0) ? arity : (arity + 1) | fmt_error::pars;
     }
     //--------------------------------------------------------------------------
     template <class... args>
-    static constexpr word scan (literal l, uword i, word arity)
+    static constexpr word scan (literal l, uword i, uword arity)
     {
         return (finished (l, i))       ?
                     check_arity_match<args...> (arity)           :
@@ -195,53 +214,119 @@ private:
     //--------------------------------------------------------------------------
 }; //validator
 //------------------------------------------------------------------------------
+#define UFO_PARAMERR_LIT "too many parameters for format string"
+#define UFO_PCHERR_LIT   "too many placeholders in format string"
+#define UFO_MODIFERR_LIT "invalid modifier in format string parameter"
+//------------------------------------------------------------------------------
 template <word result>
 constexpr bool trigger_format_error()
 {
-#define error_literal "invalid format string or arity mismatch"
-#define error_literal_ext error_literal " in parameter "
+    static_assert (fmt_error::parameter (1,  result), UFO_PARAMERR_LIT ": 1");
+    static_assert (fmt_error::parameter (2,  result), UFO_PARAMERR_LIT ": 2");
+    static_assert (fmt_error::parameter (3,  result), UFO_PARAMERR_LIT ": 3");
+    static_assert (fmt_error::parameter (4,  result), UFO_PARAMERR_LIT ": 4");
+    static_assert (fmt_error::parameter (5,  result), UFO_PARAMERR_LIT ": 5");
+    static_assert (fmt_error::parameter (6,  result), UFO_PARAMERR_LIT ": 6");
+    static_assert (fmt_error::parameter (7,  result), UFO_PARAMERR_LIT ": 7");
+    static_assert (fmt_error::parameter (8,  result), UFO_PARAMERR_LIT ": 8");
+    static_assert (fmt_error::parameter (9,  result), UFO_PARAMERR_LIT ": 9");
+    static_assert (fmt_error::parameter (10, result), UFO_PARAMERR_LIT ": 10");
+    static_assert (fmt_error::parameter (11, result), UFO_PARAMERR_LIT ": 11");
+    static_assert (fmt_error::parameter (12, result), UFO_PARAMERR_LIT ": 12");
+    static_assert (fmt_error::parameter (13, result), UFO_PARAMERR_LIT ": 13");
+    static_assert (fmt_error::parameter (14, result), UFO_PARAMERR_LIT ": 14");
+    static_assert (fmt_error::parameter (15, result), UFO_PARAMERR_LIT ": 15");
+    static_assert (fmt_error::parameter (16, result), UFO_PARAMERR_LIT ": 16");
+    static_assert (fmt_error::parameter (17, result), UFO_PARAMERR_LIT ": 17");
+    static_assert (fmt_error::parameter (18, result), UFO_PARAMERR_LIT ": 18");
+    static_assert (fmt_error::parameter (19, result), UFO_PARAMERR_LIT ": 19");
+    static_assert (fmt_error::parameter (20, result), UFO_PARAMERR_LIT ": 20");
+    static_assert (fmt_error::parameter (21, result), UFO_PARAMERR_LIT ": 21");
+    static_assert (fmt_error::parameter (22, result), UFO_PARAMERR_LIT ": 22");
+    static_assert (fmt_error::parameter (23, result), UFO_PARAMERR_LIT ": 23");
+    static_assert (fmt_error::parameter (24, result), UFO_PARAMERR_LIT ": 24");
+    static_assert (fmt_error::parameter (25, result), UFO_PARAMERR_LIT ": 25");
+    static_assert (fmt_error::parameter (26, result), UFO_PARAMERR_LIT ": 26");
+    static_assert (fmt_error::parameter (27, result), UFO_PARAMERR_LIT ": 27");
+    static_assert (fmt_error::parameter (28, result), UFO_PARAMERR_LIT ": 28");
+    static_assert (fmt_error::parameter (29, result), UFO_PARAMERR_LIT ": 29");
+    static_assert (fmt_error::parameter (30, result), UFO_PARAMERR_LIT ": 30");
+    static_assert (fmt_error::parameter (31, result), UFO_PARAMERR_LIT ": 31");
+    static_assert (fmt_error::parameter (32, result), UFO_PARAMERR_LIT ": 32");
 
-    static_assert (result != -1,  error_literal_ext "1");
-    static_assert (result != -2,  error_literal_ext "2");
-    static_assert (result != -3,  error_literal_ext "3");
-    static_assert (result != -4,  error_literal_ext "4");
-    static_assert (result != -5,  error_literal_ext "5");
-    static_assert (result != -6,  error_literal_ext "6");
-    static_assert (result != -7,  error_literal_ext "7");
-    static_assert (result != -8,  error_literal_ext "8");
-    static_assert (result != -9,  error_literal_ext "9");
-    static_assert (result != -10, error_literal_ext "10");
-    static_assert (result != -11, error_literal_ext "11");
-    static_assert (result != -12, error_literal_ext "12");
-    static_assert (result != -13, error_literal_ext "13");
-    static_assert (result != -14, error_literal_ext "14");
-    static_assert (result != -15, error_literal_ext "15");
-    static_assert (result != -16, error_literal_ext "16");
-    static_assert (result != -17, error_literal_ext "17");
-    static_assert (result != -18, error_literal_ext "18");
-    static_assert (result != -19, error_literal_ext "19");
-    static_assert (result != -20, error_literal_ext "20");
-    static_assert (result != -21, error_literal_ext "21");
-    static_assert (result != -22, error_literal_ext "22");
-    static_assert (result != -23, error_literal_ext "23");
-    static_assert (result != -24, error_literal_ext "24");
-    static_assert (result != -25, error_literal_ext "25");
-    static_assert (result != -26, error_literal_ext "26");
-    static_assert (result != -27, error_literal_ext "27");
-    static_assert (result != -28, error_literal_ext "28");
-    static_assert (result != -29, error_literal_ext "29");
-    static_assert (result != -30, error_literal_ext "30");
-    static_assert (result != -31, error_literal_ext "31");
-    static_assert (result != -32, error_literal_ext "32");
-    static_assert (result >= -32, error_literal);
+    static_assert (fmt_error::placeholder (1,  result), UFO_PCHERR_LIT ": 1");
+    static_assert (fmt_error::placeholder (2,  result), UFO_PCHERR_LIT ": 2");
+    static_assert (fmt_error::placeholder (3,  result), UFO_PCHERR_LIT ": 3");
+    static_assert (fmt_error::placeholder (4,  result), UFO_PCHERR_LIT ": 4");
+    static_assert (fmt_error::placeholder (5,  result), UFO_PCHERR_LIT ": 5");
+    static_assert (fmt_error::placeholder (6,  result), UFO_PCHERR_LIT ": 6");
+    static_assert (fmt_error::placeholder (7,  result), UFO_PCHERR_LIT ": 7");
+    static_assert (fmt_error::placeholder (8,  result), UFO_PCHERR_LIT ": 8");
+    static_assert (fmt_error::placeholder (9,  result), UFO_PCHERR_LIT ": 9");
+    static_assert (fmt_error::placeholder (10, result), UFO_PCHERR_LIT ": 10");
+    static_assert (fmt_error::placeholder (11, result), UFO_PCHERR_LIT ": 11");
+    static_assert (fmt_error::placeholder (12, result), UFO_PCHERR_LIT ": 12");
+    static_assert (fmt_error::placeholder (13, result), UFO_PCHERR_LIT ": 13");
+    static_assert (fmt_error::placeholder (14, result), UFO_PCHERR_LIT ": 14");
+    static_assert (fmt_error::placeholder (15, result), UFO_PCHERR_LIT ": 15");
+    static_assert (fmt_error::placeholder (16, result), UFO_PCHERR_LIT ": 16");
+    static_assert (fmt_error::placeholder (17, result), UFO_PCHERR_LIT ": 17");
+    static_assert (fmt_error::placeholder (18, result), UFO_PCHERR_LIT ": 18");
+    static_assert (fmt_error::placeholder (19, result), UFO_PCHERR_LIT ": 19");
+    static_assert (fmt_error::placeholder (20, result), UFO_PCHERR_LIT ": 20");
+    static_assert (fmt_error::placeholder (21, result), UFO_PCHERR_LIT ": 21");
+    static_assert (fmt_error::placeholder (22, result), UFO_PCHERR_LIT ": 22");
+    static_assert (fmt_error::placeholder (23, result), UFO_PCHERR_LIT ": 23");
+    static_assert (fmt_error::placeholder (24, result), UFO_PCHERR_LIT ": 24");
+    static_assert (fmt_error::placeholder (25, result), UFO_PCHERR_LIT ": 25");
+    static_assert (fmt_error::placeholder (26, result), UFO_PCHERR_LIT ": 26");
+    static_assert (fmt_error::placeholder (27, result), UFO_PCHERR_LIT ": 27");
+    static_assert (fmt_error::placeholder (28, result), UFO_PCHERR_LIT ": 28");
+    static_assert (fmt_error::placeholder (29, result), UFO_PCHERR_LIT ": 29");
+    static_assert (fmt_error::placeholder (30, result), UFO_PCHERR_LIT ": 30");
+    static_assert (fmt_error::placeholder (31, result), UFO_PCHERR_LIT ": 31");
+    static_assert (fmt_error::placeholder (32, result), UFO_PCHERR_LIT ": 32");
+
+    static_assert (fmt_error::modifier (1,  result), UFO_MODIFERR_LIT " 1");
+    static_assert (fmt_error::modifier (2,  result), UFO_MODIFERR_LIT " 2");
+    static_assert (fmt_error::modifier (3,  result), UFO_MODIFERR_LIT " 3");
+    static_assert (fmt_error::modifier (4,  result), UFO_MODIFERR_LIT " 4");
+    static_assert (fmt_error::modifier (5,  result), UFO_MODIFERR_LIT " 5");
+    static_assert (fmt_error::modifier (6,  result), UFO_MODIFERR_LIT " 6");
+    static_assert (fmt_error::modifier (7,  result), UFO_MODIFERR_LIT " 7");
+    static_assert (fmt_error::modifier (8,  result), UFO_MODIFERR_LIT " 8");
+    static_assert (fmt_error::modifier (9,  result), UFO_MODIFERR_LIT " 9");
+    static_assert (fmt_error::modifier (10, result), UFO_MODIFERR_LIT " 10");
+    static_assert (fmt_error::modifier (11, result), UFO_MODIFERR_LIT " 11");
+    static_assert (fmt_error::modifier (12, result), UFO_MODIFERR_LIT " 12");
+    static_assert (fmt_error::modifier (13, result), UFO_MODIFERR_LIT " 13");
+    static_assert (fmt_error::modifier (14, result), UFO_MODIFERR_LIT " 14");
+    static_assert (fmt_error::modifier (15, result), UFO_MODIFERR_LIT " 15");
+    static_assert (fmt_error::modifier (16, result), UFO_MODIFERR_LIT " 16");
+    static_assert (fmt_error::modifier (17, result), UFO_MODIFERR_LIT " 17");
+    static_assert (fmt_error::modifier (18, result), UFO_MODIFERR_LIT " 18");
+    static_assert (fmt_error::modifier (19, result), UFO_MODIFERR_LIT " 19");
+    static_assert (fmt_error::modifier (20, result), UFO_MODIFERR_LIT " 20");
+    static_assert (fmt_error::modifier (21, result), UFO_MODIFERR_LIT " 21");
+    static_assert (fmt_error::modifier (22, result), UFO_MODIFERR_LIT " 22");
+    static_assert (fmt_error::modifier (23, result), UFO_MODIFERR_LIT " 23");
+    static_assert (fmt_error::modifier (24, result), UFO_MODIFERR_LIT " 24");
+    static_assert (fmt_error::modifier (25, result), UFO_MODIFERR_LIT " 25");
+    static_assert (fmt_error::modifier (26, result), UFO_MODIFERR_LIT " 26");
+    static_assert (fmt_error::modifier (27, result), UFO_MODIFERR_LIT " 27");
+    static_assert (fmt_error::modifier (28, result), UFO_MODIFERR_LIT " 28");
+    static_assert (fmt_error::modifier (29, result), UFO_MODIFERR_LIT " 29");
+    static_assert (fmt_error::modifier (30, result), UFO_MODIFERR_LIT " 30");
+    static_assert (fmt_error::modifier (31, result), UFO_MODIFERR_LIT " 31");
+    static_assert (fmt_error::modifier (32, result), UFO_MODIFERR_LIT " 32");
 
     return true;
-
-#undef error_literal
-#undef error_literal_ext
 }
 //------------------------------------------------------------------------------
-
+#undef UFO_PARAMERR_LIT
+#undef UFO_PCHERR_LIT
+#undef UFO_MODIFERR_LIT
+//------------------------------------------------------------------------------
 } //ufo
 
 #endif /* UFO_LOG_FORMAT_VALIDATOR_HPP_ */

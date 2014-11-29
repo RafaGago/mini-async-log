@@ -70,7 +70,7 @@ struct deep_copy_bytes : public delimited_mem {};
 //------------------------------------------------------------------------------
 struct deep_copy_string : public delimited_mem {};
 //------------------------------------------------------------------------------
-inline deep_copy_bytes deep_copy (void* mem, uword size)
+inline deep_copy_bytes bytes (void* mem, uword size)
 {
     assert (mem && size);
     deep_copy_bytes b;

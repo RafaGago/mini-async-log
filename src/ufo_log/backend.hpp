@@ -172,9 +172,19 @@ public:
         }
     }
     //--------------------------------------------------------------------------
+    void set_file_severity (sev::severity s)
+    {
+        m_out.set_file_severity (s);
+    }
+    //--------------------------------------------------------------------------
     void set_console_severity (sev::severity stderr, sev::severity stdout)
     {
         m_out.set_console_severity (stderr, stdout);
+    }
+    //--------------------------------------------------------------------------
+    sev::severity min_severity() const
+    {
+        return m_out.min_severity();
     }
     //--------------------------------------------------------------------------
     backend_cfg get_cfg() const
