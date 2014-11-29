@@ -53,7 +53,7 @@ struct header_data
     uword         arity;
 };
 //------------------------------------------------------------------------------
-header_data make_header_data(
+inline header_data make_header_data(
                  sev::severity sev,
                  const char*   fmt,
                  uword         arity,

@@ -39,10 +39,9 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <memory>
 #include <ufo_log/serialization/exporter.hpp>
+#include <ufo_log/backend_cfg.hpp>
 
 namespace ufo {
-
-struct backend_cfg;
 
 //------------------------------------------------------------------------------
 class frontend

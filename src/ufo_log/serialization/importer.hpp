@@ -37,21 +37,17 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef UFO_LOG_IMPORTER_HPP_
 #define UFO_LOG_IMPORTER_HPP_
 
-#include <ufo_log/serialization/header.hpp>
-#include <ufo_log/serialization/integral.hpp>
-#include <ufo_log/serialization/non_integral.hpp>
-#include <ufo_log/serialization/non_numeric.hpp>
-#include <ufo_log/serialization/importer_exporter.hpp>
-#include <ufo_log/serialization/basic_encoder_decoder.hpp>
+
 #include <ufo_log/serialization/printf_modifiers.hpp>
 #include <ufo_log/serialization/byte_stream_convert.hpp>
+#include <ufo_log/serialization/importer_decoder.hpp>
 #include <ufo_log/output.hpp>
 #include <ufo_log/format_tokens.hpp>
 
 namespace ufo { namespace ser {
 
 //------------------------------------------------------------------------------
-class importer : protected importer_exporter<const u8>
+class importer : private importer_decoder
 {
 public:
     //--------------------------------------------------------------------------
@@ -135,7 +131,7 @@ private:
     void consume_next (output& o, bool has_placeholder)
     {
         decoding_field d;
-        decode_type (d);
+        import_type (d);
         if (d.gen.fclass == ufo_numeric)
         {
             if (d.gen.nclass == ufo_integral)
@@ -467,52 +463,7 @@ private:
         output_num (o, t, "[%020llu] ");
     }
     //--------------------------------------------------------------------------
-    void do_import (header_data& hd)
-    {
-        assert (m_pos && m_beg && m_end);
-        m_pos = header::decode (hd, m_pos, m_end);
-    }
-    //--------------------------------------------------------------------------
-    template <class T>
-    typename enable_if_integral<T, void>::type
-    do_import (T& val, integral::field f)
-    {
-        m_pos = integral::decode (val, f, m_pos, m_end);
-    }
-    //--------------------------------------------------------------------------
-    template <class T>
-    typename enable_float_double_bool<T, void>::type
-    do_import (T& val, non_integral::field f)
-    {
-        m_pos = non_integral::decode (val, f, m_pos, m_end);
-    }
-    //--------------------------------------------------------------------------
-    void do_import (literal_wrapper& str, non_numeric::field f)
-    {
-        m_pos = non_numeric::decode (str, f, m_pos, m_end);
-    }
-    //--------------------------------------------------------------------------
-    void do_import (ptr_wrapper& p, non_numeric::field f)
-    {
-        m_pos = non_numeric::decode (p, f, m_pos, m_end);
-    }
-    //--------------------------------------------------------------------------
-    void do_import (deep_copy_bytes& b, non_numeric::field f)
-    {
-        m_pos = non_numeric::decode (b, f, m_pos, m_end);
-    }
-    //--------------------------------------------------------------------------
-    void do_import (deep_copy_string& s, non_numeric::field f)
-    {
-        m_pos = non_numeric::decode (s, f, m_pos, m_end);
-    }
-    //--------------------------------------------------------------------------
-    template <class T>
-    void decode_type (T& val)
-    {
-        m_pos = basic_encoder_decoder::decode_type (val, m_pos, m_end);
-    }
-    //--------------------------------------------------------------------------
+
     const char* m_fmt;
     char        m_fmt_modif;
 };
