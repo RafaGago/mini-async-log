@@ -31,6 +31,9 @@ void general_features()
 
     std::string string = "this is deep copied";
     log_error ("message {}, raw = {}", ++i, deep_copy (string));
+
+    log_error ("message {}, bool = {}", ++i, true);
+
     log_error ("message {}, u8  = {}", ++i, (u8) 8);
     log_error ("message {}, u16 = {}", ++i, (u16) 16);
     log_error ("message {}, u32 = {}", ++i, (u32) 32);
@@ -39,9 +42,6 @@ void general_features()
     log_error ("message {}, i16 = {}", ++i, (i16) -16);
     log_error ("message {}, i32 = {}", ++i, (i32) -32);
     log_error ("message {}, i64 = {}", ++i, (i64) -64);
-    log_error ("message {}, double = {}", ++i, 12.1234567890123456789);
-    log_error ("message {}, float = {}", ++i, 12.1234567890123456789f);
-    log_error ("message {}, bool = {}", ++i, true);
 
     log_error ("message {}, hex u8  = {x}", ++i, (u8) 8);
     log_error ("message {}, hex u16 = {x}", ++i, (u16) 16);
@@ -51,6 +51,30 @@ void general_features()
     log_error ("message {}, hex i16 = {x}", ++i, (i16) -16);
     log_error ("message {}, hex i32 = {x}", ++i, (i32) -32);
     log_error ("message {}, hex i64 = {x}", ++i, (i64) -64);
+
+    log_error ("message {}, wide u8  = {w}", ++i, (u8) 8);
+    log_error ("message {}, wide u16 = {w}", ++i, (u16) 16);
+    log_error ("message {}, wide u32 = {w}", ++i, (u32) 32);
+    log_error ("message {}, wide u64 = {w}", ++i, (u64) 64);
+    log_error ("message {}, wide i8  = {w}", ++i, (i8) 8);
+    log_error ("message {}, wide i8  = {w}", ++i, (i8) -8);
+    log_error ("message {}, wide i16 = {w}", ++i, (i16) 16);
+    log_error ("message {}, wide i16 = {w}", ++i, (i16) -16);
+    log_error ("message {}, wide i32 = {w}", ++i, (i32) 32);
+    log_error ("message {}, wide i32 = {w}", ++i, (i32) -32);
+    log_error ("message {}, wide i64 = {w}", ++i, (i64) 64);
+    log_error ("message {}, wide i64 = {w}", ++i, (i64) -64);
+
+    log_error ("message {}, double = {}", ++i, 12.1234567890123456789);
+    log_error ("message {}, float = {}", ++i, 12.1234567890123456789f);
+
+    log_error ("message {}, double sci = {s}", ++i, 12.1234567890123456789);
+    log_error ("message {}, float sci = {s}", ++i, 12.1234567890123456789f);
+
+    log_error ("message {}, double hex = {x}", ++i, 12.1234567890123456789);    //I added hex floats because representing small doubles at full precision can take hundreds of characters
+    log_error ("message {}, float hex = {x}", ++i, 12.1234567890123456789f);
+
+    log_error ("message {}, bool = {}", ++i, true);
 
 #warning "todo"
 //    log_error ("message {}, ptr = {}", ++i, ptr (&fe));

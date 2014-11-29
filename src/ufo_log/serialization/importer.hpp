@@ -181,11 +181,11 @@ private:
         switch (f.niclass)
         {
         case ufo_double:
-            return output_floating_type<double, double_modif>(
+            return output_floating_type<double, u64, double_modif>(
                     o, f, has_placeholder
                     );
         case ufo_float :
-            return output_floating_type<float, float_modif>(
+            return output_floating_type<float, u32, float_modif>(
                                             o, f, has_placeholder
                                             );
         case ufo_bool  :
@@ -265,9 +265,6 @@ private:
         case fmt::full_width:
             fmt = fmt_struct::fwidth;
             break;
-        case fmt::full_width_spaces:
-            fmt = fmt_struct::fwidth_s;
-            break;
         default:
             if (has_placeholder)
             {
@@ -282,12 +279,17 @@ private:
         }
     }
     //--------------------------------------------------------------------------
-    template <class T, class fmt_struct>
+    template <class T, class H, class fmt_struct>
     void output_floating_type(
             output& o, non_integral_field f, bool has_placeholder)
     {
-        T v;
-        do_import (v, f);
+        union hex_hack
+        {
+            T floating;
+            H hex;
+        };
+        hex_hack v;
+        do_import (v.floating, f);
         const char* fmt;
         switch (m_fmt_modif)
         {
@@ -310,7 +312,14 @@ private:
         }
         if (has_placeholder)
         {
-            output_num (o, v, fmt);
+            if (fmt != fmt_struct::hex)
+            {
+                output_num (o, v.floating, fmt);
+            }
+            else
+            {
+                output_num (o, v.hex, fmt);
+            }
         }
     }
     //--------------------------------------------------------------------------

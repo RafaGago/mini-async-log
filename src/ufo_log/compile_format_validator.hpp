@@ -103,10 +103,9 @@ private:
         >::type
     is_formatting_valid (char f, T*)
     {
-        return (f == fmt::hex)               ? true :
-               (f == fmt::full_width_spaces) ? true :
-               (f == fmt::full_width       ) ? true :
-                                               false;
+        return (f == fmt::hex)        ? true :
+               (f == fmt::full_width) ? true :
+                                        false;
     }
     //--------------------------------------------------------------------------
     template <class T>
