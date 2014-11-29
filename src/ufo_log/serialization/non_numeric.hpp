@@ -53,9 +53,14 @@ public:
     //--------------------------------------------------------------------------
     typedef non_numeric_field field;
     //--------------------------------------------------------------------------
-    static UFO_CONSTEXPR uword bytes_required (const char* str)
+    static UFO_CONSTEXPR uword bytes_required (literal_wrapper)
     {
-        return sizeof (field) + sizeof (str);
+        return sizeof (field) + sizeof literal_wrapper().lit;
+    }
+    //--------------------------------------------------------------------------
+    static UFO_CONSTEXPR uword bytes_required (ptr_wrapper)
+    {
+        return sizeof (field) + sizeof ptr_wrapper().ptr;
     }
     //--------------------------------------------------------------------------
     static uword bytes_required (deep_copy_bytes b)
@@ -88,7 +93,7 @@ public:
         return f;
     }
     //--------------------------------------------------------------------------
-    static field get_field (const char*, uword bytes_required)
+    static field get_field (literal_wrapper, uword bytes_required)
     {
         field f;
         f.fclass                    = ufo_non_numeric;
@@ -97,10 +102,26 @@ public:
         return f;
     }
     //--------------------------------------------------------------------------
-    static u8* encode (u8* ptr, u8* end, const char* str, field f)
+    static field get_field (ptr_wrapper, uword bytes_required)
+    {
+        field f;
+        f.fclass                    = ufo_non_numeric;
+        f.nnclass                   = ufo_ptr;
+        f.deep_copied_length_bytes  = 0;
+        return f;
+    }
+    //--------------------------------------------------------------------------
+    static u8* encode (u8* ptr, u8* end, literal_wrapper l, field f)
     {
         ptr = encode_type (ptr, end, f);
-        ptr = encode_type (ptr, end, str);
+        ptr = encode_type (ptr, end, l.lit);
+        return ptr;
+    }
+    //--------------------------------------------------------------------------
+    static u8* encode (u8* ptr, u8* end, ptr_wrapper p, field f)
+    {
+        ptr = encode_type (ptr, end, f);
+        ptr = encode_type (ptr, end, p.ptr);
         return ptr;
     }
     //--------------------------------------------------------------------------
@@ -115,10 +136,18 @@ public:
     }
     //--------------------------------------------------------------------------
     static const u8* decode(
-            const char*& str, field, const u8* ptr, const u8* end
+            literal_wrapper& l, field, const u8* ptr, const u8* end
             )
     {
-        ptr = decode_type (str, ptr, end);
+        ptr = decode_type (l.lit, ptr, end);
+        return ptr;
+    }
+    //--------------------------------------------------------------------------
+    static const u8* decode(
+            ptr_wrapper& p, field, const u8* ptr, const u8* end
+            )
+    {
+        ptr = decode_type (p.ptr, ptr, end);
         return ptr;
     }
     //--------------------------------------------------------------------------

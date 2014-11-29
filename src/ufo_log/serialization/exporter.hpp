@@ -72,9 +72,14 @@ public:
         return non_integral::bytes_required (val);
     }
     //--------------------------------------------------------------------------
-    static uword bytes_required (const char* str)
+    static uword bytes_required (literal_wrapper str)
     {
         return non_numeric::bytes_required (str);
+    }
+    //--------------------------------------------------------------------------
+    static uword bytes_required (ptr_wrapper p)
+    {
+        return non_numeric::bytes_required (p);
     }
     //--------------------------------------------------------------------------
     static uword bytes_required (deep_copy_bytes b)
@@ -125,9 +130,14 @@ public:
         return non_numeric::get_field (s, bytes_required);
     }
     //--------------------------------------------------------------------------
-    static non_numeric::field get_field (const char*, uword bytes_required)
+    static non_numeric::field get_field (literal_wrapper, uword bytes_required)
     {
-        return non_numeric::get_field (nullptr, bytes_required);
+        return non_numeric::get_field (literal_wrapper(), bytes_required);
+    }
+    //--------------------------------------------------------------------------
+    static non_numeric::field get_field (ptr_wrapper, uword bytes_required)
+    {
+        return non_numeric::get_field (ptr_wrapper(), bytes_required);
     }
     //--------------------------------------------------------------------------
     void do_export (null_type, null_type) {}
@@ -152,9 +162,14 @@ public:
         m_pos = non_integral::encode (m_pos, m_end, val, f);
     };
     //--------------------------------------------------------------------------
-    void do_export (const char* str, non_numeric::field f)
+    void do_export (literal_wrapper str, non_numeric::field f)
     {
         m_pos = non_numeric::encode (m_pos, m_end, str, f);
+    }
+    //--------------------------------------------------------------------------
+    void do_export (ptr_wrapper p, non_numeric::field f)
+    {
+        m_pos = non_numeric::encode (m_pos, m_end, p, f);
     }
     //--------------------------------------------------------------------------
     void do_export (deep_copy_bytes b, non_numeric::field f)

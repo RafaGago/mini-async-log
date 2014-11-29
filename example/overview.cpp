@@ -76,12 +76,11 @@ void general_features()
 
     log_error ("message {}, bool = {}", ++i, true);
 
-#warning "todo"
-//    log_error ("message {}, ptr = {}", ++i, ptr (&fe));
+    log_error ("message {}, ptr = {}", ++i, ptr (&fe));
     log_error(
         "message {}, c_str = {}",
         ++i,
-        "a literal decayed to const char* that has whole-program lifetime"
+        lit ("a compile time literal")
         );
 
     u8 deep_copied_bytes[] =
@@ -101,7 +100,7 @@ void general_features()
         true,
         -1231,
         432.12f,
-        "param4",
+        lit ("param4"),
         (u64) -1
         );
 #ifndef UFO_COMPILE_TIME_FMT_CHECK

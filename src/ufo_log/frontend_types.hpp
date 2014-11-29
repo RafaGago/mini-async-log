@@ -101,8 +101,31 @@ inline deep_copy_string deep_copy (const std::string& str)
     return (deep_copy (&str[0], str.size()));
 }
 //------------------------------------------------------------------------------
-
-//deep_copy, ptr etc. will end up here.
+struct literal_wrapper
+{
+    const char* lit;
+};
+//------------------------------------------------------------------------------
+inline literal_wrapper lit (const char* literal)                                //this is because: 1-I don't want the user to remember that the const char* must point to a decayed literal 2-make clear when to print a pointer
+{
+    assert (literal);
+    literal_wrapper l;
+    l.lit = literal;
+    return l;
+}
+//------------------------------------------------------------------------------
+struct ptr_wrapper
+{
+    const void* ptr;
+};
+//------------------------------------------------------------------------------
+inline ptr_wrapper ptr (const void* pointer)                                //The pointers have to be marked explicitly, I could add a modifier in the fmt string (less verbose), but the code has to work in compilers that can't run the compile time validation
+{
+    ptr_wrapper l;
+    l.ptr = pointer;
+    return l;
+}
+//------------------------------------------------------------------------------
 
 } //namespaces
 

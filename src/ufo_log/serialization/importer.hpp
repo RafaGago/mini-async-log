@@ -212,11 +212,33 @@ private:
         {
         case ufo_c_str:
         {
-            const char* str;
-            do_import (str, f);
+            literal_wrapper l;
+            do_import (l, f);
+            if (has_placeholder && l.lit)
+            {
+                o.write (l.lit);
+            }
+            else if (!l.lit)
+            {
+                static const char lit_null_err[] =
+                    "([logger err]->nullptr literal, ignored)";
+                o.write (lit_null_err, sizeof lit_null_err - 1);
+                assert (false && "null literal");
+            }
+            break;
+        }
+        case ufo_ptr:
+        {
+            static_assert (sizeof (uword) == 4 || sizeof (uword) == 8, "");
+            const char* fmt = (sizeof (uword) == 4) ?
+                                    u32_modif::hex : u64_modif::hex;
+            ptr_wrapper p;
+            do_import (p, f);
+            uword v = (uword) p.ptr;
+
             if (has_placeholder)
             {
-                o.write (str);
+                output_num (o, v, fmt);
             }
             break;
         }
@@ -465,9 +487,14 @@ private:
         m_pos = non_integral::decode (val, f, m_pos, m_end);
     }
     //--------------------------------------------------------------------------
-    void do_import (const char*& str, non_numeric::field f)
+    void do_import (literal_wrapper& str, non_numeric::field f)
     {
         m_pos = non_numeric::decode (str, f, m_pos, m_end);
+    }
+    //--------------------------------------------------------------------------
+    void do_import (ptr_wrapper& p, non_numeric::field f)
+    {
+        m_pos = non_numeric::decode (p, f, m_pos, m_end);
     }
     //--------------------------------------------------------------------------
     void do_import (deep_copy_bytes& b, non_numeric::field f)

@@ -91,6 +91,7 @@ static const uword non_integral_class_bits = 2;
 enum non_numeric_class
 {
     ufo_c_str,
+    ufo_ptr,
     ufo_deep_copied_str,
     ufo_deep_copied_mem,
 //    shared_ptr_str,
