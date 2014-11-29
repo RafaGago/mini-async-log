@@ -59,9 +59,6 @@ either expressed or implied, of Rafael Gago Castano.
 
 namespace ufo {
 
-namespace th = UFO_THREAD_NAMESPACE;
-namespace ch = UFO_CHRONO_NAMESPACE;
-namespace at = UFO_ATOMIC_NAMESPACE;
 
 //------------------------------------------------------------------------------
 struct node : public mpsc_node_hook

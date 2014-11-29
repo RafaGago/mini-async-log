@@ -22,12 +22,6 @@
 
 #include <spdlog/spdlog.h>
 
-//namespace ch = UFO_CHRONO_NAMESPACE;
-
-namespace at = UFO_ATOMIC_NAMESPACE;
-namespace th = UFO_THREAD_NAMESPACE;
-namespace ch = UFO_CHRONO_NAMESPACE;
-
 #define TEST_LITERAL "message saying that something happened and an integer: "
 #define OUT_FOLDER   "./log_out"
 static const unsigned file_size_bytes = 50 * 1024 * 1024;

@@ -11,7 +11,6 @@
 #include <ufo_log/util/chrono.hpp>
 #include <cstdio>
 
-//namespace ch = UFO_CHRONO_NAMESPACE;
 
 //------------------------------------------------------------------------------
 void rotation_test()

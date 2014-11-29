@@ -44,8 +44,6 @@ either expressed or implied, of Rafael Gago Castano.
 
 namespace ufo {
 
-namespace th = UFO_THREAD_NAMESPACE;
-namespace at = UFO_ATOMIC_NAMESPACE;
 
 //------------------------------------------------------------------------------
 class frontend::frontend_impl

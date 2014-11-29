@@ -53,4 +53,9 @@ either expressed or implied, of Diadrom AB.
 
 #endif
 
+namespace ufo {
+
+namespace th = UFO_THREAD_NAMESPACE;
+
+}
 #endif /* UFO_THREAD_HPP_ */
