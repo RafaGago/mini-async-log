@@ -111,25 +111,29 @@ public:
         {
             auto pred = [&]() -> bool
             {
-                uword prev = m_state.exchange ((uword) blocked, mo_relaxed);
-                return prev == blocked;
+                auto state = m_state.load (mo_relaxed);
+                if (state == blocked)
+                {
+                    th::this_thread::yield();                                   //waiting an extra timeslice in case there was no memory visibility for the changes made (a case were the scheduler gives control to this thread just after the notify call). If this was a spurious wakeup it won't hurt either, as the mutex is a dummy. We still can miss the user notificatio and then wait for the whole timeout, but I think that if it happens it won't be frequently.
+                    state = m_state.load (mo_relaxed);
+                }
+                return state == unblocked;
             };
-            m_state            = blocked;
-            bool still_blocked = m_cond.wait_for(                                 //note that it's possible that the worker misses a notification and waits the whole timeout, this is by design and preferable to mutex locking the callers. if you can't tolerate this latency in the worker you can throw CPU at it by setting cfg never_block
+            m_state.store (blocked, mo_relaxed);
+            bool unblocked = m_cond.wait_for(                                 //note that it's possible that the worker misses a notification and waits the whole timeout, this is by design and preferable to mutex locking the callers. if you can't tolerate this latency in the worker you can throw CPU at it by setting cfg never_block
                                     m_dummy_mutex,
                                     ch::microseconds (m_cfg.block_us),
                                     pred
                                     );
-            m_state            = unblocked;
-            return still_blocked;
+            assert (!unblocked || m_state.load (mo_relaxed) == unblocked);
+            m_state.store (unblocked, mo_relaxed);
+            return !unblocked;
         }
     }
     //--------------------------------------------------------------------------
     bool would_block_now_hint() const                                           //can give false positives
     {
-        return !never_blocks() &&
-               (m_spins < m_cfg.spin_max) &&
-               (m_yields < m_cfg.yield_max);
+        return (m_spins >= m_cfg.spin_max) && (m_yields >= m_cfg.yield_max);
     }
     //--------------------------------------------------------------------------
     bool never_blocks() const
