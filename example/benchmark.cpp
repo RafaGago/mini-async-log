@@ -37,6 +37,7 @@ public:
     //--------------------------------------------------------------------------
     bool run (ufo::uword msgs, ufo::uword thread_count)
     {
+        using namespace ufo;
         m_cummulative_enqueue_ns   = 0;
         m_total_ns     = 0;
         m_alloc_faults = 0;
@@ -99,6 +100,7 @@ private:
     //--------------------------------------------------------------------------
     void thread (ufo::uword msg_count)
     {
+        using namespace ufo;
         auto init = ch::steady_clock::now();
 
         static_cast<derived&> (*this).thread (msg_count);
@@ -158,6 +160,7 @@ private:
             ufo::u64   join_ns
             )
     {
+        using namespace ufo;
         while (m_data_visible.load (ufo::mo_acquire) != thread_count)
         {
             th::this_thread::yield();
@@ -235,12 +238,14 @@ private:
         be_cfg.alloc.fixed_size_entry_size      = m_entry_size;
         be_cfg.alloc.use_heap_if_required       = m_heap;
 
+        be_cfg.display.show_timestamp = false; //timestamping takes 50% of the time at this time scale
+
         return m_fe->init_backend (be_cfg) == frontend::init_ok;
     }
     //--------------------------------------------------------------------------
     void thread (ufo::uword msg_count)
     {
-        for (unsigned i = 0; i < msg_count; ++i)
+        for (ufo::u64 i = 0; i < msg_count; ++i)
         {
             bool res =
                 log_error_i (m_fe.get(), log_fileline TEST_LITERAL "{}", i);
@@ -293,9 +298,9 @@ private:
     //--------------------------------------------------------------------------
     void thread (ufo::uword msg_count)
     {
-        for (unsigned i = 0; i < msg_count; ++i)
+        for (ufo::u64 i = 0; i < msg_count; ++i)
         {
-            LOG(ERROR) << TEST_LITERAL << i;
+            LOG (ERROR) << TEST_LITERAL << i;
         }
     }
     //--------------------------------------------------------------------------
@@ -332,7 +337,7 @@ private:
     //--------------------------------------------------------------------------
     void thread (ufo::uword msg_count)
     {
-        for (unsigned i = 0; i < msg_count; ++i)
+        for (ufo::u64 i = 0; i < msg_count; ++i)
         {
             m_logger->info (log_fileline TEST_LITERAL, i);
         }
@@ -386,16 +391,16 @@ void ufo_tests (ufo::uword msgs)
 
     std::printf ("no heap------------------------------------------\n");
 
-    ufo_test.set_params (1024 * 1024, 16, false);
+    ufo_test.set_params (10 * 1024 * 1024, 16, false);
     ufo_test.run (msgs, 1);
 
-    ufo_test.set_params (1024 * 1024, 16, false);
+    ufo_test.set_params (10 * 1024 * 1024, 16, false);
     ufo_test.run (msgs, 2);
 
-    ufo_test.set_params (1024 * 1024, 16, false);
+    ufo_test.set_params (10 * 1024 * 1024, 16, false);
     ufo_test.run (msgs, 4);
 
-    ufo_test.set_params (1024 * 1024, 16, false);
+    ufo_test.set_params (10 * 1024 * 1024, 16, false);
     ufo_test.run (msgs, 8);
 
     std::printf ("pure heap----------------------------------------\n");
@@ -429,6 +434,7 @@ void ufo_tests (ufo::uword msgs)
 //------------------------------------------------------------------------------
 void do_a_pause()                                                               //time for the OS to finish some file io, otherwise some results were weird.
 {
+    using namespace ufo;
     th::this_thread::sleep_for (ch::seconds (2));
 }
 //------------------------------------------------------------------------------
@@ -486,14 +492,13 @@ void spdlog_tests (ufo::uword msgs)
 //------------------------------------------------------------------------------
 int main (int argc, const char* argv[])
 {
-    const ufo::uword msgs = 1600000;
+    const ufo::uword msgs = 16000000;
 
     if (argc < 2)
     {
         std::printf ("no parameter specified (ufo, spdlog, glog)\n");
         return 1;
     }
-
     std::string choice = argv[1];
 
     if (choice.compare ("ufo") == 0)

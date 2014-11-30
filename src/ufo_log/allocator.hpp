@@ -40,6 +40,8 @@ either expressed or implied, of Rafael Gago Castano.
 #include <new>
 #include <cassert>
 #include <type_traits>
+#include <vector>
+#include <algorithm>
 #include <ufo_log/util/mpsc.hpp>
 #include <ufo_log/util/spmc.hpp>
 #include <ufo_log/util/integer_bits.hpp>
@@ -57,6 +59,9 @@ namespace ufo {
 //My point is, this is a class and looks like it can be reused, but the fact
 //is that it's pretty specialized and just separated to a header to avoid
 //cluttering the log backend implementation.
+
+//Be aware, the deallocation function is always called from the same thread and
+//that thread isn't performance critical.
 
 //------------------------------------------------------------------------------
 class ufo_allocator
@@ -118,19 +123,29 @@ public:
         }
         try
         {
-            m_list.construct (entries);
+            m_free.construct (entries);
         }
         catch (...)
         {
             free();
             return false;
         }
-        m_fixed_end   = m_fixed_begin + bsz;
-        m_entry_size  = entry_sz;
-        m_use_heap    = use_heap;
+        m_fixed_end     = m_fixed_begin + bsz;
+        m_entry_size    = entry_sz;
+        m_use_heap      = use_heap;
+
+#ifdef EXPERIMENTAL_ORDERING_CACHE
+        uword reorder_count;
+        reorder_count   = fixed_size_entries / 25;
+        reorder_count   = (reorder_count == 0) ? 1 : 0;
+        reorder_count   = (reorder_count > reorder_buffer_size) ?
+                                reorder_buffer_size : reorder_count;
+        m_reorder_count = reorder_count;
+        m_reorder.reserve (m_reorder_count);
+#endif
         for (uword i = 0; i < entries; ++i)
         {
-            m_list->bounded_push (m_fixed_begin + (i * m_entry_size));
+            m_free->bounded_push (m_fixed_begin + (i * m_entry_size));
         }
         return true;
     }
@@ -139,7 +154,10 @@ public:
     {
         if (m_fixed_begin)
         {
-            m_list.destruct_if();
+            m_free.destruct_if();
+#ifdef EXPERIMENTAL_ORDERING_CACHE
+            m_reorder.clear();
+#endif
             ::operator delete (m_fixed_begin);
             zero();
         }
@@ -150,7 +168,7 @@ public:
         if (size)
         {
             void* ret;
-            if ((size <= m_entry_size) && m_list->pop (ret))                    //TODO: profile if this scenario beats the heap
+            if ((size <= m_entry_size) && m_free->pop (ret))                    //TODO: profile if this scenario beats the heap
             {
                 return ret;
             }
@@ -173,7 +191,11 @@ public:
             addr -= fbeg;
             if ((addr & (m_entry_size - 1)) == 0)
             {
-                m_list->bounded_push (p);
+#ifndef EXPERIMENTAL_ORDERING_CACHE
+                m_free->bounded_push (p);
+#else
+                fixed_deallocate (p);
+#endif
                 return true;
             }
             assert (false && "returned pointer misaligned");
@@ -199,28 +221,57 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-
 private:
-
+#ifdef EXPERIMENTAL_ORDERING_CACHE
+    //--------------------------------------------------------------------------
+    void fixed_deallocate (void* p)
+    {
+        m_reorder.push_back ((uword) p);
+        if (m_reorder.size() == m_reorder_count.load (mo_relaxed))
+        {
+            return_nodes();
+        }
+    }
+    //--------------------------------------------------------------------------
+    void return_nodes()
+    {
+        std::sort (m_reorder.begin(), m_reorder.end());                         //naive in-place is fine for the used sizes
+        for (uword i = 0; i < m_reorder.size(); ++i)
+        {
+            m_free->bounded_push ((void*) m_reorder[i]);
+        }
+        m_reorder.clear();
+    }
+    //--------------------------------------------------------------------------
+    static const uword reorder_buffer_size = 32;
+    static const uword reorder_divisor     = 10;
+#endif
+    //--------------------------------------------------------------------------
+    void zero()
+    {
+        m_entry_size    = 0;
+        m_fixed_begin   = m_fixed_end = nullptr;
+        m_use_heap      = false;
+#ifdef EXPERIMENTAL_ORDERING_CACHE
+        m_reorder_count = 1;
+#endif
+    }
     //--------------------------------------------------------------------------
     ufo_allocator (const ufo_allocator& other);
     ufo_allocator& operator= (const ufo_allocator& other);
 
     typedef spmc_b_fifo<void*> free_list;
     //--------------------------------------------------------------------------
-    void zero()
-    {
-        m_entry_size  = 0;
-        m_fixed_begin = m_fixed_end = nullptr;
-        m_use_heap    = false;
-    }
-    //--------------------------------------------------------------------------
     placement_new<void*, cache_line_size> m_pad1;
     uword                                 m_entry_size;
     uint8*                                m_fixed_begin;
     uint8*                                m_fixed_end;
     bool                                  m_use_heap;
-    on_stack_dynamic<free_list>           m_list;
+    on_stack_dynamic<free_list>           m_free;
+#ifdef EXPERIMENTAL_ORDERING_CACHE
+    at::atomic<uword>                     m_reorder_count;
+    std::vector<uword>                    m_reorder;
+#endif
     //--------------------------------------------------------------------------
 }; //class allocator
 //------------------------------------------------------------------------------
