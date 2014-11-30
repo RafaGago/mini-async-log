@@ -87,7 +87,6 @@ struct backend_visualization_config
 {
     bool show_timestamp;
     bool show_severity;
-    //TODO: float and double decimals or best fit
 };
 //------------------------------------------------------------------------------
 struct backend_cfg

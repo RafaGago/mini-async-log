@@ -51,7 +51,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <ufo_log/output.hpp>
 #include <ufo_log/frontend.hpp>
-#include <ufo_log/serialization/importer.hpp>
+#include <ufo_log/log_writer.hpp>
 #include <ufo_log/allocator.hpp>
 #include <ufo_log/backend_cfg.hpp>
 #include <ufo_log/log_files.hpp>
@@ -118,8 +118,8 @@ public:
         m_cfg.alloc.fixed_size_entry_size      = 128;
         m_cfg.alloc.fixed_size_entry_count     = 1024;
 
-        m_cfg.display.show_severity            = m_decoder.prints_severity;
-        m_cfg.display.show_timestamp           = m_decoder.prints_timestamp;
+        m_cfg.display.show_severity            = m_writer.prints_severity;
+        m_cfg.display.show_timestamp           = m_writer.prints_timestamp;
 
         m_cfg.file.aprox_size                  = 1024;
         m_cfg.file.name_suffix                 = ".log";
@@ -245,12 +245,17 @@ public:
         m_log_thread.join();
     }
     //--------------------------------------------------------------------------
+    bool prints_timestamp()
+    {
+        return m_writer.prints_timestamp;
+    }
+    //--------------------------------------------------------------------------
 private:
     void set_cfg (const backend_cfg& c)
     {
         m_cfg = c;
-        m_decoder.prints_severity  = m_cfg.display.show_severity;
-        m_decoder.prints_timestamp = m_cfg.display.show_timestamp;
+        m_writer.prints_severity  = m_cfg.display.show_severity;
+        m_writer.prints_timestamp = m_cfg.display.show_timestamp;
         m_wait.set_cfg (c.blocking);
     }
     //--------------------------------------------------------------------------
@@ -379,7 +384,7 @@ private:
     //--------------------------------------------------------------------------
     void write_message (mpsc_node_hook& hook)
     {
-        m_decoder.import (m_out, ((node&) hook).storage());
+        m_writer.decode_and_write (m_out, ((node&) hook).storage());
     }
     //--------------------------------------------------------------------------
     void write_alloc_fault (uword count)
@@ -473,7 +478,7 @@ private:
     };
     //--------------------------------------------------------------------------
     output            m_out;
-    ser::importer     m_decoder;
+    log_writer        m_writer;
     backend_cfg       m_cfg;
     log_files         m_files;
     th::thread        m_log_thread;

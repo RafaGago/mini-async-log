@@ -215,11 +215,12 @@ private:
         m_use_heap    = false;
     }
     //--------------------------------------------------------------------------
-    uword                       m_entry_size;
-    uint8*                      m_fixed_begin;
-    uint8*                      m_fixed_end;
-    on_stack_dynamic<free_list> m_list;
-    bool                        m_use_heap;
+    placement_new<void*, cache_line_size> m_pad1;
+    uword                                 m_entry_size;
+    uint8*                                m_fixed_begin;
+    uint8*                                m_fixed_end;
+    bool                                  m_use_heap;
+    on_stack_dynamic<free_list>           m_list;
     //--------------------------------------------------------------------------
 }; //class allocator
 //------------------------------------------------------------------------------

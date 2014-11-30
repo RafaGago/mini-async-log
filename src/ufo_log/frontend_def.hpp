@@ -52,8 +52,10 @@ public:
     //--------------------------------------------------------------------------
     frontend_impl()
     {
-        m_state       = no_init;
-        m_min_severity = sev::notice;
+        m_state              = no_init;
+        m_min_severity       = sev::notice;
+        m_prints_timestamp   = true;
+        m_producer_timestamp = true;
     }
     //--------------------------------------------------------------------------
     ~frontend_impl() {}
@@ -92,11 +94,19 @@ public:
     frontend::init_status init_backend (const backend_cfg& cfg)
     {
         uword actual = no_init;
-        if (m_state.compare_exchange_strong (actual, on_init, mo_relaxed))
+        if (m_state.compare_exchange_strong (actual, on_init, mo_acquire))
         {
-            bool ok = m_back.init (cfg);
-            m_state.store ((ok) ? init : no_init, mo_relaxed);
-            return (ok) ? frontend::init_ok : frontend::init_tried_but_failed;
+            if (m_back.init (cfg))
+            {
+                m_prints_timestamp = cfg.display.show_timestamp;
+                m_state.store (init, mo_release);
+                return frontend::init_ok;
+            }
+            else
+            {
+                m_state.store (no_init, mo_relaxed);
+                return frontend::init_tried_but_failed;
+            }
         }
         switch (actual)
         {
@@ -106,7 +116,7 @@ public:
             while (actual == on_init);
             {
                 th::this_thread::yield();
-                actual = m_state.load (mo_relaxed);
+                actual = m_state.load (mo_acquire);
             }
             return (actual == init) ?
                     frontend::init_done_by_other : frontend::init_other_failed;
@@ -159,6 +169,18 @@ public:
         return (sev::severity) m_min_severity.val();
     }
     //--------------------------------------------------------------------------
+    bool producer_timestamp() const
+    {
+        return m_producer_timestamp && m_prints_timestamp;
+    }
+    //--------------------------------------------------------------------------
+    bool producer_timestamp (bool on)
+    {
+        m_producer_timestamp = on;
+        return producer_timestamp();
+    }
+    //--------------------------------------------------------------------------
+
 private:
 
     enum state
@@ -168,62 +190,73 @@ private:
         init,
         terminated
     };
-
-    backend_impl             m_back;
+    bool                     m_prints_timestamp;
+    bool                     m_producer_timestamp;
     mo_relaxed_atomic<uword> m_min_severity;
     mo_relaxed_atomic<uword> m_state;
+    backend_impl             m_back;
 };
 //------------------------------------------------------------------------------
 frontend::frontend() : m (new frontend::frontend_impl())
 {
 }
-
+//------------------------------------------------------------------------------
 frontend::~frontend()
 {
 }
-
+//------------------------------------------------------------------------------
 ser::exporter  frontend::get_encoder (uword required_bytes)
 {
     return m->get_encoder (required_bytes);
 }
-
+//------------------------------------------------------------------------------
 void frontend::push_encoded (ser::exporter  encoder)
 {
     m->push_encoded (encoder);
 }
-
+//------------------------------------------------------------------------------
 backend_cfg frontend::get_backend_cfg()
 {
     return m->get_backend_cfg();
 }
-
+//------------------------------------------------------------------------------
 frontend::init_status frontend::init_backend (const backend_cfg& cfg)
 {
     return m->init_backend (cfg);
 }
-
+//------------------------------------------------------------------------------
 sev::severity frontend::min_severity()
 {
     return m->min_severity();
 }
-
+//------------------------------------------------------------------------------
 void frontend::set_file_severity (sev::severity s)
 {
     return m->set_file_severity (s);
 }
-
+//------------------------------------------------------------------------------
 bool frontend::set_console_severity(
            sev::severity stderr, sev::severity stdout
            )
 {
     return m->set_console_severity (stderr, stdout);
 }
-
+//------------------------------------------------------------------------------
+bool frontend::producer_timestamp() const
+{
+    return m->producer_timestamp();
+}
+//------------------------------------------------------------------------------
+bool frontend::producer_timestamp (bool on)
+{
+    return m->producer_timestamp (on);
+}
+//------------------------------------------------------------------------------
 void frontend::on_termination()
 {
     return m->on_termination();
 }
-
+//------------------------------------------------------------------------------
 } //namespace
 
 #endif /* UFO_LOG_LOG_FRONTEND_DEF_HPP_ */

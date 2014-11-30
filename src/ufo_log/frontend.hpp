@@ -77,7 +77,11 @@ public:
     //--------------------------------------------------------------------------
     void push_encoded (ser::exporter encoder);
     //--------------------------------------------------------------------------
-    void on_termination();                                                      //you may want to call this from e.g. SIGTERM handlers, be aware that all the data generators should be stopped before.
+    void on_termination();                                                      //you may want to call this from e.g. SIGTERM handlers, be aware that all the data generators/producer should be stopped before to guarantee that the queue can be left completely empty (no memory leaks).
+    //--------------------------------------------------------------------------
+    bool producer_timestamp() const;
+    //--------------------------------------------------------------------------
+    bool producer_timestamp (bool on);
     //--------------------------------------------------------------------------
 private:
     class frontend_impl;

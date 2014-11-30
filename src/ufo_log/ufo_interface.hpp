@@ -124,15 +124,13 @@ bool new_entry(                                                                 
     hdr.arity      = arity;
     hdr.fmt        = fmt;
     hdr.severity   = sv;
-    hdr.has_tstamp = true;
-#warning "todo, get "
-    //hdr.tstamp     = get_timestamp();
-    hdr.tstamp     = 0;
+    hdr.has_tstamp = fe.producer_timestamp() ? 1 : 0;
+    if (hdr.has_tstamp)                                                         //timestamping is actually slow! in my machine slows down the producers by a factor of 2
+    {
+        hdr.tstamp = get_timestamp();
+    }
 
-    uword length   = 0;
-#warning "todo, timestamp deactivation"
-
-    decltype (exp::get_field (a, 0))   a_field;
+    decltype (exp::get_field (a, 0))   a_field;                                 //just 16 bytes (if all parameters are used)
     decltype (exp::get_field (b, 0))   b_field;
     decltype (exp::get_field (c, 0))   c_field;
     decltype (exp::get_field (d, 0))   d_field;
@@ -148,6 +146,7 @@ bool new_entry(                                                                 
     decltype (exp::get_field (n, 0))   n_field;
     decltype (exp::get_field (hdr, 0)) hdr_field;
 
+    uword length = 0;
     if (!prebuild_data (a, a_field, length))     { return false; }
     if (!prebuild_data (b, b_field, length))     { return false; }
     if (!prebuild_data (c, c_field, length))     { return false; }
