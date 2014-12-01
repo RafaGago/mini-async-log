@@ -126,6 +126,7 @@ bool new_entry(                                                                 
     hdr.fmt        = fmt;
     hdr.severity   = sv;
     hdr.has_tstamp = fe.producer_timestamp() ? 1 : 0;
+    hdr.tstamp     = 0;
     if (hdr.has_tstamp)                                                         //timestamping is actually slow! in my machine slows down the producers by a factor of 2
     {
         hdr.tstamp = get_timestamp();

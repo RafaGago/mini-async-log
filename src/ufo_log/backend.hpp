@@ -248,7 +248,7 @@ private:
               !a.use_heap_if_required
             )
         {
-            std::cerr << "[logger] invalid alloc cfg values cabät be 0\n";
+            std::cerr << "[logger] alloc cfg values can't be 0\n";
             assert (false && "alloc cfg invalid");
             return false;
         }
@@ -308,6 +308,7 @@ private:
         {
             th::this_thread::yield();
         }
+        idle_rotate_if();
         m_status.store (running, mo_relaxed);
         uword alloc_fault = m_alloc_fault.load (mo_relaxed);
         auto  next_flush  = ch::steady_clock::now() + ch::milliseconds (1000);

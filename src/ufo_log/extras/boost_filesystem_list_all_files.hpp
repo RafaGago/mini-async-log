@@ -33,81 +33,36 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
-#ifndef UFO_SYSTEM_HPP_
-#define UFO_SYSTEM_HPP_
 
-#if defined (__GXX_EXPERIMENTAL_CXX0X__) &&\
-    defined (__GNUC__) &&\
-    (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
-    #define UFO_HAS_CONSTEXPR 1
-    #define UFO_HAS_VARIADIC_TEMPLATES 1
+#ifndef UFO_LOG_BOOST_FILESYSTEM_LIST_ALL_FILES_HPP_
+#define UFO_LOG_BOOST_FILESYSTEM_LIST_ALL_FILES_HPP_
 
-    #if __x86_64__ || __ppc64__
-        #define UFO_64
-    #else
-        #define UFO_32
-    #endif
+#include <boost/filesystem.hpp>
+#include <ufo_log/backend_cfg.hpp>
 
-namespace ufo {
-    const char fs_separator = '/';
+//This file is not part of ufo log, just a simple example of how to enable
+//rotation between subsequent runs using boost filesystem.
+
+//Be aware that it doesn't check for log file sizes or data placed by the user
+//in the folder.
+
+namespace ufo { namespace extras {
+//------------------------------------------------------------------------------
+past_executions_file_list list_all_files (const char* path)
+{
+    namespace bfs = boost::filesystem;
+    typedef bfs::directory_iterator dir_it;
+    past_executions_file_list ret;
+    for (dir_it it (path), end; it != end; ++it)
+    {
+        if (bfs::is_regular_file (*it) && !bfs::is_symlink (*it))
+        {
+            ret.push_back (it->path().string());
+        }
+    }
+    return ret;
 }
+//------------------------------------------------------------------------------
+}} //namespaces
 
-#endif
-
-#if 0 //REMINDER
-
-MSVC++ 12.0 _MSC_VER == 1800 (Visual Studio 2013)
-MSVC++ 11.0 _MSC_VER == 1700 (Visual Studio 2012)
-MSVC++ 10.0 _MSC_VER == 1600 (Visual Studio 2010)
-MSVC++ 9.0  _MSC_VER == 1500 (Visual Studio 2008)
-MSVC++ 8.0  _MSC_VER == 1400 (Visual Studio 2005)
-MSVC++ 7.1  _MSC_VER == 1310 (Visual Studio 2003)
-
-#endif
-
-#if defined (_MSC_VER)
-
-#ifdef _WIN64
-    #define UFO_64
-#else
-    #define UFO_32
-#endif
-
-#if _MSC_VER >= 1800 //1600 >= vs2010
-    #define UFO_HAS_VARIADIC_TEMPLATES 1
-#endif
-
-namespace ufo {
-    const char fs_separator = '\\';
-}
-
-
-#endif
-
-#ifndef UFO_DYN_LIB_CALL
-
-#if defined (_MSC_VER)
-    #define UFO_DYN_LIB_CALL WINAPI
-#elif __GNUC__ >= 4
-    #define UFO_DYN_LIB_CALL __attribute__ ((visibility ("default")))
-#else
-    #define UFO_DYN_LIB_CALL
-#endif
-
-#endif //UFO_DYN_LIB_CALL
-
-namespace ufo {
-#ifndef UFO_CACHE_LINE_SIZE
-    const unsigned cache_line_size = 64;
-#else
-    const unsigned cache_line_size = UFO_CACHE_LINE_SIZE;
-#endif
-} //namespace ufo {
-
-#if defined (UFO_HAS_CONSTEXPR)
-    #define UFO_CONSTEXPR constexpr
-#else
-    #define UFO_CONSTEXPR constexpr
-#endif
-
-#endif /* UFO_SYSTEM_HPP_ */
+#endif /* UFO_LOG_BOOST_FILESYSTEM_LIST_ALL_FILES_HPP_ */
