@@ -53,7 +53,6 @@ either expressed or implied, of Rafael Gago Castano.
 
 namespace ufo {
 
-
 //------------------------------------------------------------------------------
 class log_files
 {

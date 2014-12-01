@@ -39,6 +39,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <ufo_log/util/system.hpp>
 #include <ufo_log/util/integer.hpp>
+#include <ufo_log/util/placement_new.hpp>
 #include <ufo_log/frontend_types.hpp>
 #include <ufo_log/serialization/fields.hpp>
 #include <ufo_log/serialization/header_data.hpp>
@@ -60,11 +61,12 @@ public:
     //--------------------------------------------------------------------------
     static uword bytes_required (null_type) { return 0; }
     //--------------------------------------------------------------------------
-    static uword bytes_required (header_data v)
+    static uword bytes_required (header_data h)
     {
-        return (v.has_tstamp ? unsigned_bytes_required (v.tstamp) : 0) +
-                sizeof (const char*) +
-                sizeof (header_field);
+        return sizeof (header_field) +
+               sizeof (const char*) +
+               (h.has_tstamp ? unsigned_bytes_required (h.tstamp) : 0) +
+               (h.sync ? sizeof (placement_new<decltype (h.sync)>) : 0);
     }
     //--------------------------------------------------------------------------
     template <class T>
@@ -134,6 +136,7 @@ public:
         f.severity        = v.severity;
         f.no_timestamp    = v.has_tstamp ? 0 : 1;
         f.timestamp_bytes = v.has_tstamp ? bytes - 1 : 0;
+        f.is_sync         = v.sync ? 1 : 0;
         return f;
     }
     //--------------------------------------------------------------------------
@@ -230,6 +233,13 @@ public:
         if (hd.has_tstamp)
         {
             encode_unsigned (hd.tstamp, ((uword) f.timestamp_bytes) + 1);
+        }
+        if (hd.sync)
+        {
+            assert (f.is_sync);
+            placement_new<decltype (hd.sync)> refcount_cheat;
+            refcount_cheat.construct (hd.sync);
+            m_pos = encode_type (m_pos, m_end, refcount_cheat.get());
         }
     }
     //--------------------------------------------------------------------------

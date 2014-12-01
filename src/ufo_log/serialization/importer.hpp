@@ -39,6 +39,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/serialization/basic_encoder_decoder.hpp>
 #include <ufo_log/frontend_types.hpp>
 #include <ufo_log/serialization/importer_exporter.hpp>
+#include <ufo_log/util/placement_new.hpp>
 
 namespace ufo { namespace ser {
 
@@ -68,6 +69,13 @@ public:
         if (hd.has_tstamp)
         {
             decode_unsigned (hd.tstamp, ((uword) f.timestamp_bytes) + 1);
+        }
+        if (f.is_sync)
+        {
+            placement_new<decltype (hd.sync)> refcount_cheat;
+            import_type (refcount_cheat);
+            hd.sync = refcount_cheat.get();
+            refcount_cheat.destruct();
         }
     }
     //--------------------------------------------------------------------------

@@ -52,13 +52,14 @@ struct header_field
 
     static const uword arity_bits           = 6;                                //0 = just fmt string
     static const uword severity_bits        = 3;
-    static const uword timestamp_bytes_bits = 3;
     static const uword no_timestamp_bits    = 1;
+    static const uword is_sync_bits         = 1;
 
     raw_type arity           : arity_bits;
     raw_type severity        : severity_bits;
     raw_type timestamp_bytes : numeric_bytes_bits;                              //1 to 8
     raw_type no_timestamp    : no_timestamp_bits;
+    raw_type is_sync         : is_sync_bits;
 };
 //------------------------------------------------------------------------------
 static_assert (sizeof (header_field) == sizeof (header_field::raw_type), "");

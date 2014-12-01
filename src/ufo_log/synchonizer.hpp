@@ -34,46 +34,67 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_HEADER_DATA_HPP_
-#define UFO_LOG_HEADER_DATA_HPP_
+#ifndef UFO_LOG_SYNCHONIZER_HPP_
+#define UFO_LOG_SYNCHONIZER_HPP_
 
-#include <ufo_log/util/system.hpp>
-#include <ufo_log/util/integer.hpp>
-#include <ufo_log/frontend_types.hpp>
-#include <ufo_log/synchonizer.hpp>
+#include <memory>
+#include <ufo_log/util/thread.hpp>
+#include <ufo_log/util/chrono.hpp>
 
-namespace ufo { namespace ser {
+#include <ufo_log/util//atomic.hpp>
+#include <ufo_log/util/mpsc_hybrid_wait.hpp>
+
+namespace ufo {
 
 //------------------------------------------------------------------------------
-struct header_data
+struct log_sync_resources
 {
-    u64           tstamp;                                                       //timestamps could be disabled on request, I don't know if us resolution would suffice.
-
-    const char*   fmt;
-    bool          has_tstamp;
-    sev::severity severity;
-    uword         arity;
-    synchronizer  sync;
+public:
+    log_sync_resources()
+    {
+        m_signaled = false;
+    }
+    //--------------------------------------------------------------------------
+    bool wait (uword timeout_ms)
+    {
+        try
+        {
+            auto pred = [&](){ return m_signaled; };
+            th::unique_lock<boost::mutex> l (m_lock);
+            if (timeout_ms)
+            {
+                return m_cond.wait_for(
+                            l, ch::milliseconds (timeout_ms), pred
+                            );
+            }
+            else
+            {
+                m_cond.wait (l, pred);
+                return true;
+            }
+        }
+        catch (...)
+        {
+            return false;
+        }
+    }
+    //--------------------------------------------------------------------------
+    void notify()
+    {
+        th::unique_lock<boost::mutex> l (m_lock);
+        m_signaled = true;
+        m_cond.notify_one();
+    }
+    //--------------------------------------------------------------------------
+private:
+    boost::condition_variable_any m_cond;
+    boost::mutex                  m_lock;
+    bool                          m_signaled;
+    //--------------------------------------------------------------------------
 };
 //------------------------------------------------------------------------------
-inline header_data make_header_data(
-                 sev::severity sev,
-                 const char*   fmt,
-                 uword         arity,
-                 bool          has_tstamp = false,
-                 u64           tstamp     = 0
-                )
-{
-    header_data h;
-    h.severity   = sev;
-    h.fmt        = fmt;
-    h.arity      = arity;
-    h.has_tstamp = has_tstamp;
-    h.tstamp     = tstamp;
-    return h;
-}
+typedef std::shared_ptr<log_sync_resources> synchronizer;
 //------------------------------------------------------------------------------
+} //namespaces
 
-}} //namespaces
-
-#endif /* UFO_LOG_HEADER_DATA_HPP_ */
+#endif /* UFO_LOG_SYNCHONIZER_HPP_ */

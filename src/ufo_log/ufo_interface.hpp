@@ -37,6 +37,7 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef UFO_LOG_INTERFACE_HPP_
 #define UFO_LOG_INTERFACE_HPP_
 
+#include <memory>
 #include <cassert>
 #include <string>
 #include <type_traits>
@@ -121,15 +122,14 @@ bool new_entry(                                                                 
             (std::is_same<N, null_type>::value ? 0 : 1)
             ;
 
-    ser::header_data hdr;
-    hdr.arity      = arity;
-    hdr.fmt        = fmt;
-    hdr.severity   = sv;
-    hdr.has_tstamp = fe.producer_timestamp() ? 1 : 0;
-    hdr.tstamp     = 0;
+    auto hdr = ser::make_header_data (sv, fmt, arity, fe.producer_timestamp());
     if (hdr.has_tstamp)                                                         //timestamping is actually slow! in my machine slows down the producers by a factor of 2
     {
         hdr.tstamp = get_timestamp();
+    }
+    if (false) //way to expose this to the interface
+    {
+        hdr.sync = std::make_shared<log_sync_resources>();
     }
 
     decltype (exp::get_field (a, 0))   a_field;                                 //just 16 bytes (if all parameters are used)
@@ -185,6 +185,11 @@ bool new_entry(                                                                 
         enc.do_export (m, m_field);
         enc.do_export (n, n_field);
         fe.push_encoded (enc);
+
+        if (hdr.sync)
+        {
+            hdr.sync->wait (0);
+        }
         return true;
     }
     log_error_call ("couldn't allocate encoder\n");
