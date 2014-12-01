@@ -41,9 +41,6 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/thread.hpp>
 #include <ufo_log/util/chrono.hpp>
 
-#include <ufo_log/util//atomic.hpp>
-#include <ufo_log/util/mpsc_hybrid_wait.hpp>
-
 namespace ufo {
 
 //------------------------------------------------------------------------------
