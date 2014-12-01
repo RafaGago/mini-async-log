@@ -15,6 +15,10 @@
 #include <ufo_log/util/chrono.hpp>
 #include <ufo_log/util/on_stack_dynamic.hpp>
 
+#if 0
+#include <ufo_log/synchonizer.hpp>
+#endif
+
 #include <cstdio>
 #include <memory>
 
@@ -383,6 +387,38 @@ private:
     //--------------------------------------------------------------------------
     std::shared_ptr<spdlog::logger> m_logger;
 };
+#if 0
+//------------------------------------------------------------------------------
+class raw_tests : public perftest<raw_tests>
+{
+    //--------------------------------------------------------------------------
+private:
+    friend class perftest<raw_tests>;
+    //--------------------------------------------------------------------------
+    void create()  {  }
+    //--------------------------------------------------------------------------
+    void destroy() { }
+    //--------------------------------------------------------------------------
+    bool configure()
+    {
+        return true;
+    };
+    //--------------------------------------------------------------------------
+    void thread (ufo::uword msg_count)
+    {
+        for (ufo::u64 i = 0; i < msg_count; ++i)
+        {
+            auto s = std::make_shared<ufo::log_sync_resources>();
+            auto e = s;
+        }
+    }
+    //--------------------------------------------------------------------------
+    void wait_until_work_completion() {  }
+    //--------------------------------------------------------------------------
+    const char* get_name() { return "raw test"; }
+    //--------------------------------------------------------------------------
+};
+#endif
 //------------------------------------------------------------------------------
 void ufo_tests (ufo::uword msgs)
 {
@@ -512,6 +548,18 @@ int main (int argc, const char* argv[])
     {
         spdlog_tests (msgs);
     }
+#if 0
+    else if (choice.compare ("raw") == 0)
+    {
+        raw_tests r;
+        r.run (msgs, 1);
+        r.run (msgs, 2);
+        r.run (msgs, 4);
+        r.run (msgs, 8);
+        return 1;
+
+    }
+#endif
     else
     {
         std::printf ("invalid choice\n");
