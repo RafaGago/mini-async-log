@@ -34,22 +34,15 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_TIMESTAMP_HPP_
-#define UFO_LOG_TIMESTAMP_HPP_
+#ifndef UFO_LOG_SIDE_EFFECT_ASSERT_HPP_
+#define UFO_LOG_SIDE_EFFECT_ASSERT_HPP_
 
-#include <ufo_log/util/integer.hpp>
-#include <ufo_log/util/chrono.hpp>
+#include <cassert>
 
-namespace ufo {
-//--------------------------------------------------------------------------
-inline u64 get_timestamp()
-{
-    return ch::duration_cast<ch::microseconds>(
-            ch::steady_clock::now().time_since_epoch()
-            ).count();
-}
-//------------------------------------------------------------------------------
+#ifdef NDEBUG
+    #define side_effect_assert(expr) (expr)
+#else
+    #define side_effect_assert(expr) assert (expr)
+#endif
 
-} //namespaces
-
-#endif /* UFO_LOG_TIMESTAMP_HPP_ */
+#endif /* UFO_LOG_SIDE_EFFECT_ASSERT_HPP_ */

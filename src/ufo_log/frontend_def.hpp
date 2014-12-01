@@ -164,9 +164,19 @@ public:
         m_min_severity = m_back.min_severity();
     }
     //--------------------------------------------------------------------------
-    sev::severity min_severity()
+    bool initialized() const
+    {
+        return (m_state == init);
+    }
+    //--------------------------------------------------------------------------
+    sev::severity min_severity() const
     {
         return (sev::severity) m_min_severity.val();
+    }
+    //--------------------------------------------------------------------------
+    bool can_log (sev::severity s) const
+    {
+        return initialized() && (s >= min_severity());
     }
     //--------------------------------------------------------------------------
     bool producer_timestamp() const
@@ -180,9 +190,7 @@ public:
         return producer_timestamp();
     }
     //--------------------------------------------------------------------------
-
 private:
-
     enum state
     {
         no_init,
@@ -190,6 +198,7 @@ private:
         init,
         terminated
     };
+    //--------------------------------------------------------------------------
     bool                     m_prints_timestamp;
     bool                     m_producer_timestamp;
     mo_relaxed_atomic<uword> m_min_severity;
@@ -225,9 +234,14 @@ frontend::init_status frontend::init_backend (const backend_cfg& cfg)
     return m->init_backend (cfg);
 }
 //------------------------------------------------------------------------------
-sev::severity frontend::min_severity()
+sev::severity frontend::min_severity() const
 {
     return m->min_severity();
+}
+//--------------------------------------------------------------------------
+bool frontend::can_log (sev::severity s) const
+{
+    return m->can_log (s);
 }
 //------------------------------------------------------------------------------
 void frontend::set_file_severity (sev::severity s)

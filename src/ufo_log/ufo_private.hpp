@@ -111,7 +111,7 @@ inline bool silence_warnings() { return true; }
 #define UFO_LOG_PRIVATE(instance, severity_, ...)\
     UFO_LOG_IF_PRIVATE(\
         (UFO_FMT_STRING_CHECK (__VA_ARGS__)) &&\
-        (instance.min_severity() <= ::ufo::sev::severity_),\
+        (instance.can_log (::ufo::sev::severity_)),\
         ::ufo::new_entry(\
             instance, ::ufo::sev::severity_, __VA_ARGS__\
             ))

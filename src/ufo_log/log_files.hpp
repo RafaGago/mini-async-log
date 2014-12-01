@@ -41,6 +41,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <cstring>
 #include <string>
 #include <deque>
+#include <ostream>
 #include <fstream>
 #include <vector>
 
@@ -93,6 +94,7 @@ public:
         catch (...)
         {
             assert (false && "log: memory exception");
+            std::cerr << "[logger] memory exception\n";
             return false;
         }
         if (file_count)
@@ -130,6 +132,10 @@ public:
                 erase_file (fn);
                 if (i == 20) //FIXME
                 {
+                    std::cerr << "[logger] unable to create write permission "
+                                 "verification file \""
+                              << fn
+                              << "\"\n";
                     assert(
                         false && "log: couldn't create or write a test file"
                         );

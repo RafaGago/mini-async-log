@@ -65,7 +65,9 @@ public:
     //--------------------------------------------------------------------------
     init_status init_backend (const backend_cfg& cfg);
     //--------------------------------------------------------------------------
-    sev::severity min_severity();
+    sev::severity min_severity() const;
+    //--------------------------------------------------------------------------
+    bool can_log (sev::severity s) const;
     //--------------------------------------------------------------------------
     void set_file_severity (sev::severity s);
     //--------------------------------------------------------------------------
@@ -81,7 +83,7 @@ public:
     //--------------------------------------------------------------------------
     bool producer_timestamp() const;
     //--------------------------------------------------------------------------
-    bool producer_timestamp (bool on);
+    bool producer_timestamp (bool on);                                          //even if you set this on producer_timestamp() can return false if the backed is configured to don't show timestamps
     //--------------------------------------------------------------------------
 private:
     class frontend_impl;

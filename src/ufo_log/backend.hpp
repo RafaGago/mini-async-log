@@ -40,6 +40,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <cstring>
 #include <cassert>
 #include <new>
+#include <ostream>
 
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/thread.hpp>
@@ -63,49 +64,28 @@ namespace ufo {
 //------------------------------------------------------------------------------
 struct node : public mpsc_node_hook
 {
+    //--------------------------------------------------------------------------
     u8* storage()
     {
         return ((u8*) this) + sizeof *this;
     }
-
+    //--------------------------------------------------------------------------
     static node* from_storage (u8* mem)
     {
         return (node*) (mem - sizeof (node));
     }
-
+    //--------------------------------------------------------------------------
     static uword strict_total_size (uword effective_size)
     {
         return sizeof (node) + effective_size;
     }
-
-    static u16 best_total_size (u16 effective_size)
+    //--------------------------------------------------------------------------
+    static uword effective_size (uword total_size)
     {
-        static const u16 align = std::alignment_of<node>::value;
-        u16 node_sz = ((sizeof (node) + effective_size + align - 1) / align);
-        return node_sz * align;
+        auto v = total_size - sizeof (node);
+        return (v < total_size) ? v : 0;
     }
-
-    static u16 optimize_effective_size (u16 effective_size)
-    {
-        return best_total_size (effective_size) - sizeof (node);
-    }
-
-    static u16 best_effective_size (u16 max_total_size)
-    {
-        static const u16 align = std::alignment_of<node>::value;
-        u16 candidate          = max_total_size - sizeof (node);
-        u16 res                = best_total_size (candidate);
-        if (res <= max_total_size)
-        {
-            return candidate;
-        }
-        else
-        {
-            candidate -= align;
-            res        = best_total_size (candidate);
-            return res - sizeof (node);
-        }
-    }
+    //--------------------------------------------------------------------------
 };
 //------------------------------------------------------------------------------
 class backend_impl
@@ -115,8 +95,8 @@ public:
     backend_impl()
     {
         m_cfg.alloc.use_heap_if_required       = true;
-        m_cfg.alloc.fixed_size_entry_size      = 128;
-        m_cfg.alloc.fixed_size_entry_count     = 1024;
+        m_cfg.alloc.fixed_entry_size           = 64;
+        m_cfg.alloc.fixed_block_size           = 64 * 1024;
 
         m_cfg.display.show_severity            = m_writer.prints_severity;
         m_cfg.display.show_timestamp           = m_writer.prints_timestamp;
@@ -196,12 +176,14 @@ public:
         uword exp = constructed;
         if (!m_status.compare_exchange_strong (exp, initializing, mo_relaxed))
         {
+            std::cerr << "[logger] already initialized\n";
             assert (false && "log: already initialized");
             return false;
         }
 
         if (!alloc_init (c.alloc))
         {
+            std::cerr << "[logger] allocator initialization failed\n";
             assert (false && "allocator initialization failed");
             return false;
         }
@@ -262,35 +244,43 @@ private:
     bool validate_cfg (const backend_cfg& c)
     {
         auto& a = c.alloc;
-        if (((!a.fixed_size_entry_count || !a.fixed_size_entry_size)) &&
+        if (((!a.fixed_block_size || !a.fixed_entry_size)) &&
               !a.use_heap_if_required
             )
         {
+            std::cerr << "[logger] invalid alloc cfg values cabät be 0\n";
             assert (false && "alloc cfg invalid");
             return false;
         }
-        if (a.fixed_size_entry_count && a.fixed_size_entry_size)
+        if (a.fixed_block_size && a.fixed_entry_size)
         {
-            auto sz      = node::best_effective_size (a.fixed_size_entry_size);
-            auto node_sz = node::best_total_size (sz);
-            if (node_sz < sz)
+            if (a.fixed_entry_size < 32)
             {
-                assert (false && "alloc fixed size entry size would overflow");
+                std::cerr << "[logger] minimum fixed block size is 32\n";
+                return false;
+            }
+            else if (a.fixed_block_size < a.fixed_entry_size)
+            {
+                std::cerr << "[logger] entry size bigger than the block size\n";
                 return false;
             }
         }
         if (c.file.rotation.file_count != 0 && c.file.aprox_size == 0)
         {
+            std::cerr <<
+                    "[logger] won't be able to rotate infinite size files\n";
             assert (false && "won't be able to rotate infinite size files");
             return false;
         }
         if (c.file.rotation.file_count == 1)
         {
+            std::cerr << "[logger] won't be able to rotate a single file\n";
             assert (false && "won't be able to rotate a single file");
             return false;
         }
         if (c.file.out_folder.size() == 0)
         {
+            std::cerr << "[logger] no output folder\n";
             assert (false && "log folder can't be empty");
             return false;
         }
@@ -303,12 +293,11 @@ private:
     //--------------------------------------------------------------------------
     bool alloc_init (const backend_log_entry_alloc_config& c)
     {
-        auto sz = node::best_total_size(
-                      node::best_effective_size (c.fixed_size_entry_size)
-                        );
+        assert (node::effective_size (c.fixed_entry_size));
+
         return m_alloc.init(
-                    c.fixed_size_entry_count,
-                    c.fixed_size_entry_size ? sz : 0,
+                    c.fixed_block_size,
+                    c.fixed_entry_size,
                     c.use_heap_if_required
                     );
     }

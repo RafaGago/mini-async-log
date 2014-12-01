@@ -117,14 +117,14 @@ public:
                 return state == unblocked;
             };
             m_state.store (blocked, mo_relaxed);
-            bool unblocked = m_cond.wait_for(                                 //note that it's possible that the worker misses a notification and waits the whole timeout, this is by design and preferable to mutex locking the callers. if you can't tolerate this latency in the worker you can throw CPU at it by setting cfg never_block
+            bool is_unblocked = m_cond.wait_for(                                 //note that it's possible that the worker misses a notification and waits the whole timeout, this is by design and preferable to mutex locking the callers. if you can't tolerate this latency in the worker you can throw CPU at it by setting cfg never_block
                                     m_dummy_mutex,
                                     ch::microseconds (m_cfg.block_us),
                                     pred
                                     );
-            assert (!unblocked || m_state.load (mo_relaxed) == unblocked);
+            assert (!is_unblocked || m_state.load (mo_relaxed) == unblocked);
             m_state.store (unblocked, mo_relaxed);
-            return !unblocked;
+            return !is_unblocked;
         }
     }
     //--------------------------------------------------------------------------

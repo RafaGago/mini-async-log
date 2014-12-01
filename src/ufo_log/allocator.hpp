@@ -49,20 +49,23 @@ either expressed or implied, of Rafael Gago Castano.
 
 namespace ufo {
 
-//this is a very specific spmc allocator, just the log backend thread can
-//deallocate!
+//This is a very specific spmc allocator for just this scenario and shouldn't
+//be used as a generic one.
+
+//The main reason to develop it isn't performance, as a matter of fact it barely
+//beats the heap. The main reason to have it is to be able to tune the logger
+//memory usage when the heap is disabled.
+
+//An atomic byte counter with fetch add and fetch sub would do the same job with
+//less complexity, but having multiple threads modifying the same variable is
+//a no-go, so this is the simplest next step, the good old block allocator.
+
+//Considering that the size is known and just a single thread will deallocate
+//this has a lot of room for improvement.
 
 //The only thread safe functions are allocate and deallocate.
 
 //The functions intended to be used by the producer never throw.
-
-//My point is, this is a class and looks like it can be reused, but the fact
-//is that it's pretty specialized and just separated to a header to avoid
-//cluttering the log backend implementation.
-
-//Be aware, the deallocation function is always called from the same thread and
-//that thread isn't performance critical.
-
 //------------------------------------------------------------------------------
 class ufo_allocator
 {
@@ -78,45 +81,30 @@ public:
         free();
     };
     //--------------------------------------------------------------------------
-    bool init(
-        uword fixed_size_entries,
-        uword fixed_size_entry_size,
-        bool  use_heap
-        )
+    bool init (uword total_byte_size, uword entry_size, bool use_heap)
     {
-        assert ((fixed_size_entries && fixed_size_entry_size) || use_heap);
+        total_byte_size = next_pow2 (total_byte_size);
+        entry_size      = next_pow2 (entry_size);
+
+        assert ((total_byte_size && entry_size) || use_heap);
+        assert (entry_size <= total_byte_size);
         assert (!m_fixed_begin && !m_use_heap);
 
         uword entries  = 0;
-        uword entry_sz = 0;
-        uword bsz      = 0;
 
-        if (fixed_size_entries && fixed_size_entry_size)
+        if (total_byte_size && entry_size && (entry_size <= total_byte_size))
         {
-            entries  = next_pow2 (fixed_size_entries);
-            entry_sz = next_pow2 (fixed_size_entry_size);
-
-            if ((entries < fixed_size_entries) ||
-                (entry_sz < fixed_size_entry_size)
-                )
-            {
-                return false;
-            }
-            bsz = entries * entry_sz;
-            if ((bsz / entries) != entry_sz)
-            {
-                return false;
-            }
+            entries = total_byte_size / entry_size;
         }
 
-        if (!bsz)
+        if (!entries)
         {
             zero();
             m_use_heap = use_heap;
             return true;
         }
 
-        m_fixed_begin  = (u8*) ::operator new (bsz, std::nothrow);
+        m_fixed_begin = (u8*) ::operator new (total_byte_size, std::nothrow);
         if (!m_fixed_begin)
         {
             return false;
@@ -130,8 +118,8 @@ public:
             free();
             return false;
         }
-        m_fixed_end     = m_fixed_begin + bsz;
-        m_entry_size    = entry_sz;
+        m_fixed_end     = m_fixed_begin + total_byte_size;
+        m_entry_size    = entry_size;
         m_use_heap      = use_heap;
 
 #ifdef EXPERIMENTAL_ORDERING_CACHE

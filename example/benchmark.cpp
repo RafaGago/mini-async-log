@@ -211,9 +211,9 @@ class ufo_tester : public perftest<ufo_tester>
 {
 public:
     //--------------------------------------------------------------------------
-    void set_params (ufo::uword entries, ufo::uword entry_size, bool heap)
+    void set_params (ufo::uword total_bsz, ufo::uword entry_size, bool heap)
     {
-        m_entries    = entries;
+        m_total_bsz  = total_bsz;
         m_entry_size = entry_size;
         m_heap       = heap;
     }
@@ -232,13 +232,13 @@ private:
         be_cfg.file.out_folder                  = OUT_FOLDER "/";               //this folder has to exist before running
         be_cfg.file.aprox_size                  = file_size_bytes;
         be_cfg.file.rotation.file_count         = 0;
-        be_cfg.file.rotation.delayed_file_count = 0;                                //we let the logger to have an extra file when there is a lot of workload
+        be_cfg.file.rotation.delayed_file_count = 0;                            //we let the logger to have an extra file when there is a lot of workload
 
-        be_cfg.alloc.fixed_size_entry_count     = m_entries;
-        be_cfg.alloc.fixed_size_entry_size      = m_entry_size;
+        be_cfg.alloc.fixed_block_size           = m_total_bsz;
+        be_cfg.alloc.fixed_entry_size           = m_entry_size;
         be_cfg.alloc.use_heap_if_required       = m_heap;
 
-        be_cfg.display.show_timestamp = false; //timestamping takes 50% of the time at this time scale
+        m_fe->producer_timestamp (false);                                       //timestamping on producers slows the whole thing down 2.5, 3x, so we timestamp in the file worker for now. todo: for fairness the other libraries should have it disabled too
 
         return m_fe->init_backend (be_cfg) == frontend::init_ok;
     }
@@ -261,8 +261,7 @@ private:
     const char* get_name() { return "ufo log"; }
     //--------------------------------------------------------------------------
     ufo::on_stack_dynamic<ufo::frontend> m_fe;
-    ufo::uword m_entries, m_entry_size, m_heap;
-
+    ufo::uword m_total_bsz, m_entry_size, m_heap;
 };
 //------------------------------------------------------------------------------
 class google_tester: public perftest<google_tester>
@@ -391,16 +390,16 @@ void ufo_tests (ufo::uword msgs)
 
     std::printf ("no heap------------------------------------------\n");
 
-    ufo_test.set_params (10 * 1024 * 1024, 16, false);
+    ufo_test.set_params (64 * 1024 * 1024, 32, false);
     ufo_test.run (msgs, 1);
 
-    ufo_test.set_params (10 * 1024 * 1024, 16, false);
+    ufo_test.set_params (64 * 1024 * 1024, 32, false);
     ufo_test.run (msgs, 2);
 
-    ufo_test.set_params (10 * 1024 * 1024, 16, false);
+    ufo_test.set_params (64 * 1024 * 1024, 32, false);
     ufo_test.run (msgs, 4);
 
-    ufo_test.set_params (10 * 1024 * 1024, 16, false);
+    ufo_test.set_params (64 * 1024 * 1024, 32, false);
     ufo_test.run (msgs, 8);
 
     std::printf ("pure heap----------------------------------------\n");
@@ -419,16 +418,16 @@ void ufo_tests (ufo::uword msgs)
 
     std::printf ("hybrid-------------------------------------------\n");
 
-    ufo_test.set_params (1024 * 8, 16, true);
+    ufo_test.set_params (1024 * 128, 32, true);
     ufo_test.run (msgs, 1);
 
-    ufo_test.set_params (1024 * 8, 16, true);
+    ufo_test.set_params (1024 * 128, 32, true);
     ufo_test.run (msgs, 2);
 
-    ufo_test.set_params (1024 * 8, 16, true);
+    ufo_test.set_params (1024 * 128, 32, true);
     ufo_test.run (msgs, 4);
 
-    ufo_test.set_params (1024 * 8, 16, true);
+    ufo_test.set_params (1024 * 128, 32, true);
     ufo_test.run (msgs, 8);
 }
 //------------------------------------------------------------------------------
@@ -492,7 +491,7 @@ void spdlog_tests (ufo::uword msgs)
 //------------------------------------------------------------------------------
 int main (int argc, const char* argv[])
 {
-    const ufo::uword msgs = 16000000;
+    const ufo::uword msgs = 1600000;
 
     if (argc < 2)
     {

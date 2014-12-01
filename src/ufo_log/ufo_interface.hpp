@@ -43,6 +43,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/frontend.hpp>
 #include <ufo_log/timestamp.hpp>
 #include <ufo_log/serialization/exporter.hpp>
+#include <ufo_log/util/side_effect_assert.hpp>
 
 namespace ufo {
 
@@ -147,21 +148,22 @@ bool new_entry(                                                                 
     decltype (exp::get_field (hdr, 0)) hdr_field;
 
     uword length = 0;
-    if (!prebuild_data (a, a_field, length))     { return false; }
-    if (!prebuild_data (b, b_field, length))     { return false; }
-    if (!prebuild_data (c, c_field, length))     { return false; }
-    if (!prebuild_data (d, d_field, length))     { return false; }
-    if (!prebuild_data (e, e_field, length))     { return false; }
-    if (!prebuild_data (f, f_field, length))     { return false; }
-    if (!prebuild_data (g, g_field, length))     { return false; }
-    if (!prebuild_data (h, h_field, length))     { return false; }
-    if (!prebuild_data (i, i_field, length))     { return false; }
-    if (!prebuild_data (j, j_field, length))     { return false; }
-    if (!prebuild_data (k, k_field, length))     { return false; }
-    if (!prebuild_data (l, l_field, length))     { return false; }
-    if (!prebuild_data (m, m_field, length))     { return false; }
-    if (!prebuild_data (n, n_field, length))     { return false; }
-    if (!prebuild_data (hdr, hdr_field, length)) { return false; }
+
+    side_effect_assert (prebuild_data (a, a_field, length));
+    side_effect_assert (prebuild_data (b, b_field, length));
+    side_effect_assert (prebuild_data (c, c_field, length));
+    side_effect_assert (prebuild_data (d, d_field, length));
+    side_effect_assert (prebuild_data (e, e_field, length));
+    side_effect_assert (prebuild_data (f, f_field, length));
+    side_effect_assert (prebuild_data (g, g_field, length));
+    side_effect_assert (prebuild_data (h, h_field, length));
+    side_effect_assert (prebuild_data (i, i_field, length));
+    side_effect_assert (prebuild_data (j, j_field, length));
+    side_effect_assert (prebuild_data (k, k_field, length));
+    side_effect_assert (prebuild_data (l, l_field, length));
+    side_effect_assert (prebuild_data (m, m_field, length));
+    side_effect_assert (prebuild_data (n, n_field, length));
+    side_effect_assert (prebuild_data (hdr, hdr_field, length));
 
     auto enc = fe.get_encoder (length);
     if (enc.has_memory())
