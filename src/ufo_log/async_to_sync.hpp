@@ -34,41 +34,49 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_SYNCHONIZER_HPP_
-#define UFO_LOG_SYNCHONIZER_HPP_
+#ifndef UFO_LOG_ASYNC_TO_SYNC_HPP_
+#define UFO_LOG_ASYNC_TO_SYNC_HPP_
 
-#include <memory>
 #include <ufo_log/util/thread.hpp>
 #include <ufo_log/util/chrono.hpp>
+#include <ufo_log/sync_point.hpp>
 
 namespace ufo {
 
 //------------------------------------------------------------------------------
-struct log_sync_resources
+struct async_to_sync
 {
 public:
-    log_sync_resources()
+    //--------------------------------------------------------------------------
+    async_to_sync()
     {
-        m_signaled = false;
+        m_cancel_all = false;
     }
     //--------------------------------------------------------------------------
-    bool wait (uword timeout_ms)
+    ~async_to_sync()
     {
+        cancel_all();
+    }
+    //--------------------------------------------------------------------------
+    void cancel_all()
+    {
+        m_lock.lock();
+        m_cancel_all = true;
+        m_lock.unlock();
+        m_cond.notify_all();
+    }
+    //--------------------------------------------------------------------------
+    bool wait (sync_point& sync)
+    {
+        th::unique_lock<boost::mutex> lock (m_lock);
         try
         {
-            auto pred = [&](){ return m_signaled; };
-            th::unique_lock<boost::mutex> l (m_lock);
-            if (timeout_ms)
+            auto pred = [&]()
             {
-                return m_cond.wait_for(
-                            l, ch::milliseconds (timeout_ms), pred
-                            );
-            }
-            else
-            {
-                m_cond.wait (l, pred);
-                return true;
-            }
+                return (sync.state == sync_point::touched) || m_cancel_all;
+            };
+            m_cond.wait (lock, pred);
+            return !m_cancel_all;
         }
         catch (...)
         {
@@ -76,22 +84,21 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-    void notify()
+    void notify (sync_point& sync)
     {
         th::unique_lock<boost::mutex> l (m_lock);
-        m_signaled = true;
-        m_cond.notify_one();
+        sync.state = sync_point::touched;
+        m_cond.notify_all();
     }
     //--------------------------------------------------------------------------
 private:
     boost::condition_variable_any m_cond;
     boost::mutex                  m_lock;
-    bool                          m_signaled;
+    bool                          m_cancel_all;
     //--------------------------------------------------------------------------
 };
 //------------------------------------------------------------------------------
-typedef std::shared_ptr<log_sync_resources> synchronizer;
-//------------------------------------------------------------------------------
+
 } //namespaces
 
-#endif /* UFO_LOG_SYNCHONIZER_HPP_ */
+#endif /* UFO_LOG_ASYNC_TO_SYNC_HPP_ */

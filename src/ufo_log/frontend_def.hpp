@@ -37,13 +37,14 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef UFO_LOG_LOG_FRONTEND_DEF_HPP_
 #define UFO_LOG_LOG_FRONTEND_DEF_HPP_
 
+#include <utility>
 #include <ufo_log/util/atomic.hpp>
 #include <ufo_log/util/thread.hpp>
 #include <ufo_log/frontend.hpp>
 #include <ufo_log/backend.hpp>
+#include <ufo_log/async_to_sync.hpp>
 
 namespace ufo {
-
 
 //------------------------------------------------------------------------------
 class frontend::frontend_impl
@@ -72,7 +73,25 @@ public:
         return e;
     }
     //--------------------------------------------------------------------------
-    void push_encoded (ser::exporter encoder)
+    bool sync_push_encoded(
+            ser::exporter encoder, sync_point& sync
+            )
+    {
+        assert (m_state.load (mo_relaxed) == init);
+        if (encoder.has_memory())
+        {
+            uint8* mem = encoder.get_memory();
+            m_back.push_allocated_entry (mem);
+            return m_sync.wait (sync);
+        }
+        else
+        {
+            assert (false && "bug!");
+            return false;
+        }
+    }
+    //--------------------------------------------------------------------------
+    void async_push_encoded (ser::exporter encoder)
     {
         assert (m_state.load (mo_relaxed) == init);
         if (encoder.has_memory())
@@ -96,7 +115,7 @@ public:
         uword actual = no_init;
         if (m_state.compare_exchange_strong (actual, on_init, mo_acquire))
         {
-            if (m_back.init (cfg))
+            if (m_back.init (cfg, m_sync))
             {
                 m_prints_timestamp = cfg.display.show_timestamp;
                 m_state.store (init, mo_release);
@@ -136,6 +155,7 @@ public:
         uword actual = init;
         if (m_state.compare_exchange_strong (actual, terminated, mo_relaxed))
         {
+            m_sync.cancel_all();
             m_back.on_termination();
         }
     }
@@ -204,6 +224,7 @@ private:
     mo_relaxed_atomic<uword> m_min_severity;
     mo_relaxed_atomic<uword> m_state;
     backend_impl             m_back;
+    async_to_sync            m_sync;
 };
 //------------------------------------------------------------------------------
 frontend::frontend() : m (new frontend::frontend_impl())
@@ -214,14 +235,22 @@ frontend::~frontend()
 {
 }
 //------------------------------------------------------------------------------
-ser::exporter  frontend::get_encoder (uword required_bytes)
+ser::exporter frontend::get_encoder (uword required_bytes)
 {
     return m->get_encoder (required_bytes);
 }
 //------------------------------------------------------------------------------
-void frontend::push_encoded (ser::exporter  encoder)
+void frontend::async_push_encoded (ser::exporter encoder)
 {
-    m->push_encoded (encoder);
+    m->async_push_encoded (encoder);
+}
+//--------------------------------------------------------------------------
+bool frontend::sync_push_encoded(
+        ser::exporter encoder,
+        sync_point&   sync
+        )
+{
+    return m->sync_push_encoded (encoder, sync);
 }
 //------------------------------------------------------------------------------
 backend_cfg frontend::get_backend_cfg()

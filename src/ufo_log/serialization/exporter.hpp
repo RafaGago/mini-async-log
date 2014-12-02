@@ -65,8 +65,8 @@ public:
     {
         return sizeof (header_field) +
                sizeof (const char*) +
-               (h.has_tstamp ? unsigned_bytes_required (h.tstamp) : 0) +
-               (h.sync ? sizeof (placement_new<decltype (h.sync)>) : 0);
+               (h.has_tstamp      ? unsigned_bytes_required (h.tstamp) : 0) +
+               (h.sync == nullptr ? 0 : sizeof h.sync );
     }
     //--------------------------------------------------------------------------
     template <class T>
@@ -128,15 +128,17 @@ public:
     static header_field get_field (header_data v, uword bytes_required)
     {
         uword bytes = bytes_required -
-                      (sizeof (const char*) +
-                      sizeof (header_field));
+                      sizeof (const char*) -
+                      sizeof (header_field) -
+                      ((v.sync != nullptr ? 1 : 0) * sizeof v.sync)
+                      ;
         assert ((v.has_tstamp && bytes) || !v.has_tstamp);
         header_field f;
         f.arity           = v.arity;
         f.severity        = v.severity;
-        f.no_timestamp    = v.has_tstamp ? 0 : 1;
-        f.timestamp_bytes = v.has_tstamp ? bytes - 1 : 0;
-        f.is_sync         = v.sync ? 1 : 0;
+        f.no_timestamp    = v.has_tstamp      ? 0 : 1;
+        f.timestamp_bytes = v.has_tstamp      ? bytes - 1 : 0;
+        f.is_sync         = v.sync != nullptr ? 1 : 0;
         return f;
     }
     //--------------------------------------------------------------------------
@@ -228,18 +230,15 @@ public:
     //--------------------------------------------------------------------------
     void do_export (header_data hd, header_field f)
     {
-        m_pos = encode_type (m_pos, m_end, f);
-        m_pos = encode_type (m_pos, m_end, hd.fmt);
+        export_type (f);
+        export_type (hd.fmt);
         if (hd.has_tstamp)
         {
             encode_unsigned (hd.tstamp, ((uword) f.timestamp_bytes) + 1);
         }
         if (hd.sync)
         {
-            assert (f.is_sync);
-            placement_new<decltype (hd.sync)> refcount_cheat;
-            refcount_cheat.construct (hd.sync);
-            m_pos = encode_type (m_pos, m_end, refcount_cheat.get());
+            export_type (hd.sync);
         }
     }
     //--------------------------------------------------------------------------
@@ -261,31 +260,31 @@ public:
     //--------------------------------------------------------------------------
     void do_export (bool, non_integral_field f)
     {
-        m_pos = encode_type (m_pos, m_end, f);
+        export_type (f);
     }
     //--------------------------------------------------------------------------
     void do_export (float v, non_integral_field f)
     {
-        m_pos = encode_type (m_pos, m_end, f);
-        m_pos = encode_type (m_pos, m_end, v);
+        export_type (f);
+        export_type (v);
     }
     //--------------------------------------------------------------------------
     void do_export (double v, non_integral_field f)
     {
-        m_pos = encode_type (m_pos, m_end, f);
-        m_pos = encode_type (m_pos, m_end, v);
+        export_type (f);
+        export_type (v);
     }
     //--------------------------------------------------------------------------
     void do_export (literal_wrapper l, non_numeric_field f)
     {
-        m_pos = encode_type (m_pos, m_end, f);
-        m_pos = encode_type (m_pos, m_end, l.lit);
+        export_type (f);
+        export_type (l.lit);
     }
     //--------------------------------------------------------------------------
     void do_export (ptr_wrapper p, non_numeric_field f)
     {
-        m_pos = encode_type (m_pos, m_end, f);
-        m_pos = encode_type (m_pos, m_end, p.ptr);
+        export_type (f);
+        export_type (p.ptr);
     }
     //--------------------------------------------------------------------------
     void do_export (deep_copy_bytes b, non_numeric_field f)
@@ -299,6 +298,12 @@ public:
     }
     //--------------------------------------------------------------------------
 private:
+    //--------------------------------------------------------------------------
+    template <class T>
+    void export_type (T val)
+    {
+        m_pos = encode_type (m_pos, m_end, val);
+    }
     //--------------------------------------------------------------------------
     template <class T>
     static typename enable_if_unsigned<T, uword>::type
@@ -358,7 +363,7 @@ private:
     void encode_prepared_integral (T val, integral_field f)
     {
         typedef typename std::make_unsigned<T>::type U;
-        m_pos = encode_type (m_pos, m_end, f);
+        export_type (f);
         encode_unsigned ((U) val, ((uword) f.bytes) + 1);
     }
     //--------------------------------------------------------------------------
@@ -372,7 +377,7 @@ private:
     //--------------------------------------------------------------------------
     void encode_delimited (delimited_mem m, non_numeric_field f)
     {
-        m_pos = encode_type (m_pos, m_end, f);
+        export_type (f);
         encode_unsigned(
                 m.size, ((uword) f.deep_copied_length_bytes) + 1
                 );

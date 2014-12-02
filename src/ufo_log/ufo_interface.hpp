@@ -44,6 +44,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/frontend.hpp>
 #include <ufo_log/timestamp.hpp>
 #include <ufo_log/serialization/exporter.hpp>
+#include <ufo_log/sync_point.hpp>
 #include <ufo_log/util/side_effect_assert.hpp>
 
 namespace ufo {
@@ -103,8 +104,11 @@ bool new_entry(                                                                 
     N             n
     )
 {
+    static const bool is_async = false;
+
     typedef ser::exporter exp;
     typedef exp::null_type null_type;
+
     const uword arity =
             (std::is_same<A, null_type>::value ? 0 : 1) +
             (std::is_same<B, null_type>::value ? 0 : 1) +
@@ -122,15 +126,7 @@ bool new_entry(                                                                 
             (std::is_same<N, null_type>::value ? 0 : 1)
             ;
 
-    auto hdr = ser::make_header_data (sv, fmt, arity, fe.producer_timestamp());
-    if (hdr.has_tstamp)                                                         //timestamping is actually slow! in my machine slows down the producers by a factor of 2
-    {
-        hdr.tstamp = get_timestamp();
-    }
-    if (false) //way to expose this to the interface
-    {
-        hdr.sync = std::make_shared<log_sync_resources>();
-    }
+    ser::header_data hdr;
 
     decltype (exp::get_field (a, 0))   a_field;                                 //just 16 bytes (if all parameters are used)
     decltype (exp::get_field (b, 0))   b_field;
@@ -164,6 +160,18 @@ bool new_entry(                                                                 
     side_effect_assert (prebuild_data (l, l_field, length));
     side_effect_assert (prebuild_data (m, m_field, length));
     side_effect_assert (prebuild_data (n, n_field, length));
+
+    hdr = ser::make_header_data (sv, fmt, arity, fe.producer_timestamp());
+    if (hdr.has_tstamp)                                                         //timestamping is actually slow! in my machine slows down the producers by a factor of 2
+    {
+        hdr.tstamp = get_timestamp();
+    }
+
+    sync_point sync;
+    if (!is_async)
+    {
+        hdr.sync = &sync;
+    }
     side_effect_assert (prebuild_data (hdr, hdr_field, length));
 
     auto enc = fe.get_encoder (length);
@@ -184,11 +192,14 @@ bool new_entry(                                                                 
         enc.do_export (l, l_field);
         enc.do_export (m, m_field);
         enc.do_export (n, n_field);
-        fe.push_encoded (enc);
-
-        if (hdr.sync)
+        if (is_async)
         {
-            hdr.sync->wait (0);
+            fe.async_push_encoded (enc);
+        }
+        else
+        {
+            fe.sync_push_encoded (enc, sync);
+//            fe.sync_push_encoded (enc, 5000000, hdr.sync_transaction_id);
         }
         return true;
     }

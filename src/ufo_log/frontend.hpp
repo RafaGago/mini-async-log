@@ -43,6 +43,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 namespace ufo {
 
+class sync_point;
 //------------------------------------------------------------------------------
 class frontend
 {
@@ -77,7 +78,12 @@ public:
     //--------------------------------------------------------------------------
     ser::exporter get_encoder (uword required_bytes);
     //--------------------------------------------------------------------------
-    void push_encoded (ser::exporter encoder);
+    void async_push_encoded (ser::exporter encoder);
+    //--------------------------------------------------------------------------
+    bool sync_push_encoded(                                                     //returns false if timeout
+            ser::exporter encoder,
+            sync_point&   syncer
+            );
     //--------------------------------------------------------------------------
     void on_termination();                                                      //you may want to call this from e.g. SIGTERM handlers, be aware that all the data generators/producer should be stopped before to guarantee that the queue can be left completely empty (no memory leaks).
     //--------------------------------------------------------------------------

@@ -57,25 +57,23 @@ public:
     //--------------------------------------------------------------------------
     void do_import (header_data& hd)
     {
-        header_field f;
-        import_type (f);
+        header_field h;
+        import_type (h);
         import_type (hd.fmt);
 
-        hd.arity      = f.arity;
-        hd.has_tstamp = f.no_timestamp ? 0 : 1;
+        hd.arity      = h.arity;
+        hd.has_tstamp = h.no_timestamp ? false : true;
         hd.tstamp     = 0;
-        hd.severity   = (sev::severity) f.severity;
+        hd.severity   = (sev::severity) h.severity;
+        hd.sync       = nullptr;
 
         if (hd.has_tstamp)
         {
-            decode_unsigned (hd.tstamp, ((uword) f.timestamp_bytes) + 1);
+            decode_unsigned (hd.tstamp, ((uword) h.timestamp_bytes) + 1);
         }
-        if (f.is_sync)
+        if (h.is_sync)
         {
-            placement_new<decltype (hd.sync)> refcount_cheat;
-            import_type (refcount_cheat);
-            hd.sync = refcount_cheat.get();
-            refcount_cheat.destruct();
+            import_type (hd.sync);
         }
     }
     //--------------------------------------------------------------------------

@@ -34,36 +34,29 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_BASIC_ENCODER_DECODER_HPP_
-#define UFO_LOG_BASIC_ENCODER_DECODER_HPP_
+#ifndef UFO_LOG_SYNC_POINT_HPP_
+#define UFO_LOG_SYNC_POINT_HPP_
 
-#include <cassert>
-#include <cstring>
 #include <ufo_log/util/integer.hpp>
 
-namespace ufo { namespace ser {
+namespace ufo {
+
 //------------------------------------------------------------------------------
-struct basic_encoder_decoder
+struct sync_point
 {
     //--------------------------------------------------------------------------
-    template <class T>
-    static u8* encode_type (u8* ptr, u8* end, T val)
+    enum { untouched, touched,};
+    //--------------------------------------------------------------------------
+    sync_point()
     {
-        assert (ptr && end && (ptr + sizeof val <= end));
-        std::memcpy (ptr, &val, sizeof val);
-        return ptr + sizeof val;
+        state = untouched;
     }
     //--------------------------------------------------------------------------
-    template <class T>
-    static const u8* decode_type (T& val, const u8* ptr, const u8* end)
-    {
-        assert (ptr && end && (ptr + sizeof val) <= end);
-        std::memcpy (&val, ptr, sizeof val);
-        return ptr + sizeof val;
-    }
+private:
+    friend class async_to_sync;
+    u8 state;
 };
 //------------------------------------------------------------------------------
+} //namespaces
 
-}} //namespaces
-
-#endif /* UFO_LOG_BASIC_ENCODER_DECODER_HPP_ */
+#endif /* UFO_LOG_SYNC_POINT_HPP_ */

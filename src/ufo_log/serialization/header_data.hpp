@@ -40,20 +40,22 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/system.hpp>
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/frontend_types.hpp>
-#include <ufo_log/synchonizer.hpp>
 
-namespace ufo { namespace ser {
+namespace ufo {
+
+class sync_point;
+
+namespace ser {
 
 //------------------------------------------------------------------------------
 struct header_data
 {
     u64           tstamp;                                                       //timestamps could be disabled on request, I don't know if us resolution would suffice.
-
     const char*   fmt;
     bool          has_tstamp;
     sev::severity severity;
     uword         arity;
-    synchronizer  sync;
+    sync_point*   sync;
 };
 //------------------------------------------------------------------------------
 inline header_data make_header_data(
@@ -70,6 +72,7 @@ inline header_data make_header_data(
     h.arity      = arity;
     h.has_tstamp = has_tstamp;
     h.tstamp     = tstamp;
+    h.sync       = nullptr;
     return h;
 }
 //------------------------------------------------------------------------------

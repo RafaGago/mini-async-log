@@ -60,6 +60,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 namespace ufo {
 
+class async_to_sync;
 
 //------------------------------------------------------------------------------
 struct node : public mpsc_node_hook
@@ -169,7 +170,7 @@ public:
         return m_cfg;
     }
     //--------------------------------------------------------------------------
-    bool init (const backend_cfg& c)
+    bool init (const backend_cfg& c, async_to_sync& sync)
     {
         if (!validate_cfg (c)) { return false; }
 
@@ -202,6 +203,8 @@ public:
 
         auto rollback_cfg = m_cfg;
         set_cfg (c);
+
+        m_writer.set_synchronizer (sync);
 
         m_status.store (initialized, mo_release);                               // I guess that all Kernels do this for me when launching a thread, just being on the safe side in case is not true
         m_log_thread = th::thread ([this](){ this->thread(); });
@@ -293,7 +296,9 @@ private:
     //--------------------------------------------------------------------------
     bool alloc_init (const backend_log_entry_alloc_config& c)
     {
-        assert (node::effective_size (c.fixed_entry_size));
+        assert (node::effective_size (c.fixed_entry_size) ||
+                c.use_heap_if_required
+                );
 
         return m_alloc.init(
                     c.fixed_block_size,
