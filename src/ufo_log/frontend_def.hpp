@@ -37,15 +37,15 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef UFO_LOG_LOG_FRONTEND_DEF_HPP_
 #define UFO_LOG_LOG_FRONTEND_DEF_HPP_
 
+#include <utility>
 #include <ufo_log/util/atomic.hpp>
 #include <ufo_log/util/thread.hpp>
 #include <ufo_log/frontend.hpp>
 #include <ufo_log/backend.hpp>
+#include <ufo_log/async_to_sync.hpp>
+#include <ufo_log/timestamp.hpp>
 
 namespace ufo {
-
-namespace th = UFO_THREAD_NAMESPACE;
-namespace at = UFO_ATOMIC_NAMESPACE;
 
 //------------------------------------------------------------------------------
 class frontend::frontend_impl
@@ -54,35 +54,117 @@ public:
     //--------------------------------------------------------------------------
     frontend_impl()
     {
-        m_state    = no_init;
-        m_severity = sev::notice;
+        m_state              = no_init;
+        m_min_severity       = sev::notice;
+        m_prints_timestamp   = true;
+        m_producer_timestamp = true;
+        m_timestamp_base     = 0;
     }
     //--------------------------------------------------------------------------
     ~frontend_impl() {}
     //--------------------------------------------------------------------------
-    proto::encoder get_encoder (uword required_bytes)
+    ser::exporter get_encoder (uword required_bytes)
     {
         assert (m_state.load (mo_relaxed) == init);
-        proto::encoder m;
+        ser::exporter e;
         uint8* mem = m_back.allocate_entry (required_bytes);
         if (mem)
         {
-            m.init (mem, required_bytes);
+            e.init (mem, required_bytes);
         }
-        return m;
+        return e;
     }
     //--------------------------------------------------------------------------
-    void push_encoded (proto::encoder encoder)
+    bool sync_push_encoded(
+            ser::exporter encoder, sync_point& sync
+            )
     {
         assert (m_state.load (mo_relaxed) == init);
-        if (encoder.can_encode())
+        if (encoder.has_memory())
         {
-            uint8* mem = encoder.get_result();
+            uint8* mem = encoder.get_memory();
+            m_back.push_allocated_entry (mem);
+            return m_sync.wait (sync);
+        }
+        else
+        {
+            assert (false && "bug!");
+            return false;
+        }
+    }
+    //--------------------------------------------------------------------------
+    void async_push_encoded (ser::exporter encoder)
+    {
+        assert (m_state.load (mo_relaxed) == init);
+        if (encoder.has_memory())
+        {
+            uint8* mem = encoder.get_memory();
             m_back.push_allocated_entry (mem);
         }
         else
         {
             assert (false && "bug!");
+        }
+    }
+    //--------------------------------------------------------------------------
+    backend_cfg get_backend_cfg() const
+    {
+        return m_back.get_cfg();
+    }
+    //--------------------------------------------------------------------------
+    frontend::init_status init_backend (const backend_cfg& cfg)
+    {
+        uword actual = no_init;
+        if (m_state.compare_exchange_strong (actual, on_init, mo_acquire))
+        {
+            m_timestamp_base = get_timestamp();
+            if (m_back.init (cfg, m_sync, m_timestamp_base))
+            {
+                m_prints_timestamp = cfg.display.show_timestamp;
+                m_state.store (init, mo_release);
+                return frontend::init_ok;
+            }
+            else
+            {
+                m_state.store (no_init, mo_relaxed);
+                return frontend::init_tried_but_failed;
+            }
+        }
+        switch (actual)
+        {
+        case on_init:
+        {
+            uword actual = on_init;
+            while (actual == on_init);
+            {
+                th::this_thread::yield();
+                actual = m_state.load (mo_acquire);
+            }
+            return (actual == init) ?
+                    frontend::init_done_by_other : frontend::init_other_failed;
+        }
+        case init:
+            return frontend::init_done_by_other;
+        case terminated:
+            return frontend::init_was_terminated;
+        default:
+            assert (false && "unreachable");
+            return frontend::init_was_terminated;
+        }
+    }
+    //--------------------------------------------------------------------------
+    u64 timestamp_base() const
+    {
+        return m_timestamp_base;
+    }
+    //--------------------------------------------------------------------------
+    void on_termination()
+    {
+        uword actual = init;
+        if (m_state.compare_exchange_strong (actual, terminated, mo_relaxed))
+        {
+            m_sync.cancel_all();
+            m_back.on_termination();
         }
     }
     //--------------------------------------------------------------------------
@@ -99,68 +181,44 @@ public:
             return false;
         }
         m_back.set_console_severity (stderr, stdout);
+        m_min_severity = m_back.min_severity();
         return true;
     }
     //--------------------------------------------------------------------------
-    backend_cfg get_backend_cfg() const
+    void set_file_severity (sev::severity s)
     {
-        return m_back.get_cfg();
+        assert (s < sev::invalid);
+        m_back.set_file_severity (s);
+        m_min_severity = m_back.min_severity();
     }
     //--------------------------------------------------------------------------
-    frontend::init_status init_backend (const backend_cfg& cfg)
+    bool initialized() const
     {
-        uword actual = no_init;
-        if (m_state.compare_exchange_strong (actual, on_init, mo_relaxed))
-        {
-            bool ok = m_back.init (cfg);
-            m_state.store ((ok) ? init : no_init, mo_relaxed);
-            return (ok) ? frontend::init_ok : frontend::init_tried_but_failed;
-        }
-        switch (actual)
-        {
-        case on_init:
-        {
-            uword actual = on_init;
-            while (actual == on_init);
-            {
-                th::this_thread::yield();
-                actual = m_state.load (mo_relaxed);
-            }
-            return (actual == init) ?
-                    frontend::init_done_by_other : frontend::init_other_failed;
-        }
-        case init:
-            return frontend::init_done_by_other;
-        case terminated:
-            return frontend::init_was_terminated;
-        default:
-            assert (false && "unreachable");
-            return frontend::init_was_terminated;
-        }
+        return (m_state == init);
     }
     //--------------------------------------------------------------------------
-    void on_termination()
+    sev::severity min_severity() const
     {
-        uword actual = init;
-        if (m_state.compare_exchange_strong (actual, terminated, mo_relaxed))
-        {
-            m_back.on_termination();
-        }
+        return (sev::severity) m_min_severity.val();
     }
     //--------------------------------------------------------------------------
-    void set_severity (sev::severity s)
+    bool can_log (sev::severity s) const
     {
-        assert (severity() < sev::invalid);
-        m_severity.store (s, mo_relaxed);
+        return initialized() && (s >= min_severity());
     }
     //--------------------------------------------------------------------------
-    sev::severity severity()
+    bool producer_timestamp() const
     {
-        return (sev::severity) m_severity.load (mo_relaxed);
+        return m_producer_timestamp && m_prints_timestamp;
+    }
+    //--------------------------------------------------------------------------
+    bool producer_timestamp (bool on)
+    {
+        m_producer_timestamp = on;
+        return producer_timestamp();
     }
     //--------------------------------------------------------------------------
 private:
-
     enum state
     {
         no_init,
@@ -168,62 +226,92 @@ private:
         init,
         terminated
     };
-
-    backend_impl      m_back;
-    at::atomic<uword> m_severity;
-    at::atomic<uword> m_state;
+    //--------------------------------------------------------------------------
+    bool                     m_prints_timestamp;
+    bool                     m_producer_timestamp;
+    u64                      m_timestamp_base;
+    mo_relaxed_atomic<uword> m_min_severity;
+    mo_relaxed_atomic<uword> m_state;
+    backend_impl             m_back;
+    async_to_sync            m_sync;
 };
 //------------------------------------------------------------------------------
 frontend::frontend() : m (new frontend::frontend_impl())
 {
 }
-
+//------------------------------------------------------------------------------
 frontend::~frontend()
 {
 }
-
-proto::encoder frontend::get_encoder (uword required_bytes)
+//------------------------------------------------------------------------------
+ser::exporter frontend::get_encoder (uword required_bytes)
 {
     return m->get_encoder (required_bytes);
 }
-
-void frontend::push_encoded (proto::encoder encoder)
+//------------------------------------------------------------------------------
+void frontend::async_push_encoded (ser::exporter encoder)
 {
-    m->push_encoded (encoder);
+    m->async_push_encoded (encoder);
 }
-
+//--------------------------------------------------------------------------
+bool frontend::sync_push_encoded(
+        ser::exporter encoder,
+        sync_point&   sync
+        )
+{
+    return m->sync_push_encoded (encoder, sync);
+}
+//------------------------------------------------------------------------------
 backend_cfg frontend::get_backend_cfg()
 {
     return m->get_backend_cfg();
 }
-
+//------------------------------------------------------------------------------
 frontend::init_status frontend::init_backend (const backend_cfg& cfg)
 {
     return m->init_backend (cfg);
 }
-
-void frontend::set_severity (sev::severity s)
+//------------------------------------------------------------------------------
+sev::severity frontend::min_severity() const
 {
-    return m->set_severity (s);
+    return m->min_severity();
 }
-
-sev::severity frontend::severity()
+//--------------------------------------------------------------------------
+bool frontend::can_log (sev::severity s) const
 {
-    return m->severity();
+    return m->can_log (s);
 }
-
+//------------------------------------------------------------------------------
+void frontend::set_file_severity (sev::severity s)
+{
+    return m->set_file_severity (s);
+}
+//------------------------------------------------------------------------------
 bool frontend::set_console_severity(
            sev::severity stderr, sev::severity stdout
            )
 {
     return m->set_console_severity (stderr, stdout);
 }
-
+//--------------------------------------------------------------------------
+timestamp_data frontend::get_timestamp_data() const
+{
+    timestamp_data d;
+    d.producer_timestamps = m->producer_timestamp();
+    d.base                = m->timestamp_base();
+    return d;
+}
+//------------------------------------------------------------------------------
+bool frontend::producer_timestamp (bool on)
+{
+    return m->producer_timestamp (on);
+}
+//------------------------------------------------------------------------------
 void frontend::on_termination()
 {
     return m->on_termination();
 }
-
+//------------------------------------------------------------------------------
 } //namespace
 
 #endif /* UFO_LOG_LOG_FRONTEND_DEF_HPP_ */

@@ -34,20 +34,35 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_FORMAT_TOKENS_HPP_
-#define UFO_LOG_FORMAT_TOKENS_HPP_
+#ifndef UFO_LOG_BOOST_FILESYSTEM_LIST_ALL_FILES_HPP_
+#define UFO_LOG_BOOST_FILESYSTEM_LIST_ALL_FILES_HPP_
 
+#include <boost/filesystem.hpp>
+#include <ufo_log/backend_cfg.hpp>
 
-namespace ufo { namespace fmt {
+//This file is not part of ufo log, just a simple example of how to enable
+//rotation between subsequent runs using boost filesystem.
+
+//Be aware that it doesn't check for log file sizes or data placed by the user
+//in the folder.
+
+namespace ufo { namespace extras {
 //------------------------------------------------------------------------------
-
-static const char placeholder_open  = '{';
-static const char placeholder_close = '}';
-static const char full_width        = 'w';
-static const char hex               = 'x';
-static const char scientific        = 's';
-
+past_executions_file_list list_all_files (const char* path)
+{
+    namespace bfs = boost::filesystem;
+    typedef bfs::directory_iterator dir_it;
+    past_executions_file_list ret;
+    for (dir_it it (path), end; it != end; ++it)
+    {
+        if (bfs::is_regular_file (*it) && !bfs::is_symlink (*it))
+        {
+            ret.push_back (it->path().string());
+        }
+    }
+    return ret;
+}
 //------------------------------------------------------------------------------
 }} //namespaces
 
-#endif /* UFO_LOG_FORMAT_TOKENS_HPP_ */
+#endif /* UFO_LOG_BOOST_FILESYSTEM_LIST_ALL_FILES_HPP_ */

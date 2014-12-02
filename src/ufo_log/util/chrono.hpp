@@ -53,4 +53,10 @@ either expressed or implied, of Diadrom AB.
 
 #endif
 
+namespace ufo {
+
+namespace ch = UFO_CHRONO_NAMESPACE;
+
+}
+
 #endif /* UFO_CHRONO_HPP_ */

@@ -5,24 +5,28 @@
  *      Author: rafa
  */
 
-
-#include <ufo_log/frontend_def.hpp>                                                //compiled in place, but it could be in a separate library
+#include <ufo_log/extras/boost_filesystem_list_all_files.hpp>
 #include <ufo_log/ufo_log.hpp>
+#include <ufo_log/frontend_def.hpp>                                                //compiled in place, but it could be in a separate library
 #include <ufo_log/util/chrono.hpp>
 #include <cstdio>
 
-//namespace ch = UFO_CHRONO_NAMESPACE;
 
 //------------------------------------------------------------------------------
 void rotation_test()
 {
     using namespace ufo;
     ufo::frontend fe;
+
+    //WARNING WARNING WARNING, files in this path will be deleted! (rotated)
+    const char* path = "./log_out/";
+
     auto be_cfg                             = fe.get_backend_cfg();
-    be_cfg.file.out_folder                  = "./log_out/";                     //this folder has to exist before running
-    be_cfg.file.aprox_size                  = 512 * 1024;
+    be_cfg.file.out_folder                  = path;
+    be_cfg.file.aprox_size                  = 2048 * 1024;
     be_cfg.file.rotation.file_count         = 4;
     be_cfg.file.rotation.delayed_file_count = 1;                                //we let the logger to have an extra file when there is a lot of workload
+    be_cfg.file.rotation.past_files         = extras::list_all_files (path);
 
     if (fe.init_backend (be_cfg) != frontend::init_ok) { return; }
 
@@ -39,7 +43,7 @@ void rotation_test()
     auto reader_msgs_s =
             ((double) msg_count / (double) reader_ns) * 1000000000.;
 
-    fe.set_severity (sev::trace);
+    fe.set_file_severity (sev::trace);
 
     log_trace_i(
         fe,

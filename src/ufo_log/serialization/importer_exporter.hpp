@@ -34,20 +34,68 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_FORMAT_TOKENS_HPP_
-#define UFO_LOG_FORMAT_TOKENS_HPP_
+#ifndef UFO_LOG_IMPORTER_EXPORTER_BASE_HPP_
+#define UFO_LOG_IMPORTER_EXPORTER_BASE_HPP_
 
+#include <cassert>
+#include <ufo_log/util/integer.hpp>
 
-namespace ufo { namespace fmt {
-//------------------------------------------------------------------------------
-
-static const char placeholder_open  = '{';
-static const char placeholder_close = '}';
-static const char full_width        = 'w';
-static const char hex               = 'x';
-static const char scientific        = 's';
+namespace ufo { namespace ser {
 
 //------------------------------------------------------------------------------
+template <class ptr_type>
+class importer_exporter                                                         //could be named vandelay too.. https://www.youtube.com/watch?v=67L0pbneT2w
+{
+public:
+    //--------------------------------------------------------------------------
+    struct null_type {};
+    //--------------------------------------------------------------------------
+    importer_exporter()
+    {
+        zero();
+    }
+    //--------------------------------------------------------------------------
+    void init (ptr_type* mem, uword msg_total_size)
+    {
+        assert (mem);
+        assert (msg_total_size);
+
+        m_pos = m_beg = mem;
+        m_end = m_pos + msg_total_size;
+    }
+    //--------------------------------------------------------------------------
+    void init (ptr_type* mem)
+    {
+        assert (mem);
+        uword total_size = ((uword) -1) - ((uword) mem);
+        init (mem, total_size);
+    }
+    //--------------------------------------------------------------------------
+    bool has_memory() const
+    {
+        return m_pos != nullptr;
+    }
+    //--------------------------------------------------------------------------
+    u8* get_memory() const
+    {
+        return m_beg;
+    }
+    //--------------------------------------------------------------------------
+protected:
+
+    //--------------------------------------------------------------------------
+    void zero()
+    {
+        m_beg = m_pos = m_end = nullptr;
+    }
+    //--------------------------------------------------------------------------
+    ptr_type* m_pos;
+    ptr_type* m_beg;
+    ptr_type* m_end;
+    //--------------------------------------------------------------------------
+}; //class encoder_decoder_base
+//------------------------------------------------------------------------------
+
 }} //namespaces
 
-#endif /* UFO_LOG_FORMAT_TOKENS_HPP_ */
+#endif /* UFO_LOG_IMPORTER_EXPORTER_BASE_HPP_ */

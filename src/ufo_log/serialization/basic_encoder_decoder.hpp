@@ -34,20 +34,36 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_FORMAT_TOKENS_HPP_
-#define UFO_LOG_FORMAT_TOKENS_HPP_
+#ifndef UFO_LOG_BASIC_ENCODER_DECODER_HPP_
+#define UFO_LOG_BASIC_ENCODER_DECODER_HPP_
 
+#include <cassert>
+#include <cstring>
+#include <ufo_log/util/integer.hpp>
 
-namespace ufo { namespace fmt {
+namespace ufo { namespace ser {
+//------------------------------------------------------------------------------
+struct basic_encoder_decoder
+{
+    //--------------------------------------------------------------------------
+    template <class T>
+    static u8* encode_type (u8* ptr, u8* end, T val)
+    {
+        assert (ptr && end && (ptr + sizeof val <= end));
+        std::memcpy (ptr, &val, sizeof val);
+        return ptr + sizeof val;
+    }
+    //--------------------------------------------------------------------------
+    template <class T>
+    static const u8* decode_type (T& val, const u8* ptr, const u8* end)
+    {
+        assert (ptr && end && (ptr + sizeof val) <= end);
+        std::memcpy (&val, ptr, sizeof val);
+        return ptr + sizeof val;
+    }
+};
 //------------------------------------------------------------------------------
 
-static const char placeholder_open  = '{';
-static const char placeholder_close = '}';
-static const char full_width        = 'w';
-static const char hex               = 'x';
-static const char scientific        = 's';
-
-//------------------------------------------------------------------------------
 }} //namespaces
 
-#endif /* UFO_LOG_FORMAT_TOKENS_HPP_ */
+#endif /* UFO_LOG_BASIC_ENCODER_DECODER_HPP_ */

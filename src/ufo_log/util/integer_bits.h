@@ -360,6 +360,7 @@ unsigned highest_used_byte_16 (uint16_t v)
 static inline
 unsigned highest_used_byte_32 (uint32_t v)
 {
+#ifdef UFO_INTEGER_BITS_NO_BRANCHING
     unsigned res = 0, cmp = 0;
 
     cmp = ((unsigned) ((v & 0x0000ff00ULL) == 0)) - 1;
@@ -372,11 +373,19 @@ unsigned highest_used_byte_32 (uint32_t v)
     res = (res & ~cmp) | (cmp & 3);
 
     return res;
+#else
+    if ((v & 0xffffff00ULL) == 0) { return 0; }
+    if ((v & 0xffff0000ULL) == 0) { return 1; }
+    if ((v & 0xff000000ULL) == 0) { return 2; }
+    return 3;
+#endif
+
 }
 //------------------------------------------------------------------------------
 static inline
 unsigned highest_used_byte_64 (uint64_t v)
 {
+#ifdef UFO_INTEGER_BITS_NO_BRANCHING
     unsigned res = 0, cmp = 0;
 
     cmp = ((unsigned) ((v & 0x000000000000ff00ULL) == 0)) - 1;
@@ -401,6 +410,16 @@ unsigned highest_used_byte_64 (uint64_t v)
     res = (res & ~cmp) | (cmp & 7);
 
     return res;
+#else
+    if ((v & 0xffffffffffffff00ULL) == 0) { return 0; }
+    if ((v & 0xffffffffffff0000ULL) == 0) { return 1; }
+    if ((v & 0xffffffffff000000ULL) == 0) { return 2; }
+    if ((v & 0xffffffff00000000ULL) == 0) { return 3; }
+    if ((v & 0xffffff0000000000ULL) == 0) { return 4; }
+    if ((v & 0xffff000000000000ULL) == 0) { return 5; }
+    if ((v & 0xff00000000000000ULL) == 0) { return 6; }
+    return 7;
+#endif
 }
 //------------------------------------------------------------------------------
 

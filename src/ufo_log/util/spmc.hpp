@@ -81,7 +81,6 @@ either expressed or implied, of Diadrom AB.
 
 namespace ufo {
 
-namespace at = UFO_ATOMIC_NAMESPACE;
 //------------------------------------------------------------------------------
 template<typename T>
 class spmc_b_fifo

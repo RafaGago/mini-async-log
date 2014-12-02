@@ -34,20 +34,41 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_FORMAT_TOKENS_HPP_
-#define UFO_LOG_FORMAT_TOKENS_HPP_
+#ifndef UFO_LOG_INTEGRAL_ENABLE_IF_HPP_
+#define UFO_LOG_INTEGRAL_ENABLE_IF_HPP_
 
+#include <type_traits>
 
-namespace ufo { namespace fmt {
-//------------------------------------------------------------------------------
-
-static const char placeholder_open  = '{';
-static const char placeholder_close = '}';
-static const char full_width        = 'w';
-static const char hex               = 'x';
-static const char scientific        = 's';
+namespace ufo {
 
 //------------------------------------------------------------------------------
-}} //namespaces
+template <class T, class ret>
+struct enable_if_signed :
+        public std::enable_if<
+            std::is_signed<T>::value && !std::is_floating_point<T>::value,
+            ret
+            >
+{};
+//------------------------------------------------------------------------------
+template <class T, class ret>
+struct enable_if_unsigned :
+        public std::enable_if<
+            std::is_unsigned<T>::value && !std::is_same<T, bool>::value,
+            ret
+            >
+{};
+//------------------------------------------------------------------------------
+template <class T, class ret, bool exclude_bool = true>
+struct enable_if_integral :                                                     //ad-hoc definition of integral, as bool belongs here too but I exclude it
+        public std::enable_if<
+            std::is_integral<T>::value &&
+            (!exclude_bool || (!std::is_same<T, bool>::value))
+            ,
+            ret
+            >
+{};
+//------------------------------------------------------------------------------
 
-#endif /* UFO_LOG_FORMAT_TOKENS_HPP_ */
+} //namespaces
+
+#endif /* UFO_LOG_INTEGRAL_ENABLE_IF_HPP_ */

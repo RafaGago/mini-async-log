@@ -37,64 +37,39 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef UFO_LOG_INTERFACE_HPP_
 #define UFO_LOG_INTERFACE_HPP_
 
+#include <memory>
 #include <cassert>
 #include <string>
 #include <type_traits>
-#include <ufo_log/protocol.hpp>
 #include <ufo_log/frontend.hpp>
-#include <ufo_log/message_encoder.hpp>
+#include <ufo_log/timestamp.hpp>
+#include <ufo_log/serialization/exporter.hpp>
+#include <ufo_log/sync_point.hpp>
+#include <ufo_log/util/side_effect_assert.hpp>
 
 namespace ufo {
 
 //------------------------------------------------------------------------------
-proto::raw_data deep_copy (const std::string& str)
-{
-    proto::raw_data r;
-    r.mem  = &str[0];
-    r.size = str.size();
-    return r;
-}
-//------------------------------------------------------------------------------
-proto::raw_data deep_copy (const void* mem, uword size)
-{
-    proto::raw_data r;
-    r.mem  = mem;
-    r.size = size;
-    return r;
-}
-//------------------------------------------------------------------------------
-template <uword N>
-proto::str_literal lit (const char (&arr)[N])
-{
-    return proto::str_literal (arr);
-}
-//------------------------------------------------------------------------------
-template <class T>
-proto::integer<T> hex (T v)
-{
-    return proto::integer<T> (v, true);
-}
-//------------------------------------------------------------------------------
-template <class T>
-proto::integer<uword> ptr (T* v)
-{
-    return proto::integer<uword> ((uword) v, true);
-}
-//------------------------------------------------------------------------------
-proto::byte_stream bytes (const void* mem, uword size)
-{
-    proto::byte_stream b;
-    b.mem  = mem;
-    b.size = size;
-    return b;
-}
-//------------------------------------------------------------------------------
 void log_error_call (const char* str)
 {
-    //todo
+    //todo throwing here is possible
 }
 //------------------------------------------------------------------------------
+template <class T, class field>
+inline bool prebuild_data (T& v, field& f, uword& total_length)
+{
+    typedef ser::exporter exp;
+    auto clength   = exp::bytes_required (v);
+    f              = exp::get_field (v, clength);
+    total_length  += clength;
+    return (total_length >= (total_length - clength));
+}
+//------------------------------------------------------------------------------
+// todo: this function has to be beautified, but I don't want to add compile
+// time vectors or more complexity right now.
+//------------------------------------------------------------------------------
 template<
+    bool is_async,
     class A,
     class B,
     class C,
@@ -111,27 +86,29 @@ template<
     class N
     >
 bool new_entry(                                                                 //don't use this directly, use the macros!
-    frontend&          fe,
-    sev::severity      sv,
-    proto::str_literal fmt,
-    A                  a,
-    B                  b,
-    C                  c,
-    D                  d,
-    E                  e,
-    F                  f,
-    G                  g,
-    H                  h,
-    I                  i,
-    J                  j,
-    K                  k,
-    L                  l,
-    M                  m,
-    N                  n
+    frontend&     fe,
+    sev::severity sv,
+    const char*   fmt,
+    A             a,
+    B             b,
+    C             c,
+    D             d,
+    E             e,
+    F             f,
+    G             g,
+    H             h,
+    I             i,
+    J             j,
+    K             k,
+    L             l,
+    M             m,
+    N             n
     )
 {
-    typedef proto::encoder::null_type null_type;
-    const uword arity = 1 +
+    typedef ser::exporter exp;
+    typedef exp::null_type null_type;
+
+    const uword arity =
             (std::is_same<A, null_type>::value ? 0 : 1) +
             (std::is_same<B, null_type>::value ? 0 : 1) +
             (std::is_same<C, null_type>::value ? 0 : 1) +
@@ -148,52 +125,89 @@ bool new_entry(                                                                 
             (std::is_same<N, null_type>::value ? 0 : 1)
             ;
 
-    uword length = proto::encoder::required_bytes_arity1(); //1
-    length      += proto::encoder::required_bytes (a);      //2
-    length      += proto::encoder::required_bytes (b);      //3
-    length      += proto::encoder::required_bytes (c);      //4
-    length      += proto::encoder::required_bytes (d);      //5
-    length      += proto::encoder::required_bytes (e);      //6
-    length      += proto::encoder::required_bytes (f);      //7
-    length      += proto::encoder::required_bytes (g);      //8
-    length      += proto::encoder::required_bytes (h);      //9
-    length      += proto::encoder::required_bytes (i);      //10
-    length      += proto::encoder::required_bytes (j);      //11
-    length      += proto::encoder::required_bytes (k);      //12
-    length      += proto::encoder::required_bytes (l);      //13
-    length      += proto::encoder::required_bytes (m);      //14
-    length      += proto::encoder::required_bytes (n);      //15
-    auto enc = fe.get_encoder (length);
-    if (enc.can_encode())
+    ser::header_data hdr;
+
+    decltype (exp::get_field (a, 0))   a_field;                                 //just 16 bytes (if all parameters are used)
+    decltype (exp::get_field (b, 0))   b_field;
+    decltype (exp::get_field (c, 0))   c_field;
+    decltype (exp::get_field (d, 0))   d_field;
+    decltype (exp::get_field (e, 0))   e_field;
+    decltype (exp::get_field (f, 0))   f_field;
+    decltype (exp::get_field (g, 0))   g_field;
+    decltype (exp::get_field (h, 0))   h_field;
+    decltype (exp::get_field (i, 0))   i_field;
+    decltype (exp::get_field (j, 0))   j_field;
+    decltype (exp::get_field (k, 0))   k_field;
+    decltype (exp::get_field (l, 0))   l_field;
+    decltype (exp::get_field (m, 0))   m_field;
+    decltype (exp::get_field (n, 0))   n_field;
+    decltype (exp::get_field (hdr, 0)) hdr_field;
+
+    uword length = 0;
+
+    side_effect_assert (prebuild_data (a, a_field, length));
+    side_effect_assert (prebuild_data (b, b_field, length));
+    side_effect_assert (prebuild_data (c, c_field, length));
+    side_effect_assert (prebuild_data (d, d_field, length));
+    side_effect_assert (prebuild_data (e, e_field, length));
+    side_effect_assert (prebuild_data (f, f_field, length));
+    side_effect_assert (prebuild_data (g, g_field, length));
+    side_effect_assert (prebuild_data (h, h_field, length));
+    side_effect_assert (prebuild_data (i, i_field, length));
+    side_effect_assert (prebuild_data (j, j_field, length));
+    side_effect_assert (prebuild_data (k, k_field, length));
+    side_effect_assert (prebuild_data (l, l_field, length));
+    side_effect_assert (prebuild_data (m, m_field, length));
+    side_effect_assert (prebuild_data (n, n_field, length));
+
+    auto td = fe.get_timestamp_data();
+    hdr     = ser::make_header_data (sv, fmt, arity, td.producer_timestamps);
+    if (hdr.has_tstamp)                                                         //timestamping is actually slow! in my machine slows down the producers by a factor of 2
     {
-        enc.encode_basic (sv, arity, fmt);
-        if (!enc.encode (a)) { goto overflow; }
-        if (!enc.encode (b)) { goto overflow; }
-        if (!enc.encode (c)) { goto overflow; }
-        if (!enc.encode (d)) { goto overflow; }
-        if (!enc.encode (e)) { goto overflow; }
-        if (!enc.encode (f)) { goto overflow; }
-        if (!enc.encode (g)) { goto overflow; }
-        if (!enc.encode (h)) { goto overflow; }
-        if (!enc.encode (i)) { goto overflow; }
-        if (!enc.encode (j)) { goto overflow; }
-        if (!enc.encode (k)) { goto overflow; }
-        if (!enc.encode (l)) { goto overflow; }
-        if (!enc.encode (m)) { goto overflow; }
-        if (!enc.encode (n)) { goto overflow; }
-        fe.push_encoded (enc);
-        return true;
+        hdr.tstamp = get_timestamp() - td.base;
+    }
+
+    sync_point sync;
+    if (!is_async)
+    {
+        hdr.sync = &sync;
+    }
+    side_effect_assert (prebuild_data (hdr, hdr_field, length));
+
+    auto enc = fe.get_encoder (length);
+    if (enc.has_memory())
+    {
+        enc.do_export (hdr, hdr_field);
+        enc.do_export (a, a_field);
+        enc.do_export (b, b_field);
+        enc.do_export (c, c_field);
+        enc.do_export (d, d_field);
+        enc.do_export (e, e_field);
+        enc.do_export (f, f_field);
+        enc.do_export (g, g_field);
+        enc.do_export (h, h_field);
+        enc.do_export (i, i_field);
+        enc.do_export (j, j_field);
+        enc.do_export (k, k_field);
+        enc.do_export (l, l_field);
+        enc.do_export (m, m_field);
+        enc.do_export (n, n_field);
+        if (is_async)
+        {
+           fe.async_push_encoded (enc);
+           return true;
+        }
+        else
+        {
+            return fe.sync_push_encoded (enc, sync);
+        }
     }
     log_error_call ("couldn't allocate encoder\n");
-    return false;
-overflow:
-    fe.push_encoded (enc);
-    log_error_call ("overflow when encoding\n");
-    assert (false && "bug!");                                                   //The size is precomputed, so this should be unreachable.
     return false;
 }
 //------------------------------------------------------------------------------
 template<
+    bool is_async,
     class A,
     class B,
     class C,
@@ -209,29 +223,32 @@ template<
     class M
     >
 bool new_entry(                                                                 //don't use this directly, use the macros!
-    frontend&          fe,
-    sev::severity      sv,
-    proto::str_literal fmt,
-    A                  a,
-    B                  b,
-    C                  c,
-    D                  d,
-    E                  e,
-    F                  f,
-    G                  g,
-    H                  h,
-    I                  i,
-    J                  j,
-    K                  k,
-    L                  l,
-    M                  m
+    frontend&     fe,
+    sev::severity sv,
+    const char*   fmt,
+    A             a,
+    B             b,
+    C             c,
+    D             d,
+    E             e,
+    F             f,
+    G             g,
+    H             h,
+    I             i,
+    J             j,
+    K             k,
+    L             l,
+    M             m
     )
 {
-    proto::encoder::null_type no;
-    return new_entry (fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, k, l, m, no);
+    ser::exporter::null_type no;
+    return new_entry<is_async>(
+            fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, k, l, m, no
+            );
 }
 //------------------------------------------------------------------------------
 template<
+    bool is_async,
     class A,
     class B,
     class C,
@@ -246,28 +263,31 @@ template<
     class L
     >
 bool new_entry(                                                                 //don't use this directly, use the macros!
-    frontend&          fe,
-    sev::severity      sv,
-    proto::str_literal fmt,
-    A                  a,
-    B                  b,
-    C                  c,
-    D                  d,
-    E                  e,
-    F                  f,
-    G                  g,
-    H                  h,
-    I                  i,
-    J                  j,
-    K                  k,
-    L                  l
+    frontend&     fe,
+    sev::severity sv,
+    const char*   fmt,
+    A             a,
+    B             b,
+    C             c,
+    D             d,
+    E             e,
+    F             f,
+    G             g,
+    H             h,
+    I             i,
+    J             j,
+    K             k,
+    L             l
     )
 {
-    proto::encoder::null_type no;
-    return new_entry (fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, k, l, no, no);
+    ser::exporter::null_type no;
+    return new_entry<is_async>(
+            fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, k, l, no, no
+            );
 }
 //------------------------------------------------------------------------------
 template<
+    bool is_async,
     class A,
     class B,
     class C,
@@ -281,27 +301,30 @@ template<
     class K
     >
 bool new_entry(                                                                 //don't use this directly, use the macros!
-    frontend&          fe,
-    sev::severity      sv,
-    proto::str_literal fmt,
-    A                  a,
-    B                  b,
-    C                  c,
-    D                  d,
-    E                  e,
-    F                  f,
-    G                  g,
-    H                  h,
-    I                  i,
-    J                  j,
-    K                  k
+    frontend&     fe,
+    sev::severity sv,
+    const char*   fmt,
+    A             a,
+    B             b,
+    C             c,
+    D             d,
+    E             e,
+    F             f,
+    G             g,
+    H             h,
+    I             i,
+    J             j,
+    K             k
     )
 {
-    proto::encoder::null_type no;
-    return new_entry (fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, k, no, no, no);
+    ser::exporter::null_type no;
+    return new_entry<is_async>(
+            fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, k, no, no, no
+            );
 }
 //------------------------------------------------------------------------------
 template<
+    bool is_async,
     class A,
     class B,
     class C,
@@ -314,28 +337,29 @@ template<
     class J
     >
 bool new_entry(                                                                 //don't use this directly, use the macros!
-    frontend&          fe,
-    sev::severity      sv,
-    proto::str_literal fmt,
-    A                  a,
-    B                  b,
-    C                  c,
-    D                  d,
-    E                  e,
-    F                  f,
-    G                  g,
-    H                  h,
-    I                  i,
-    J                  j
+    frontend&     fe,
+    sev::severity sv,
+    const char*   fmt,
+    A             a,
+    B             b,
+    C             c,
+    D             d,
+    E             e,
+    F             f,
+    G             g,
+    H             h,
+    I             i,
+    J             j
     )
 {
-    proto::encoder::null_type no;
-    return new_entry(
-        fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, no, no, no, no
-        );
+    ser::exporter::null_type no;
+    return new_entry<is_async>(
+            fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, no, no, no, no
+            );
 }
 //------------------------------------------------------------------------------
 template<
+    bool is_async,
     class A,
     class B,
     class C,
@@ -347,160 +371,159 @@ template<
     class I
     >
 bool new_entry(                                                                 //don't use this directly, use the macros!
-    frontend&          fe,
-    sev::severity      sv,
-    proto::str_literal fmt,
-    A                  a,
-    B                  b,
-    C                  c,
-    D                  d,
-    E                  e,
-    F                  f,
-    G                  g,
-    H                  h,
-    I                  i
+    frontend&     fe,
+    sev::severity sv,
+    const char*   fmt,
+    A             a,
+    B             b,
+    C             c,
+    D             d,
+    E             e,
+    F             f,
+    G             g,
+    H             h,
+    I             i
     )
 {
-    proto::encoder::null_type no;
-    return new_entry(
+    ser::exporter::null_type no;
+    return new_entry<is_async>(
             fe, sv, fmt, a, b, c, d, e, f, g, h, i, no, no, no, no, no
             );
 }
 //------------------------------------------------------------------------------
-template<class A, class B, class C, class D, class E, class F, class G, class H>
+template<
+    bool is_async,
+    class A,
+    class B,
+    class C,
+    class D,
+    class E,
+    class F,
+    class G,
+    class H
+    >
 bool new_entry(                                                                 //don't use this directly, use the macros!
-    frontend&          fe,
-    sev::severity      sv,
-    proto::str_literal fmt,
-    A                  a,
-    B                  b,
-    C                  c,
-    D                  d,
-    E                  e,
-    F                  f,
-    G                  g,
-    H                  h
+    frontend&     fe,
+    sev::severity sv,
+    const char*   fmt,
+    A             a,
+    B             b,
+    C             c,
+    D             d,
+    E             e,
+    F             f,
+    G             g,
+    H             h
     )
 {
-    proto::encoder::null_type no;
-    return new_entry(
+    ser::exporter::null_type no;
+    return new_entry<is_async>(
             fe, sv, fmt, a, b, c, d, e, f, g, h, no, no, no, no, no, no
             );
 }
 //------------------------------------------------------------------------------
-template<class A, class B, class C, class D, class E, class F, class G>
+template<
+    bool is_async,
+    class A,
+    class B,
+    class C,
+    class D,
+    class E,
+    class F,
+    class G
+    >
 bool new_entry(                                                                 //don't use this directly, use the macros!
-    frontend&          fe,
-    sev::severity      sv,
-    proto::str_literal fmt,
-    A                  a,
-    B                  b,
-    C                  c,
-    D                  d,
-    E                  e,
-    F                  f,
-    G                  g
+    frontend&     fe,
+    sev::severity sv,
+    const char*   fmt,
+    A             a,
+    B             b,
+    C             c,
+    D             d,
+    E             e,
+    F             f,
+    G             g
     )
 {
-    proto::encoder::null_type no;
-    return new_entry(
+    ser::exporter::null_type no;
+    return new_entry<is_async>(
             fe, sv, fmt, a, b, c, d, e, f, g, no, no, no, no, no, no, no
             );
 }
 //------------------------------------------------------------------------------
-template<class A, class B, class C, class D, class E, class F>
+template<bool is_async, class A, class B, class C, class D, class E, class F>
 bool new_entry(                                                                 //don't use this directly, use the macros!
-    frontend&          fe,
-    sev::severity      sv,
-    proto::str_literal fmt,
-    A                  a,
-    B                  b,
-    C                  c,
-    D                  d,
-    E                  e,
-    F                  f
+    frontend&     fe,
+    sev::severity sv,
+    const char*   fmt,
+    A             a,
+    B             b,
+    C             c,
+    D             d,
+    E             e,
+    F             f
     )
 {
-    proto::encoder::null_type no;
-    return new_entry(
+    ser::exporter::null_type no;
+    return new_entry<is_async>(
             fe, sv, fmt, a, b, c, d, e, f, no, no, no, no, no, no, no, no
             );
 }
 //------------------------------------------------------------------------------
-template<class A, class B, class C, class D, class E>
+template<bool is_async, class A, class B, class C, class D, class E>
 bool new_entry(                                                                 //don't use this directly, use the macros!
-    frontend&          fe,
-    sev::severity      sv,
-    proto::str_literal fmt,
-    A                  a,
-    B                  b,
-    C                  c,
-    D                  d,
-    E                  e
+    frontend& fe, sev::severity sv, const char* fmt, A a, B b, C c, D d, E e
     )
 {
-    proto::encoder::null_type no;
-    return new_entry(
+    ser::exporter::null_type no;
+    return new_entry<is_async>(
             fe, sv, fmt, a, b, c, d, e, no, no, no, no, no, no, no, no, no
             );
 }
 //------------------------------------------------------------------------------
-template<class A, class B, class C, class D>
+template<bool is_async, class A, class B, class C, class D>
 bool new_entry(                                                                 //don't use this directly, use the macros!
-    frontend&          fe,
-    sev::severity      sv,
-    proto::str_literal fmt,
-    A                  a,
-    B                  b,
-    C                  c,
-    D                  d
+    frontend& fe, sev::severity sv, const char* fmt, A a, B b, C c, D d
     )
 {
-    proto::encoder::null_type no;
-    return new_entry(
+    ser::exporter::null_type no;
+    return new_entry<is_async>(
             fe, sv, fmt, a, b, c, d, no, no, no, no, no, no, no, no, no, no
             );
 }
 //------------------------------------------------------------------------------
-template<class A, class B, class C>
-bool new_entry(
-        frontend& fe, sev::severity sv, proto::str_literal fmt, A a, B b, C c
-        )
+template<bool is_async, class A, class B, class C>
+bool new_entry (frontend& fe, sev::severity sv, const char* fmt, A a, B b, C c)
 {
-    proto::encoder::null_type no;
-    return new_entry(
+    ser::exporter::null_type no;
+    return new_entry<is_async>(
         fe, sv, fmt, a, b, c, no, no, no, no, no, no, no, no, no, no, no
         );
 }
 //------------------------------------------------------------------------------
-template<class A, class B>
-bool new_entry(
-        frontend& fe, sev::severity sv, proto::str_literal fmt, A a, B b
-        )
+template<bool is_async, class A, class B>
+bool new_entry (frontend& fe, sev::severity sv, const char* fmt, A a, B b)
 {
-    proto::encoder::null_type no;
-    return new_entry(
+    ser::exporter::null_type no;
+    return new_entry<is_async>(
         fe, sv, fmt, a, b, no, no, no, no, no, no, no, no, no, no, no, no
         );
 }
 //------------------------------------------------------------------------------
-template<class A>
-bool new_entry(
-        frontend& fe, sev::severity sv, proto::str_literal fmt, A a
-        )
+template<bool is_async, class A>
+bool new_entry (frontend& fe, sev::severity sv, const char* fmt, A a)
 {
-    proto::encoder::null_type no;
-    return new_entry(
+    ser::exporter::null_type no;
+    return new_entry<is_async>(
         fe, sv, fmt, a, no, no, no, no, no, no, no, no, no, no, no, no, no
         );
 }
 //------------------------------------------------------------------------------
-inline bool new_entry(
-        frontend& fe, sev::severity sv, proto::str_literal fmt
-        )
+template<bool is_async>
+bool new_entry (frontend& fe, sev::severity sv, const char* fmt)
 {
-    proto::encoder::null_type no;
-    return new_entry(
+    ser::exporter::null_type no;
+    return new_entry<is_async>(
         fe, sv, fmt, no, no, no, no, no, no, no, no, no, no, no, no, no, no
         );
 }

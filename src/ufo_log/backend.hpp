@@ -40,6 +40,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <cstring>
 #include <cassert>
 #include <new>
+#include <ostream>
 
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/thread.hpp>
@@ -51,63 +52,41 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <ufo_log/output.hpp>
 #include <ufo_log/frontend.hpp>
-#include <ufo_log/message_decode_and_fwd.hpp>
+#include <ufo_log/log_writer.hpp>
 #include <ufo_log/allocator.hpp>
 #include <ufo_log/backend_cfg.hpp>
 #include <ufo_log/log_files.hpp>
+#include <ufo_log/timestamp.hpp>
 
 namespace ufo {
 
-namespace th = UFO_THREAD_NAMESPACE;
-namespace ch = UFO_CHRONO_NAMESPACE;
-namespace at = UFO_ATOMIC_NAMESPACE;
+class async_to_sync;
 
 //------------------------------------------------------------------------------
 struct node : public mpsc_node_hook
 {
+    //--------------------------------------------------------------------------
     u8* storage()
     {
         return ((u8*) this) + sizeof *this;
     }
-
+    //--------------------------------------------------------------------------
     static node* from_storage (u8* mem)
     {
         return (node*) (mem - sizeof (node));
     }
-
+    //--------------------------------------------------------------------------
     static uword strict_total_size (uword effective_size)
     {
         return sizeof (node) + effective_size;
     }
-
-    static u16 best_total_size (uword effective_size)
+    //--------------------------------------------------------------------------
+    static uword effective_size (uword total_size)
     {
-        static const uword align = std::alignment_of<node>::value;
-        u16 node_sz = ((sizeof (node) + effective_size + align - 1) / align);
-        return node_sz * align;
+        auto v = total_size - sizeof (node);
+        return (v < total_size) ? v : 0;
     }
-
-    static u16 optimize_effective_size (uword effective_size)
-    {
-        return best_total_size (effective_size) - sizeof (node);
-    }
-
-    static u16 best_effective_size (uword max_total_size)
-    {
-        static const uword align = std::alignment_of<node>::value;
-        uword candidate          = max_total_size - sizeof (node);
-        uword res                = best_total_size (candidate);
-        if (res <= max_total_size)
-        {
-            return candidate;
-        }
-        else
-        {
-            candidate -= align;
-            res        = best_total_size (candidate);
-            return res - sizeof (node);
-        }
-    }
+    //--------------------------------------------------------------------------
 };
 //------------------------------------------------------------------------------
 class backend_impl
@@ -117,11 +96,11 @@ public:
     backend_impl()
     {
         m_cfg.alloc.use_heap_if_required       = true;
-        m_cfg.alloc.fixed_size_entry_size      = 128;
-        m_cfg.alloc.fixed_size_entry_count     = 1024;
+        m_cfg.alloc.fixed_entry_size           = 64;
+        m_cfg.alloc.fixed_block_size           = 64 * 1024;
 
-        m_cfg.display.show_severity            = m_decoder.prints_severity;
-        m_cfg.display.show_timestamp           = m_decoder.prints_timestamp;
+        m_cfg.display.show_severity            = m_writer.prints_severity;
+        m_cfg.display.show_timestamp           = m_writer.prints_timestamp;
 
         m_cfg.file.aprox_size                  = 1024;
         m_cfg.file.name_suffix                 = ".log";
@@ -141,7 +120,7 @@ public:
     //--------------------------------------------------------------------------
     uint8* allocate_entry (uword size)
     {
-        if (size && size <= proto::largest_message_bytesize)
+        if (size)
         {
             void* mem = m_alloc.allocate (node::strict_total_size (size));
             if (mem)
@@ -171,9 +150,19 @@ public:
         }
     }
     //--------------------------------------------------------------------------
+    void set_file_severity (sev::severity s)
+    {
+        m_out.set_file_severity (s);
+    }
+    //--------------------------------------------------------------------------
     void set_console_severity (sev::severity stderr, sev::severity stdout)
     {
         m_out.set_console_severity (stderr, stdout);
+    }
+    //--------------------------------------------------------------------------
+    sev::severity min_severity() const
+    {
+        return m_out.min_severity();
     }
     //--------------------------------------------------------------------------
     backend_cfg get_cfg() const
@@ -181,19 +170,21 @@ public:
         return m_cfg;
     }
     //--------------------------------------------------------------------------
-    bool init (const backend_cfg& c)
+    bool init (const backend_cfg& c, async_to_sync& sync, u64 timestamp_base)
     {
         if (!validate_cfg (c)) { return false; }
 
         uword exp = constructed;
         if (!m_status.compare_exchange_strong (exp, initializing, mo_relaxed))
         {
+            std::cerr << "[logger] already initialized\n";
             assert (false && "log: already initialized");
             return false;
         }
 
         if (!alloc_init (c.alloc))
         {
+            std::cerr << "[logger] allocator initialization failed\n";
             assert (false && "allocator initialization failed");
             return false;
         }
@@ -212,6 +203,9 @@ public:
 
         auto rollback_cfg = m_cfg;
         set_cfg (c);
+
+        m_writer.set_synchronizer (sync);
+        m_writer.set_timestamp_base (timestamp_base);
 
         m_status.store (initialized, mo_release);                               // I guess that all Kernels do this for me when launching a thread, just being on the safe side in case is not true
         m_log_thread = th::thread ([this](){ this->thread(); });
@@ -237,47 +231,60 @@ public:
         m_log_thread.join();
     }
     //--------------------------------------------------------------------------
+    bool prints_timestamp()
+    {
+        return m_writer.prints_timestamp;
+    }
+    //--------------------------------------------------------------------------
 private:
     void set_cfg (const backend_cfg& c)
     {
         m_cfg = c;
-        m_decoder.prints_severity  = m_cfg.display.show_severity;
-        m_decoder.prints_timestamp = m_cfg.display.show_timestamp;
+        m_writer.prints_severity  = m_cfg.display.show_severity;
+        m_writer.prints_timestamp = m_cfg.display.show_timestamp;
         m_wait.set_cfg (c.blocking);
     }
     //--------------------------------------------------------------------------
     bool validate_cfg (const backend_cfg& c)
     {
         auto& a = c.alloc;
-        if (((!a.fixed_size_entry_count || !a.fixed_size_entry_size)) &&
+        if (((!a.fixed_block_size || !a.fixed_entry_size)) &&
               !a.use_heap_if_required
             )
         {
+            std::cerr << "[logger] alloc cfg values can't be 0\n";
             assert (false && "alloc cfg invalid");
             return false;
         }
-        if (a.fixed_size_entry_count && a.fixed_size_entry_size)
+        if (a.fixed_block_size && a.fixed_entry_size)
         {
-            auto sz      = node::best_effective_size (a.fixed_size_entry_size);
-            auto node_sz = node::best_total_size (sz);
-            if (node_sz < sz)
+            if (a.fixed_entry_size < 32)
             {
-                assert (false && "alloc fixed size entry size would overflow");
+                std::cerr << "[logger] minimum fixed block size is 32\n";
+                return false;
+            }
+            else if (a.fixed_block_size < a.fixed_entry_size)
+            {
+                std::cerr << "[logger] entry size bigger than the block size\n";
                 return false;
             }
         }
         if (c.file.rotation.file_count != 0 && c.file.aprox_size == 0)
         {
+            std::cerr <<
+                    "[logger] won't be able to rotate infinite size files\n";
             assert (false && "won't be able to rotate infinite size files");
             return false;
         }
         if (c.file.rotation.file_count == 1)
         {
+            std::cerr << "[logger] won't be able to rotate a single file\n";
             assert (false && "won't be able to rotate a single file");
             return false;
         }
         if (c.file.out_folder.size() == 0)
         {
+            std::cerr << "[logger] no output folder\n";
             assert (false && "log folder can't be empty");
             return false;
         }
@@ -290,12 +297,13 @@ private:
     //--------------------------------------------------------------------------
     bool alloc_init (const backend_log_entry_alloc_config& c)
     {
-        auto sz = node::best_total_size(
-                      node::best_effective_size (c.fixed_size_entry_size)
-                        );
+        assert (node::effective_size (c.fixed_entry_size) ||
+                c.use_heap_if_required
+                );
+
         return m_alloc.init(
-                    c.fixed_size_entry_count,
-                    c.fixed_size_entry_size ? sz : 0,
+                    c.fixed_block_size,
+                    c.fixed_entry_size,
                     c.use_heap_if_required
                     );
     }
@@ -306,6 +314,7 @@ private:
         {
             th::this_thread::yield();
         }
+        idle_rotate_if();
         m_status.store (running, mo_relaxed);
         uword alloc_fault = m_alloc_fault.load (mo_relaxed);
         auto  next_flush  = ch::steady_clock::now() + ch::milliseconds (1000);
@@ -362,33 +371,30 @@ private:
     const char* new_file_name_to_buffer()
     {
         using namespace ch;
-        u64 cpu      = get_tstamp ();
+        u64 cpu      = get_timestamp();
         u64 calendar = duration_cast<microseconds>(
                         system_clock::now().time_since_epoch()
                         ).count();
         return m_files.new_filename_in_buffer (cpu, calendar);
     }
     //--------------------------------------------------------------------------
-    static u64 get_tstamp ()
-    {
-        using namespace UFO_CHRONO_NAMESPACE;
-        return duration_cast<microseconds>(
-                steady_clock::now().time_since_epoch()
-                ).count();
-    }
-    //--------------------------------------------------------------------------
     void write_message (mpsc_node_hook& hook)
     {
-        m_decoder.new_entry (((node&) hook).storage());
-        if (m_decoder.has_content())
-        {
-            m_decoder.decode_and_fwd_entry (m_out, get_tstamp());
-        }
+        m_writer.decode_and_write (m_out, ((node&) hook).storage());
     }
     //--------------------------------------------------------------------------
     void write_alloc_fault (uword count)
     {
-        m_decoder.fwd_alloc_fault_entry (m_out, get_tstamp(), count);
+        char str[96];
+        std::snprintf(
+                str,
+                sizeof str,
+                "[%020llu] [logger_err] %u alloc faults detected",
+                get_timestamp(),
+                count
+                );
+        str[sizeof str - 1] = 0;
+        m_out.raw_write (sev::error, str);
     }
     //--------------------------------------------------------------------------
     bool slices_files() const
@@ -467,21 +473,18 @@ private:
         thread_stopped,
     };
     //--------------------------------------------------------------------------
-    output                     m_out;
-    proto::decode_and_fwd      m_decoder;
-    backend_cfg                m_cfg;
-    log_files                  m_files;
-    th::thread                 m_log_thread;
-    at::atomic<uword>          m_status;
-    ufo_allocator              m_alloc;
-    mpsc_hybrid_wait           m_wait;
-    mpsc_i_fifo                m_log_queue;
-    atomic_uword               m_alloc_fault;
+    output            m_out;
+    log_writer        m_writer;
+    backend_cfg       m_cfg;
+    log_files         m_files;
+    th::thread        m_log_thread;
+    at::atomic<uword> m_status;
+    ufo_allocator     m_alloc;
+    mpsc_hybrid_wait  m_wait;
+    mpsc_i_fifo       m_log_queue;
+    atomic_uword      m_alloc_fault;
  };
 //------------------------------------------------------------------------------
-
-
-
 } //namespaces
 
 #endif /* UFO_LOG_BACKEND_DEF_HPP_ */

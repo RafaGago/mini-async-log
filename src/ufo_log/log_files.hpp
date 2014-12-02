@@ -41,6 +41,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <cstring>
 #include <string>
 #include <deque>
+#include <ostream>
 #include <fstream>
 #include <vector>
 
@@ -52,8 +53,6 @@ either expressed or implied, of Rafael Gago Castano.
 
 namespace ufo {
 
-namespace th = UFO_THREAD_NAMESPACE;
-
 //------------------------------------------------------------------------------
 class log_files
 {
@@ -61,28 +60,32 @@ public:
     //--------------------------------------------------------------------------
     bool init(
         uword                          file_count,
-        const std::string&             folder,
+        std::string                    folder,
         const std::string&             prefix,
         const std::string&             suffix,
         const std::deque<std::string>& previous
         )
     {
         assert (file_count == 0 || file_count > 1);
-        uword max_name = folder.size() +
-                         prefix.size() +
-                         fixed_chars_in_name +
-                         suffix.size();
-        for (uword i = 0; i < previous.size(); ++i)
-        {
-            max_name = (previous[i].size() > max_name) ?
-                            previous[i].size() : max_name;
-        }
-        ++max_name;                                                             //trailing null
         try
         {
+            append_separator_if (folder);
+            uword max_name = folder.size() +
+                             prefix.size() +
+                             fixed_chars_in_name +
+                             suffix.size();
+            for (uword i = 0; i < previous.size(); ++i)
+            {
+                max_name = (previous[i].size() > max_name) ?
+                                previous[i].size() : max_name;
+            }
+            ++max_name;                                                             //trailing null
+            std::deque<std::string> prev;
+
             m_buffer.resize (max_name, 0);
-            auto prev = previous;
-            while (file_count && ((prev.size() >= file_count)))
+
+            prev = previous;
+            while (file_count && ((prev.size() > file_count)))
             {
                 erase_file (prev.front().c_str());
                 prev.pop_front();
@@ -90,27 +93,37 @@ public:
             m_folder = folder;
             m_prefix = prefix;
             m_suffix = suffix;
+
+            if (file_count)
+            {
+                m_name_strings.free();
+                if (!m_name_strings.init (max_name, file_count))
+                {
+                    return false;
+                }
+            }
+
+            for (auto it = prev.begin(); it != prev.end(); ++it)
+            {
+                m_name_strings.push_tail();
+                std::memcpy (m_name_strings.tail(), &(*it)[0], it->size());
+            }
+            return true;
         }
         catch (...)
         {
             assert (false && "log: memory exception");
+            std::cerr << "[logger] memory exception\n";
             return false;
         }
-        if (file_count)
-        {
-            m_name_strings.free();
-            if (!m_name_strings.init (max_name, file_count))
-            {
-                return false;
-            }
-        }
-        return true;
+
     }
     //--------------------------------------------------------------------------
-    bool can_write_in_folder (const std::string& folder)
+    bool can_write_in_folder (std::string folder)
     {
         try
         {
+            append_separator_if (folder);
             if (m_buffer.size() < (folder.size() + fixed_chars_in_name + 1))
             {
                 m_buffer.resize (folder.size() + fixed_chars_in_name + 1, -1);
@@ -131,6 +144,11 @@ public:
                 erase_file (fn);
                 if (i == 20) //FIXME
                 {
+                    std::cerr << "[logger] unable to create verification file: "
+                                 "\""
+                              << fn
+                              << "\", does folder exist? has this user write "
+                                 "access to it?\n";
                     assert(
                         false && "log: couldn't create or write a test file"
                         );
@@ -180,6 +198,14 @@ public:
     }
     //--------------------------------------------------------------------------
 private:
+    //--------------------------------------------------------------------------
+    void append_separator_if (std::string& folder)
+    {
+        if (folder[folder.size() - 1] != fs_separator)
+        {
+            folder.append (1, fs_separator);
+        }
+    }
     //--------------------------------------------------------------------------
     static void erase_file (const char* file)
     {

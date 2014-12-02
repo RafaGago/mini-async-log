@@ -22,10 +22,6 @@
 
 #include <spdlog/spdlog.h>
 
-namespace at = UFO_ATOMIC_NAMESPACE;
-namespace th = UFO_THREAD_NAMESPACE;
-namespace ch = UFO_CHRONO_NAMESPACE;
-
 #define TEST_LITERAL "message saying that something happened and an integer: "
 #define OUT_FOLDER   "./log_out"
 static const unsigned file_size_bytes = 50 * 1024 * 1024;
@@ -41,10 +37,11 @@ public:
     //--------------------------------------------------------------------------
     bool run (ufo::uword msgs, ufo::uword thread_count)
     {
-        m_cummulative_enqueue_ns   = 0;
-        m_total_ns     = 0;
-        m_alloc_faults = 0;
-        m_data_visible = 0;
+        using namespace ufo;
+        m_cummulative_enqueue_ns = 0;
+        m_total_ns               = 0;
+        m_alloc_faults           = 0;
+        m_data_visible           = 0;
 
         static_cast<derived&> (*this).create();
         if (!static_cast<derived&> (*this).configure())
@@ -103,6 +100,7 @@ private:
     //--------------------------------------------------------------------------
     void thread (ufo::uword msg_count)
     {
+        using namespace ufo;
         auto init = ch::steady_clock::now();
 
         static_cast<derived&> (*this).thread (msg_count);
@@ -162,6 +160,7 @@ private:
             ufo::u64   join_ns
             )
     {
+        using namespace ufo;
         while (m_data_visible.load (ufo::mo_acquire) != thread_count)
         {
             th::this_thread::yield();
@@ -212,9 +211,9 @@ class ufo_tester : public perftest<ufo_tester>
 {
 public:
     //--------------------------------------------------------------------------
-    void set_params (ufo::uword entries, ufo::uword entry_size, bool heap)
+    void set_params (ufo::uword total_bsz, ufo::uword entry_size, bool heap)
     {
-        m_entries    = entries;
+        m_total_bsz  = total_bsz;
         m_entry_size = entry_size;
         m_heap       = heap;
     }
@@ -233,18 +232,20 @@ private:
         be_cfg.file.out_folder                  = OUT_FOLDER "/";               //this folder has to exist before running
         be_cfg.file.aprox_size                  = file_size_bytes;
         be_cfg.file.rotation.file_count         = 0;
-        be_cfg.file.rotation.delayed_file_count = 0;                                //we let the logger to have an extra file when there is a lot of workload
+        be_cfg.file.rotation.delayed_file_count = 0;                            //we let the logger to have an extra file when there is a lot of workload
 
-        be_cfg.alloc.fixed_size_entry_count     = m_entries;
-        be_cfg.alloc.fixed_size_entry_size      = m_entry_size;
+        be_cfg.alloc.fixed_block_size           = m_total_bsz;
+        be_cfg.alloc.fixed_entry_size           = m_entry_size;
         be_cfg.alloc.use_heap_if_required       = m_heap;
+
+        m_fe->producer_timestamp (false);                                       //timestamping on producers slows the whole thing down 2.5, 3x, so we timestamp in the file worker for now. todo: for fairness the other libraries should have it disabled too
 
         return m_fe->init_backend (be_cfg) == frontend::init_ok;
     }
     //--------------------------------------------------------------------------
     void thread (ufo::uword msg_count)
     {
-        for (unsigned i = 0; i < msg_count; ++i)
+        for (ufo::u64 i = 0; i < msg_count; ++i)
         {
             bool res =
                 log_error_i (m_fe.get(), log_fileline TEST_LITERAL "{}", i);
@@ -260,8 +261,7 @@ private:
     const char* get_name() { return "ufo log"; }
     //--------------------------------------------------------------------------
     ufo::on_stack_dynamic<ufo::frontend> m_fe;
-    ufo::uword m_entries, m_entry_size, m_heap;
-
+    ufo::uword m_total_bsz, m_entry_size, m_heap;
 };
 //------------------------------------------------------------------------------
 class google_tester: public perftest<google_tester>
@@ -297,9 +297,9 @@ private:
     //--------------------------------------------------------------------------
     void thread (ufo::uword msg_count)
     {
-        for (unsigned i = 0; i < msg_count; ++i)
+        for (ufo::u64 i = 0; i < msg_count; ++i)
         {
-            LOG(ERROR) << TEST_LITERAL << i;
+            LOG (ERROR) << TEST_LITERAL << i;
         }
     }
     //--------------------------------------------------------------------------
@@ -335,7 +335,7 @@ private:
     //--------------------------------------------------------------------------
     void thread (ufo::uword msg_count)
     {
-        for (unsigned i = 0; i < msg_count; ++i)
+        for (ufo::u64 i = 0; i < msg_count; ++i)
         {
             m_logger->info (log_fileline TEST_LITERAL, i);
         }
@@ -390,16 +390,16 @@ void ufo_tests (ufo::uword msgs)
 
     std::printf ("no heap------------------------------------------\n");
 
-    ufo_test.set_params (1024 * 1024, 16, false);
+    ufo_test.set_params (64 * 1024 * 1024, 32, false);
     ufo_test.run (msgs, 1);
 
-    ufo_test.set_params (1024 * 1024, 16, false);
+    ufo_test.set_params (64 * 1024 * 1024, 32, false);
     ufo_test.run (msgs, 2);
 
-    ufo_test.set_params (1024 * 1024, 16, false);
+    ufo_test.set_params (64 * 1024 * 1024, 32, false);
     ufo_test.run (msgs, 4);
 
-    ufo_test.set_params (1024 * 1024, 16, false);
+    ufo_test.set_params (64 * 1024 * 1024, 32, false);
     ufo_test.run (msgs, 8);
 
     std::printf ("pure heap----------------------------------------\n");
@@ -418,21 +418,22 @@ void ufo_tests (ufo::uword msgs)
 
     std::printf ("hybrid-------------------------------------------\n");
 
-    ufo_test.set_params (1024 * 8, 16, true);
+    ufo_test.set_params (1024 * 128, 32, true);
     ufo_test.run (msgs, 1);
 
-    ufo_test.set_params (1024 * 8, 16, true);
+    ufo_test.set_params (1024 * 128, 32, true);
     ufo_test.run (msgs, 2);
 
-    ufo_test.set_params (1024 * 8, 16, true);
+    ufo_test.set_params (1024 * 128, 32, true);
     ufo_test.run (msgs, 4);
 
-    ufo_test.set_params (1024 * 8, 16, true);
+    ufo_test.set_params (1024 * 128, 32, true);
     ufo_test.run (msgs, 8);
 }
 //------------------------------------------------------------------------------
 void do_a_pause()                                                               //time for the OS to finish some file io, otherwise some results were weird.
 {
+    using namespace ufo;
     th::this_thread::sleep_for (ch::seconds (2));
 }
 //------------------------------------------------------------------------------
@@ -497,7 +498,6 @@ int main (int argc, const char* argv[])
         std::printf ("no parameter specified (ufo, spdlog, glog)\n");
         return 1;
     }
-
     std::string choice = argv[1];
 
     if (choice.compare ("ufo") == 0)

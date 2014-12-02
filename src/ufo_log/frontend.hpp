@@ -38,12 +38,18 @@ either expressed or implied, of Rafael Gago Castano.
 #define UFO_LOG_LOG_FRONTEND_HPP_
 
 #include <memory>
-#include <ufo_log/message_encoder.hpp>
+#include <ufo_log/serialization/exporter.hpp>
+#include <ufo_log/backend_cfg.hpp>
 
 namespace ufo {
 
-struct backend_cfg;
-
+class sync_point;
+//------------------------------------------------------------------------------
+struct timestamp_data
+{
+    u64  base;
+    bool producer_timestamps;
+};
 //------------------------------------------------------------------------------
 class frontend
 {
@@ -66,19 +72,34 @@ public:
     //--------------------------------------------------------------------------
     init_status init_backend (const backend_cfg& cfg);
     //--------------------------------------------------------------------------
-    void set_severity (sev::severity s);
+    sev::severity min_severity() const;
     //--------------------------------------------------------------------------
-    sev::severity severity();
+    bool can_log (sev::severity s) const;
+    //--------------------------------------------------------------------------
+    void set_file_severity (sev::severity s);
     //--------------------------------------------------------------------------
     bool set_console_severity(
             sev::severity stderr, sev::severity stdout = sev::off
             );
     //--------------------------------------------------------------------------
-    proto::encoder get_encoder (uword required_bytes);
+    ser::exporter get_encoder (uword required_bytes);
     //--------------------------------------------------------------------------
-    void push_encoded (proto::encoder encoder);
+    void async_push_encoded (ser::exporter encoder);
     //--------------------------------------------------------------------------
-    void on_termination();                                                      //you may want to call this from e.g. SIGTERM handlers, be aware that all the data generators should be stopped before.
+    bool sync_push_encoded(                                                     //this is an emergency call that blocks the caller until the entry is dequeued by the file worker, it has more overhead and scales very poorly, so if you are using this often you may need to switch to a traditional synchronous-logger. returns false if interrupted/on termination.
+            ser::exporter encoder,
+            sync_point&   syncer
+            );
+    //--------------------------------------------------------------------------
+    void on_termination();                                                      //you may want to call this from e.g. SIGTERM handlers, be aware that all the data generators/producer should be stopped before to guarantee that the queue can be left completely empty (no memory leaks).
+    //--------------------------------------------------------------------------
+    timestamp_data get_timestamp_data() const;
+    //--------------------------------------------------------------------------
+    bool producer_timestamp (bool on);                                          //even if you set this on producer_timestamp() can return false if the backed is configured to don't show timestamps
+    //--------------------------------------------------------------------------
+    u64 timestamp_base() const;
+    //--------------------------------------------------------------------------
+    void flush();                                                               //flushing the files is called after detecting idle periods, this is just in case you want to force it.
     //--------------------------------------------------------------------------
 private:
     class frontend_impl;

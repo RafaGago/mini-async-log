@@ -33,150 +33,129 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
+#ifndef UFO_LOG_IMPORTER_HPP_
+#define UFO_LOG_IMPORTER_HPP_
 
-#ifndef UFO_LOG_LOG_OUTPUT_HPP_
-#define UFO_LOG_LOG_OUTPUT_HPP_
+#include <ufo_log/serialization/basic_encoder_decoder.hpp>
+#include <ufo_log/frontend_types.hpp>
+#include <ufo_log/serialization/importer_exporter.hpp>
+#include <ufo_log/util/placement_new.hpp>
 
-#include <cstdio>
-#include <cassert>
-#include <fstream>
-#include <iostream>
-#include <ufo_log/util/integer.hpp>
-#include <ufo_log/util/atomic.hpp>
-#include <ufo_log/protocol.hpp>
+namespace ufo { namespace ser {
 
-namespace ufo {
 //------------------------------------------------------------------------------
-class output
+class importer : protected importer_exporter<const u8>,
+                 private basic_encoder_decoder
 {
 public:
     //--------------------------------------------------------------------------
-    output()
+    template <class T>
+    void import_type (T& t)
     {
-        m_sev_current = sev::off;
-        m_stderr_sev  = sev::off;
-        m_stdout_sev  = sev::off;
-        m_file_sev    = sev::warning;
+        m_pos = decode_type (t, m_pos, m_end);
     }
     //--------------------------------------------------------------------------
-    bool file_open (const char* file)
+    void do_import (header_data& hd)
     {
-        m_file.open (file);
-        return file_no_error();
-    }
-    //--------------------------------------------------------------------------
-    bool file_is_open ()
-    {
-        return m_file.is_open();
-    }
-    //--------------------------------------------------------------------------
-    void file_close()
-    {
-        m_file.close();
-    }
-    //--------------------------------------------------------------------------
-    bool file_no_error() const
-    {
-        return m_file.good();
-    }
-    //--------------------------------------------------------------------------
-    void flush()
-    {
-        m_file.flush();
-    }
-    //--------------------------------------------------------------------------
-    uword file_bytes_written()
-    {
-        return m_file.tellp();
-    }
-    //--------------------------------------------------------------------------
-    void set_console_severity(
-            sev::severity stderr_sev,
-            sev::severity stdout_sev
-            )
-    {
-        assert (stderr_sev < sev::invalid);
-        assert (stdout_sev < sev::invalid);
-        assert ((stdout_sev < stderr_sev) || stdout_sev == sev::off);
-        m_stderr_sev = stderr_sev;
-        m_stdout_sev = stdout_sev;
-    }
-    //--------------------------------------------------------------------------
-    void set_file_severity (sev::severity sev)
-    {
-        assert (sev < sev::invalid);
-        m_file_sev = sev;
-    }
-    //--------------------------------------------------------------------------
-    sev::severity min_severity() const
-    {
-        sev::severity err, out, file;
-        err   = (sev::severity) m_stderr_sev;
-        out   = (sev::severity) m_stdout_sev;
-        file  = (sev::severity) m_file_sev;
+        header_field h;
+        import_type (h);
+        import_type (hd.fmt);
 
-        auto min = (err <= out)  ? err : out;
-        min      = (min <= file) ? min : file;
-        return min;
+        hd.arity      = h.arity;
+        hd.has_tstamp = h.no_timestamp ? false : true;
+        hd.tstamp     = 0;
+        hd.severity   = (sev::severity) h.severity;
+        hd.sync       = nullptr;
+
+        if (hd.has_tstamp)
+        {
+            decode_unsigned (hd.tstamp, ((uword) h.timestamp_bytes) + 1);
+        }
+        if (h.is_sync)
+        {
+            import_type (hd.sync);
+        }
     }
     //--------------------------------------------------------------------------
-    void entry_begin (sev::severity s)
+    template <class T>
+    typename enable_if_unsigned<T, void>::type
+    do_import (T& val, integral_field f)
     {
-        assert (s < sev::invalid);
-        m_sev_current = s;
+        decode_unsigned (val, ((uword) f.bytes) + 1);
     }
     //--------------------------------------------------------------------------
-    void entry_end()
+    template <class T>
+    typename enable_if_signed<T, void>::type
+    do_import (T& val, integral_field f)
     {
-        char newline = '\n';
-        write (&newline, sizeof newline);
+        decode_unsigned (val, ((uword) f.bytes) + 1);
+        val = (f.is_negative == 0) ? val : reconstruct_negative (val);
     }
     //--------------------------------------------------------------------------
-    void write (const void* d, uword sz)
+    void do_import (double& val, non_integral_field f)
     {
-        if (m_sev_current >= m_file_sev)
-        {
-            m_file.write ((const char*) d, sz);
-        }
-        if (m_sev_current >= m_stderr_sev)
-        {
-            std::cerr.write ((const char*) d, sz);
-        }
-        else if (m_sev_current >= m_stdout_sev)
-        {
-            std::cout.write ((const char*) d, sz);
-        }
+        import_type (val);
     }
     //--------------------------------------------------------------------------
-    void write (const char* str)
+    void do_import (float& val, non_integral_field f)
     {
-        raw_write (m_sev_current, str);
+        import_type (val);
     }
     //--------------------------------------------------------------------------
-    void raw_write (sev::severity s, const char* str)
+    void do_import (bool& val, non_integral_field f)
     {
-        if (s >= m_file_sev)
+        val = f.bool_val ? true : false;
+    }
+    //--------------------------------------------------------------------------
+    void do_import (literal_wrapper& l, non_numeric_field f)
+    {
+        import_type (l.lit);
+    }
+    //--------------------------------------------------------------------------
+    void do_import (ptr_wrapper& p, non_numeric_field f)
+    {
+        import_type (p.ptr);
+    }
+    //--------------------------------------------------------------------------
+    void do_import (deep_copy_bytes& b, non_numeric_field f)
+    {
+        decode_delimited ((delimited_mem&) b, f);
+    }
+    //--------------------------------------------------------------------------
+    void do_import (deep_copy_string& s, non_numeric_field f)
+    {
+        decode_delimited ((delimited_mem&) s, f);
+    }
+    //--------------------------------------------------------------------------
+    template <class T>
+    static typename enable_if_signed<T, T>::type
+    reconstruct_negative (T val)
+    {
+        static const T sign_mask = ((T) 1) << ((sizeof val * 8) - 1);
+        return (~val) | sign_mask;
+    }
+    //--------------------------------------------------------------------------
+    template <class T>
+    void decode_unsigned (T& val, uword size)
+    {
+        assert (m_pos + size <= m_end);
+        val = 0;
+        for (uword i = 0; i < size; ++i, ++m_pos)
         {
-            m_file << str;
-        }
-        if (s >= m_stderr_sev)
-        {
-            std::cerr << str;
-        }
-        else if (s >= m_stdout_sev)
-        {
-            std::cout << str;
+            val |= ((T) *m_pos) << (i * 8);
         }
     }
     //--------------------------------------------------------------------------
-private:
-    sev::severity                    m_sev_current;
-    mo_relaxed_atomic<sev::severity> m_stderr_sev;
-    mo_relaxed_atomic<sev::severity> m_stdout_sev;
-    mo_relaxed_atomic<sev::severity> m_file_sev;
-    std::ofstream                    m_file;
+    void decode_delimited (delimited_mem& m, non_numeric_field f)
+    {
+        decode_unsigned (m.size, ((uword) f.deep_copied_length_bytes) + 1);
+        m.mem = m_pos;
+        assert (m_pos + m.size <= m_end);
+        m_pos += m.size;
+    }
+    //--------------------------------------------------------------------------
 };
-//------------------------------------------------------------------------------
-}
 
-#endif /* UFO_LOG_LOG_FILE_SINK_HPP_ */
+}} //namespaces
+
+#endif /* UFO_LOG_IMPORTER_HPP_ */

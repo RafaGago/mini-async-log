@@ -47,6 +47,11 @@ either expressed or implied, of Rafael Gago Castano.
     #else
         #define UFO_32
     #endif
+
+namespace ufo {
+    const char fs_separator = '/';
+}
+
 #endif
 
 #if 0 //REMINDER
@@ -62,15 +67,20 @@ MSVC++ 7.1  _MSC_VER == 1310 (Visual Studio 2003)
 
 #if defined (_MSC_VER)
 
+#ifdef _WIN64
+    #define UFO_64
+#else
+    #define UFO_32
+#endif
+
 #if _MSC_VER >= 1800 //1600 >= vs2010
     #define UFO_HAS_VARIADIC_TEMPLATES 1
-
-    #ifdef _WIN64
-        #define UFO_64
-    #else
-        #define UFO_32
-    #endif
 #endif
+
+namespace ufo {
+    const char fs_separator = '\\';
+}
+
 
 #endif
 
@@ -94,9 +104,10 @@ namespace ufo {
 #endif
 } //namespace ufo {
 
-
-#if defined (UFO_HAS_CONSTEXPR) && defined (UFO_HAS_VARIADIC_TEMPLATES)
-    #define UFO_COMPILE_TIME_FMT_CHECK
+#if defined (UFO_HAS_CONSTEXPR)
+    #define UFO_CONSTEXPR constexpr
+#else
+    #define UFO_CONSTEXPR constexpr
 #endif
 
 #endif /* UFO_SYSTEM_HPP_ */

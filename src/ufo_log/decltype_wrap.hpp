@@ -69,6 +69,8 @@ done
 
 */
 
+//BRUTE FORCE!
+
 #define UFO_DECLTYPE_WRAP_PRIVATE_1(a1)\
 
 #define UFO_DECLTYPE_WRAP_PRIVATE_2(a1, a2)\

@@ -34,20 +34,49 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_FORMAT_TOKENS_HPP_
-#define UFO_LOG_FORMAT_TOKENS_HPP_
+#ifndef UFO_LOG_HEADER_DATA_HPP_
+#define UFO_LOG_HEADER_DATA_HPP_
 
+#include <ufo_log/util/system.hpp>
+#include <ufo_log/util/integer.hpp>
+#include <ufo_log/frontend_types.hpp>
 
-namespace ufo { namespace fmt {
+namespace ufo {
+
+class sync_point;
+
+namespace ser {
+
+//------------------------------------------------------------------------------
+struct header_data
+{
+    u64           tstamp;                                                       //timestamps could be disabled on request, I don't know if us resolution would suffice.
+    const char*   fmt;
+    bool          has_tstamp;
+    sev::severity severity;
+    uword         arity;
+    sync_point*   sync;
+};
+//------------------------------------------------------------------------------
+inline header_data make_header_data(
+                 sev::severity sev,
+                 const char*   fmt,
+                 uword         arity,
+                 bool          has_tstamp = false,
+                 u64           tstamp     = 0
+                )
+{
+    header_data h;
+    h.severity   = sev;
+    h.fmt        = fmt;
+    h.arity      = arity;
+    h.has_tstamp = has_tstamp;
+    h.tstamp     = tstamp;
+    h.sync       = nullptr;
+    return h;
+}
 //------------------------------------------------------------------------------
 
-static const char placeholder_open  = '{';
-static const char placeholder_close = '}';
-static const char full_width        = 'w';
-static const char hex               = 'x';
-static const char scientific        = 's';
-
-//------------------------------------------------------------------------------
 }} //namespaces
 
-#endif /* UFO_LOG_FORMAT_TOKENS_HPP_ */
+#endif /* UFO_LOG_HEADER_DATA_HPP_ */

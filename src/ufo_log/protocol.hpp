@@ -37,6 +37,8 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef UFO_LOG_PROTOCOL_HPP_
 #define UFO_LOG_PROTOCOL_HPP_
 
+#if 0
+
 #include <type_traits>
 #include <ufo_log/util/integer.hpp>
 
@@ -229,5 +231,7 @@ struct sev
 //------------------------------------------------------------------------------
 
 } //namespace ufo
+
+#endif
 
 #endif /* UFO_LOG_LOG_MESSAGE_HPP_ */

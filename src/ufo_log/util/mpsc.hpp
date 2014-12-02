@@ -185,9 +185,12 @@ public:
     //--------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------
+    aligned_type<void*, cache_line_size>                    m_pad1;
     aligned_type<mpsc_node_hook::ptr_type, cache_line_size> m_tail;
     aligned_type<mpsc_node_hook::ptr_type, cache_line_size> m_head;
     aligned_type<mpsc_node_hook, cache_line_size>           m_stable_node;
+    aligned_type<void*, cache_line_size>                    m_pad2;
+    //--------------------------------------------------------------------------
 };
 
 //------------------------------------------------------------------------------
@@ -288,9 +291,11 @@ private:
         return (mpsc_node_hook*) ((uword) p & ~1);
     }
     //--------------------------------------------------------------------------
+    aligned_type<void*, cache_line_size>                    m_pad1;
     aligned_type<mpsc_node_hook::ptr_type, cache_line_size> m_tail;
     aligned_type<mpsc_node_hook::ptr_type, cache_line_size> m_head;
     aligned_type<mpsc_node_hook, cache_line_size>           m_stable_node;
+    aligned_type<void*, cache_line_size>                    m_pad2;
 };
 //------------------------------------------------------------------------------
 
