@@ -40,6 +40,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/serialization/printf_modifiers.hpp>
 #include <ufo_log/serialization/byte_stream_convert.hpp>
 #include <ufo_log/serialization/importer.hpp>
+#include <ufo_log/ufo_private.hpp>
 #include <ufo_log/timestamp.hpp>
 #include <ufo_log/output.hpp>
 #include <ufo_log/format_tokens.hpp>
@@ -54,15 +55,21 @@ public:
     //--------------------------------------------------------------------------
     log_writer()
     {
-        m_fmt           = nullptr;
-        m_fmt_modif     = 0;
-        prints_severity = prints_timestamp = true;
-        m_sync          = nullptr;
+        m_timestamp_base = 0;
+        m_fmt            = nullptr;
+        m_fmt_modif      = 0;
+        prints_severity  = prints_timestamp = true;
+        m_sync           = nullptr;
     }
     //--------------------------------------------------------------------------
     void set_synchronizer (async_to_sync& sync)
     {
         m_sync = &sync;
+    }
+    //--------------------------------------------------------------------------
+    void set_timestamp_base (u64 base)
+    {
+        m_timestamp_base = base;
     }
     //--------------------------------------------------------------------------
     bool decode_and_write (output& o, const u8* msg)
@@ -74,25 +81,23 @@ public:
         ser::header_data h;
         do_import (h);
 
-        if (h.sync != nullptr)
-        {
-            assert (m_sync);
-            m_sync->notify (*h.sync);
-        }
+        if (h.sync != nullptr) { m_sync->notify (*h.sync); }
 
         set_next_msg_fmt_string (h.fmt);
         o.entry_begin (h.severity);
 
         if (prints_timestamp)
         {
-            write_timestamp (o, h.has_tstamp ? h.tstamp : get_timestamp());
+            write_timestamp(
+                o,
+                h.has_tstamp ? h.tstamp : (get_timestamp() - m_timestamp_base)
+                );
         }
-        if (prints_severity)
-        {
-            write_severity (o, h.severity);
-        }
+        if (prints_severity) { write_severity (o, h.severity);  }
+
         uword params   = h.arity;
         bool fmt_param = find_param_in_fmt_str (o, params > 0);
+
         while (params > 0 && fmt_param)
         {
             consume_next (o, true);
@@ -100,6 +105,9 @@ public:
             fmt_param = find_param_in_fmt_str (o, params > 0);
         }
 
+#ifdef UFO_COMPILE_TIME_FMT_CHECK
+        assert (params == 0 && !fmt_param);
+#else
         if (params)
         {
             do
@@ -131,9 +139,9 @@ public:
                 false && "too many placeholders, see log output for details"
                 );
         }
+#endif
         o.entry_end();
-
-        if (h.sync != nullptr)
+        if (h.severity >= sev::critical)
         {
             o.flush();
         }
@@ -486,10 +494,13 @@ private:
     //--------------------------------------------------------------------------
     static void write_timestamp (output& o, u64 t)
     {
-        output_num (o, t, "[%020llu] ");
+        u64 s = t / 1000000000;
+        output_num (o, s, "[%011llu.");
+        t -= s;
+        output_num (o, t, "%09llu] ");
     }
     //--------------------------------------------------------------------------
-
+    u64            m_timestamp_base;
     const char*    m_fmt;
     async_to_sync* m_sync;
     char           m_fmt_modif;

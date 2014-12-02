@@ -108,11 +108,11 @@ inline bool silence_warnings() { return true; }
         return UFO_LOG_IF_PRIVATE (counter##line == 0, statement); \
     }.operator ()());
 
-#define UFO_LOG_PRIVATE(instance, severity_, ...)\
+#define UFO_LOG_PRIVATE(instance, async, severity_, ...)\
     UFO_LOG_IF_PRIVATE(\
         (UFO_FMT_STRING_CHECK (__VA_ARGS__)) &&\
         (instance.can_log (::ufo::sev::severity_)),\
-        ::ufo::new_entry(\
+        ::ufo::new_entry<async>(\
             instance, ::ufo::sev::severity_, __VA_ARGS__\
             ))
 

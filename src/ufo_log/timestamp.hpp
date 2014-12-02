@@ -44,7 +44,7 @@ namespace ufo {
 //--------------------------------------------------------------------------
 inline u64 get_timestamp()
 {
-    return ch::duration_cast<ch::microseconds>(
+    return ch::duration_cast<ch::nanoseconds>(
             ch::steady_clock::now().time_since_epoch()
             ).count();
 }

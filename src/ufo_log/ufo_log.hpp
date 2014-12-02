@@ -64,90 +64,138 @@ either expressed or implied, of Rafael Gago Castano.
 #if !defined (UFO_STRIP_LOG_SEVERITY)
 
 #define log_debug_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, debug, __VA_ARGS__)
+    UFO_LOG_PRIVATE (instance, true, debug, __VA_ARGS__)
+
+#define log_debug_sync_i(instance, ...)\
+    UFO_LOG_PRIVATE (instance, false, debug, __VA_ARGS__)
 
 #define log_debug(...)\
     log_debug_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
+#define log_debug_sync(...)\
+    log_debug_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+
 #else
 
-    #define log_debug_i(...) ::ufo::macro::silence_warnings()
-    #define log_debug(...)   ::ufo::macro::silence_warnings()
+    #define log_debug_i(...)      ::ufo::macro::silence_warnings()
+    #define log_debug_sync_i(...) ::ufo::macro::silence_warnings()
+    #define log_debug(...)        ::ufo::macro::silence_warnings()
+    #define log_debug_sync(...)   ::ufo::macro::silence_warnings()
 
 #endif //UFO_STRIP_LOG_SEVERITY
 //------------------------------------------------------------------------------
 #if !defined (UFO_STRIP_LOG_SEVERITY) || UFO_STRIP_LOG_SEVERITY < 1
 
 #define log_trace_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, trace, __VA_ARGS__)
+    UFO_LOG_PRIVATE (instance, true, trace, __VA_ARGS__)
+
+#define log_trace_sync_i(instance, ...)\
+    UFO_LOG_PRIVATE (instance, false, trace, __VA_ARGS__)
 
 #define log_trace(...)\
     log_trace_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
+#define log_trace_sync(...)\
+    log_trace_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+
 #else
 
-    #define log_trace_i(...) ::ufo::macro::silence_warnings()
-    #define log_trace(...)   ::ufo::macro::silence_warnings()
+    #define log_trace_i(...)      ::ufo::macro::silence_warnings()
+    #define log_trace_sync_i(...) ::ufo::macro::silence_warnings()
+    #define log_trace(...)        ::ufo::macro::silence_warnings()
+    #define log_trace_sync(...)   ::ufo::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
 #if !defined (UFO_STRIP_LOG_SEVERITY) || UFO_STRIP_LOG_SEVERITY < 2
 
 #define log_notice_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, notice, __VA_ARGS__)
+    UFO_LOG_PRIVATE (instance, true, notice, __VA_ARGS__)
+
+#define log_notice_sync_i(instance, ...)\
+    UFO_LOG_PRIVATE (instance, false, notice, __VA_ARGS__)
 
 #define log_notice(...)\
     log_notice_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
+#define log_notice_sync(...)\
+    log_notice_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+
 #else
 
-    #define log_notice_i(...) ::ufo::macro::silence_warnings()
-    #define log_notice(...)   ::ufo::macro::silence_warnings()
+    #define log_notice_i(...)      ::ufo::macro::silence_warnings()
+    #define log_notice_sync_i(...) ::ufo::macro::silence_warnings()
+    #define log_notice(...)        ::ufo::macro::silence_warnings()
+    #define log_notice_sync(...)   ::ufo::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
 #if !defined (UFO_STRIP_LOG_SEVERITY) || UFO_STRIP_LOG_SEVERITY < 3
 
 #define log_warning_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, warning, __VA_ARGS__)
+    UFO_LOG_PRIVATE (instance, true, warning, __VA_ARGS__)
+
+#define log_warning_sync_i(instance, ...)\
+    UFO_LOG_PRIVATE (instance, false, warning, __VA_ARGS__)
 
 #define log_warning(...)\
     log_warning_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
+#define log_warning_sync(...)\
+    log_warning_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+
 #else
 
-    #define log_warning_i(...) ::ufo::macro::silence_warnings()
-    #define log_warning(...)   ::ufo::macro::silence_warnings()
+    #define log_warning_i(...)      ::ufo::macro::silence_warnings()
+    #define log_warning_sync_i(...) ::ufo::macro::silence_warnings()
+    #define log_warning(...)        ::ufo::macro::silence_warnings()
+    #define log_warning_sync(...)   ::ufo::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
 #if !defined (UFO_STRIP_LOG_SEVERITY) || UFO_STRIP_LOG_SEVERITY < 4
 
 #define log_error_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, error, __VA_ARGS__)
+    UFO_LOG_PRIVATE (instance, true, error, __VA_ARGS__)
+
+#define log_error_sync_i(instance, ...)\
+    UFO_LOG_PRIVATE (instance, false, error, __VA_ARGS__)
 
 #define log_error(...)\
     log_error_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
+#define log_error_sync(...)\
+    log_error_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+
 #else
 
-    #define log_error_i(...) ::ufo::macro::silence_warnings()
-    #define log_error(...)   ::ufo::macro::silence_warnings()
+    #define log_error_i(...)      ::ufo::macro::silence_warnings()
+    #define log_error_sync_i(...) ::ufo::macro::silence_warnings()
+    #define log_error(...)        ::ufo::macro::silence_warnings()
+    #define log_error_sync(...)   ::ufo::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
 #if !defined (UFO_STRIP_LOG_SEVERITY) || UFO_STRIP_LOG_SEVERITY < 5
 
 #define log_critical_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, critical, __VA_ARGS__)
+    UFO_LOG_PRIVATE (instance, true, critical, __VA_ARGS__)
+
+#define log_critical_sync_i(instance, ...)\
+    UFO_LOG_PRIVATE (instance, false, critical, __VA_ARGS__)
 
 #define log_critical(...)\
     log_critical_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
+#define log_critical_sync(...)\
+    log_critical_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+
 #else
 
-    #define log_critical_i(...) ::ufo::macro::silence_warnings()
-    #define log_critical(...)   ::ufo::macro::silence_warnings()
+    #define log_critical_i(...)      ::ufo::macro::silence_warnings()
+    #define log_critical_sync_i(...) ::ufo::macro::silence_warnings()
+    #define log_critical(...)        ::ufo::macro::silence_warnings()
+    #define log_critical_sync(...)   ::ufo::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------

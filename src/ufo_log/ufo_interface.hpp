@@ -69,6 +69,7 @@ inline bool prebuild_data (T& v, field& f, uword& total_length)
 // time vectors or more complexity right now.
 //------------------------------------------------------------------------------
 template<
+    bool is_async,
     class A,
     class B,
     class C,
@@ -104,8 +105,6 @@ bool new_entry(                                                                 
     N             n
     )
 {
-    static const bool is_async = false;
-
     typedef ser::exporter exp;
     typedef exp::null_type null_type;
 
@@ -161,10 +160,11 @@ bool new_entry(                                                                 
     side_effect_assert (prebuild_data (m, m_field, length));
     side_effect_assert (prebuild_data (n, n_field, length));
 
-    hdr = ser::make_header_data (sv, fmt, arity, fe.producer_timestamp());
+    auto td = fe.get_timestamp_data();
+    hdr     = ser::make_header_data (sv, fmt, arity, td.producer_timestamps);
     if (hdr.has_tstamp)                                                         //timestamping is actually slow! in my machine slows down the producers by a factor of 2
     {
-        hdr.tstamp = get_timestamp();
+        hdr.tstamp = get_timestamp() - td.base;
     }
 
     sync_point sync;
@@ -194,20 +194,20 @@ bool new_entry(                                                                 
         enc.do_export (n, n_field);
         if (is_async)
         {
-            fe.async_push_encoded (enc);
+           fe.async_push_encoded (enc);
+           return true;
         }
         else
         {
-            fe.sync_push_encoded (enc, sync);
-//            fe.sync_push_encoded (enc, 5000000, hdr.sync_transaction_id);
+            return fe.sync_push_encoded (enc, sync);
         }
-        return true;
     }
     log_error_call ("couldn't allocate encoder\n");
     return false;
 }
 //------------------------------------------------------------------------------
 template<
+    bool is_async,
     class A,
     class B,
     class C,
@@ -242,10 +242,13 @@ bool new_entry(                                                                 
     )
 {
     ser::exporter::null_type no;
-    return new_entry (fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, k, l, m, no);
+    return new_entry<is_async>(
+            fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, k, l, m, no
+            );
 }
 //------------------------------------------------------------------------------
 template<
+    bool is_async,
     class A,
     class B,
     class C,
@@ -278,10 +281,13 @@ bool new_entry(                                                                 
     )
 {
     ser::exporter::null_type no;
-    return new_entry (fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, k, l, no, no);
+    return new_entry<is_async>(
+            fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, k, l, no, no
+            );
 }
 //------------------------------------------------------------------------------
 template<
+    bool is_async,
     class A,
     class B,
     class C,
@@ -312,10 +318,13 @@ bool new_entry(                                                                 
     )
 {
     ser::exporter::null_type no;
-    return new_entry (fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, k, no, no, no);
+    return new_entry<is_async>(
+            fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, k, no, no, no
+            );
 }
 //------------------------------------------------------------------------------
 template<
+    bool is_async,
     class A,
     class B,
     class C,
@@ -344,12 +353,13 @@ bool new_entry(                                                                 
     )
 {
     ser::exporter::null_type no;
-    return new_entry(
-        fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, no, no, no, no
-        );
+    return new_entry<is_async>(
+            fe, sv, fmt, a, b, c, d, e, f, g, h, i, j, no, no, no, no
+            );
 }
 //------------------------------------------------------------------------------
 template<
+    bool is_async,
     class A,
     class B,
     class C,
@@ -376,12 +386,22 @@ bool new_entry(                                                                 
     )
 {
     ser::exporter::null_type no;
-    return new_entry(
+    return new_entry<is_async>(
             fe, sv, fmt, a, b, c, d, e, f, g, h, i, no, no, no, no, no
             );
 }
 //------------------------------------------------------------------------------
-template<class A, class B, class C, class D, class E, class F, class G, class H>
+template<
+    bool is_async,
+    class A,
+    class B,
+    class C,
+    class D,
+    class E,
+    class F,
+    class G,
+    class H
+    >
 bool new_entry(                                                                 //don't use this directly, use the macros!
     frontend&     fe,
     sev::severity sv,
@@ -397,12 +417,21 @@ bool new_entry(                                                                 
     )
 {
     ser::exporter::null_type no;
-    return new_entry(
+    return new_entry<is_async>(
             fe, sv, fmt, a, b, c, d, e, f, g, h, no, no, no, no, no, no
             );
 }
 //------------------------------------------------------------------------------
-template<class A, class B, class C, class D, class E, class F, class G>
+template<
+    bool is_async,
+    class A,
+    class B,
+    class C,
+    class D,
+    class E,
+    class F,
+    class G
+    >
 bool new_entry(                                                                 //don't use this directly, use the macros!
     frontend&     fe,
     sev::severity sv,
@@ -417,12 +446,12 @@ bool new_entry(                                                                 
     )
 {
     ser::exporter::null_type no;
-    return new_entry(
+    return new_entry<is_async>(
             fe, sv, fmt, a, b, c, d, e, f, g, no, no, no, no, no, no, no
             );
 }
 //------------------------------------------------------------------------------
-template<class A, class B, class C, class D, class E, class F>
+template<bool is_async, class A, class B, class C, class D, class E, class F>
 bool new_entry(                                                                 //don't use this directly, use the macros!
     frontend&     fe,
     sev::severity sv,
@@ -436,64 +465,65 @@ bool new_entry(                                                                 
     )
 {
     ser::exporter::null_type no;
-    return new_entry(
+    return new_entry<is_async>(
             fe, sv, fmt, a, b, c, d, e, f, no, no, no, no, no, no, no, no
             );
 }
 //------------------------------------------------------------------------------
-template<class A, class B, class C, class D, class E>
+template<bool is_async, class A, class B, class C, class D, class E>
 bool new_entry(                                                                 //don't use this directly, use the macros!
     frontend& fe, sev::severity sv, const char* fmt, A a, B b, C c, D d, E e
     )
 {
     ser::exporter::null_type no;
-    return new_entry(
+    return new_entry<is_async>(
             fe, sv, fmt, a, b, c, d, e, no, no, no, no, no, no, no, no, no
             );
 }
 //------------------------------------------------------------------------------
-template<class A, class B, class C, class D>
+template<bool is_async, class A, class B, class C, class D>
 bool new_entry(                                                                 //don't use this directly, use the macros!
     frontend& fe, sev::severity sv, const char* fmt, A a, B b, C c, D d
     )
 {
     ser::exporter::null_type no;
-    return new_entry(
+    return new_entry<is_async>(
             fe, sv, fmt, a, b, c, d, no, no, no, no, no, no, no, no, no, no
             );
 }
 //------------------------------------------------------------------------------
-template<class A, class B, class C>
+template<bool is_async, class A, class B, class C>
 bool new_entry (frontend& fe, sev::severity sv, const char* fmt, A a, B b, C c)
 {
     ser::exporter::null_type no;
-    return new_entry(
+    return new_entry<is_async>(
         fe, sv, fmt, a, b, c, no, no, no, no, no, no, no, no, no, no, no
         );
 }
 //------------------------------------------------------------------------------
-template<class A, class B>
+template<bool is_async, class A, class B>
 bool new_entry (frontend& fe, sev::severity sv, const char* fmt, A a, B b)
 {
     ser::exporter::null_type no;
-    return new_entry(
+    return new_entry<is_async>(
         fe, sv, fmt, a, b, no, no, no, no, no, no, no, no, no, no, no, no
         );
 }
 //------------------------------------------------------------------------------
-template<class A>
+template<bool is_async, class A>
 bool new_entry (frontend& fe, sev::severity sv, const char* fmt, A a)
 {
     ser::exporter::null_type no;
-    return new_entry(
+    return new_entry<is_async>(
         fe, sv, fmt, a, no, no, no, no, no, no, no, no, no, no, no, no, no
         );
 }
 //------------------------------------------------------------------------------
-inline bool new_entry (frontend& fe, sev::severity sv, const char* fmt)
+template<bool is_async>
+bool new_entry (frontend& fe, sev::severity sv, const char* fmt)
 {
     ser::exporter::null_type no;
-    return new_entry(
+    return new_entry<is_async>(
         fe, sv, fmt, no, no, no, no, no, no, no, no, no, no, no, no, no, no
         );
 }

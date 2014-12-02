@@ -43,6 +43,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/frontend.hpp>
 #include <ufo_log/backend.hpp>
 #include <ufo_log/async_to_sync.hpp>
+#include <ufo_log/timestamp.hpp>
 
 namespace ufo {
 
@@ -57,6 +58,7 @@ public:
         m_min_severity       = sev::notice;
         m_prints_timestamp   = true;
         m_producer_timestamp = true;
+        m_timestamp_base     = 0;
     }
     //--------------------------------------------------------------------------
     ~frontend_impl() {}
@@ -115,7 +117,8 @@ public:
         uword actual = no_init;
         if (m_state.compare_exchange_strong (actual, on_init, mo_acquire))
         {
-            if (m_back.init (cfg, m_sync))
+            m_timestamp_base = get_timestamp();
+            if (m_back.init (cfg, m_sync, m_timestamp_base))
             {
                 m_prints_timestamp = cfg.display.show_timestamp;
                 m_state.store (init, mo_release);
@@ -148,6 +151,11 @@ public:
             assert (false && "unreachable");
             return frontend::init_was_terminated;
         }
+    }
+    //--------------------------------------------------------------------------
+    u64 timestamp_base() const
+    {
+        return m_timestamp_base;
     }
     //--------------------------------------------------------------------------
     void on_termination()
@@ -221,6 +229,7 @@ private:
     //--------------------------------------------------------------------------
     bool                     m_prints_timestamp;
     bool                     m_producer_timestamp;
+    u64                      m_timestamp_base;
     mo_relaxed_atomic<uword> m_min_severity;
     mo_relaxed_atomic<uword> m_state;
     backend_impl             m_back;
@@ -284,10 +293,13 @@ bool frontend::set_console_severity(
 {
     return m->set_console_severity (stderr, stdout);
 }
-//------------------------------------------------------------------------------
-bool frontend::producer_timestamp() const
+//--------------------------------------------------------------------------
+timestamp_data frontend::get_timestamp_data() const
 {
-    return m->producer_timestamp();
+    timestamp_data d;
+    d.producer_timestamps = m->producer_timestamp();
+    d.base                = m->timestamp_base();
+    return d;
 }
 //------------------------------------------------------------------------------
 bool frontend::producer_timestamp (bool on)

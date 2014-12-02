@@ -45,6 +45,12 @@ namespace ufo {
 
 class sync_point;
 //------------------------------------------------------------------------------
+struct timestamp_data
+{
+    u64  base;
+    bool producer_timestamps;
+};
+//------------------------------------------------------------------------------
 class frontend
 {
 public:
@@ -80,16 +86,20 @@ public:
     //--------------------------------------------------------------------------
     void async_push_encoded (ser::exporter encoder);
     //--------------------------------------------------------------------------
-    bool sync_push_encoded(                                                     //returns false if timeout
+    bool sync_push_encoded(                                                     //this is an emergency call that blocks the caller until the entry is dequeued by the file worker, it has more overhead and scales very poorly, so if you are using this often you may need to switch to a traditional synchronous-logger. returns false if interrupted/on termination.
             ser::exporter encoder,
             sync_point&   syncer
             );
     //--------------------------------------------------------------------------
     void on_termination();                                                      //you may want to call this from e.g. SIGTERM handlers, be aware that all the data generators/producer should be stopped before to guarantee that the queue can be left completely empty (no memory leaks).
     //--------------------------------------------------------------------------
-    bool producer_timestamp() const;
+    timestamp_data get_timestamp_data() const;
     //--------------------------------------------------------------------------
     bool producer_timestamp (bool on);                                          //even if you set this on producer_timestamp() can return false if the backed is configured to don't show timestamps
+    //--------------------------------------------------------------------------
+    u64 timestamp_base() const;
+    //--------------------------------------------------------------------------
+    void flush();                                                               //flushing the files is called after detecting idle periods, this is just in case you want to force it.
     //--------------------------------------------------------------------------
 private:
     class frontend_impl;

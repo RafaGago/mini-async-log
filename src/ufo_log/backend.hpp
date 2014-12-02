@@ -170,7 +170,7 @@ public:
         return m_cfg;
     }
     //--------------------------------------------------------------------------
-    bool init (const backend_cfg& c, async_to_sync& sync)
+    bool init (const backend_cfg& c, async_to_sync& sync, u64 timestamp_base)
     {
         if (!validate_cfg (c)) { return false; }
 
@@ -205,6 +205,7 @@ public:
         set_cfg (c);
 
         m_writer.set_synchronizer (sync);
+        m_writer.set_timestamp_base (timestamp_base);
 
         m_status.store (initialized, mo_release);                               // I guess that all Kernels do this for me when launching a thread, just being on the safe side in case is not true
         m_log_thread = th::thread ([this](){ this->thread(); });
