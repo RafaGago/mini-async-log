@@ -3,6 +3,7 @@
 #include <cassert>
 #include <ufo_log/frontend_def.hpp>                                             //compiled in place, but it could be in a separate library
 #include <ufo_log/ufo_log.hpp>
+
 //------------------------------------------------------------------------------
 inline ufo::frontend& get_ufo_logger_instance()
 {
@@ -140,13 +141,14 @@ void general_features()
         log_every (4, log_notice ("every 4, count = {}", j));
     }
 
-    bool called = false;
+    bool called           = false;
+    auto side_effect_expr = [&](){ called = true; return called; };
 
     log_trace(
         "you shouldn't see this, this entry is below logged severity, as usual "
         "with most data loggers parameters are lazy evaluated, so be aware "
         "that no passed expression has side effects. {}",
-        (called = true, called)
+        side_effect_expr()
         );
 
     assert (!called);
@@ -157,7 +159,7 @@ void general_features()
     log_trace(
         "now this is above the logged severity, you should see this, the "
         "function with side effects is called now: {}",
-        (called = true, called)
+        side_effect_expr()
         );
 
     assert (called);
