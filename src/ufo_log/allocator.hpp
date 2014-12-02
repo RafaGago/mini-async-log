@@ -83,27 +83,27 @@ public:
     //--------------------------------------------------------------------------
     bool init (uword total_byte_size, uword entry_size, bool use_heap)
     {
-        total_byte_size = next_pow2 (total_byte_size);
-        entry_size      = next_pow2 (entry_size);
-
         assert ((total_byte_size && entry_size) || use_heap);
         assert (entry_size <= total_byte_size);
         assert (!m_fixed_begin && !m_use_heap);
 
-        uword entries  = 0;
-
-        if (total_byte_size && entry_size && (entry_size <= total_byte_size))
+        uword entries = 0;
+        if (total_byte_size && entry_size)
         {
-            entries = total_byte_size / entry_size;
-        }
+            total_byte_size = next_pow2 (total_byte_size);
+            entry_size      = next_pow2 (entry_size);
 
+            if ((entry_size <= total_byte_size))
+            {
+                entries = total_byte_size / entry_size;
+            }
+        }
         if (!entries)
         {
             zero();
             m_use_heap = use_heap;
-            return true;
+            return use_heap;
         }
-
         m_fixed_begin = (u8*) ::operator new (total_byte_size, std::nothrow);
         if (!m_fixed_begin)
         {
