@@ -100,8 +100,6 @@ public:
     //--------------------------------------------------------------------------
     u64 timestamp_base() const;
     //--------------------------------------------------------------------------
-    void flush();                                                               //flushing the files is called after detecting idle periods, this is just in case you want to force it.
-    //--------------------------------------------------------------------------
 private:
     class frontend_impl;
     std::unique_ptr<frontend_impl> m;
