@@ -68,7 +68,7 @@ Be aware that it's dangerous to have a dynamic library or executable loaded mult
 
 The worker blocks in its destructor until its work queue is empty when normally exiting a program.
 
-When a signal is sent you can call the frontend function  [on termination](https://github.com/RafaGago/ufo-log/blob/master/src/ufo_log/frontend.hpp) after shutting down your data/log producers. This will early interrupt any synchronous calls you made.
+When a signal is sent you can call the frontend function  [on termination](https://github.com/RafaGago/ufo-log/blob/master/include/ufo_log/frontend.hpp) after shutting down your data/log producers. This will early interrupt any synchronous calls you made.
 
 
 ## Errors ##
