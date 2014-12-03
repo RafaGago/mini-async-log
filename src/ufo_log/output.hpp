@@ -43,7 +43,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <iostream>
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/atomic.hpp>
-#include <ufo_log/protocol.hpp>
+#include <ufo_log/frontend_types.hpp>
 
 namespace ufo {
 //------------------------------------------------------------------------------

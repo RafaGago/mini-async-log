@@ -41,18 +41,10 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/atomic.hpp>
 #include <ufo_log/util/chrono.hpp>
 #include <ufo_log/util/thread.hpp>
+#include <ufo_log/util/mpsc_hybrid_wait_cfg.hpp>
 
 namespace ufo {
 
-
-//------------------------------------------------------------------------------
-struct mpsc_hybrid_wait_cfg
-{
-    uword spin_max;
-    uword yield_max;
-    uword block_us;
-    bool  never_block;
-};
 //------------------------------------------------------------------------------
 // This class implements an hybrid lock to work with a lock-free queue. It is
 // to be used under the next assumtions:

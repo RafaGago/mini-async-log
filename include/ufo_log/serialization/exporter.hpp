@@ -39,7 +39,6 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <ufo_log/util/system.hpp>
 #include <ufo_log/util/integer.hpp>
-#include <ufo_log/util/placement_new.hpp>
 #include <ufo_log/frontend_types.hpp>
 #include <ufo_log/serialization/fields.hpp>
 #include <ufo_log/serialization/header_data.hpp>

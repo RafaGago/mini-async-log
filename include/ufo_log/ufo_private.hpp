@@ -38,7 +38,6 @@ either expressed or implied, of Rafael Gago Castano.
 #define UFO_LOG_LOG_INCLUDE_PRIVATE_HPP_
 
 #include <ufo_log/util/system.hpp>
-#include <ufo_log/decltype_wrap.hpp>
 
 #if defined (UFO_HAS_CONSTEXPR) && defined (UFO_HAS_VARIADIC_TEMPLATES)
     #define UFO_COMPILE_TIME_FMT_CHECK

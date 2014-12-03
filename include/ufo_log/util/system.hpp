@@ -85,17 +85,25 @@ namespace ufo {
     const char fs_separator = '\\';
 }
 
-
 #endif
 
 #ifndef UFO_DYN_LIB_CALL
 
 #if defined (_MSC_VER)
-    #define UFO_DYN_LIB_CALL WINAPI
+    #define UFO_LIB_EXPORTED_FUNC WINAPI  //using def files
+    #if defined (UFO_DYNLIB_COMPILE)
+        #define UFO_LIB_EXPORTED_CLASS __declspec(dllexport)
+    #elif defined (UFO_DYNLIB_LOADING)
+        #define UFO_LIB_EXPORTED_CLASS __declspec(dllimport)
+    #else
+        #define UFO_LIB_EXPORTED_CLASS
+    #endif
 #elif __GNUC__ >= 4
-    #define UFO_DYN_LIB_CALL __attribute__ ((visibility ("default")))
+    #define UFO_LIB_EXPORTED_FUNC __attribute__ ((visibility ("default")))
+    #define UFO_LIB_EXPORTED_CLASS __attribute__ ((visibility ("default")))
 #else
-    #define UFO_DYN_LIB_CALL
+    #define UFO_LIB_EXPORTED_FUNC
+    #define UFO_LIB_EXPORTED_CLASS
 #endif
 
 #endif //UFO_DYN_LIB_CALL

@@ -7,45 +7,18 @@ We just wanted an asynchronous logger that can be used from many dynamically loa
 
 After having maintained a slightly modified version of glog and given the fact that this is a very small project we decided that existing wheels weren't round enough.
 
-## Preliminary benchmarks with unoptimized and unprofiled code
-
-Below are some [throughput tests](https://github.com/RafaGago/ufo-log/blob/master/example/benchmark.cpp).
-
-This is a synthetic scenario that has nothing to do with reality. It requires a lot of memory. The file worker can't release memory as fast as the producers enqueue.
-
-Beware that an asynchronous logger is used mostly for latency, not for throughput. These measurements are a lot move involved and left for the profiling/optimizing phase.
-
-The used computer is a Dell(R) Latitude(TM) E6520 laptop with a Intel(R) Core(TM) i5-2520M CPU @ 2.50GHz CPU. It has two cores and Hyperthreading(TM). running on a 3.2.0-70-generic-pae Linux Kernel. The code was compiled with gcc 7.1 -O3.
-
-All the library versions are the latest of today (24 Nov 2014).
-
-This table shows the time that takes to join "n" threads that write a total of 1.600.0000 log entries. Each thread has to send exactly the same amount of entries.
-
-Other libraries as "boost::log" and" g2log" have been tested to be slower by other people, so I didn't include them here.
-
-|threads|glog|spdlog|ufo heap|ufo hybrid|ufo fixed|
-|-------|:-------:|:-----:|:------:|:------:|:------:|
-|1|5.387s|3.272s|0.147s|0.135s|0.094s|
-|2|4.814s|2.851s|0.116s|0.131s|0.089s|
-|4|5.346s|2.573s|0.146s|0.097s|0.122s|
-|8|5.898s|2.678s|0.121s|0.102s|0.115s|
-
-|threads|glog|spdlog|ufo heap|ufo hybrid|ufo fixed|
-|-------|:-------:|:-----:|:------:|:-----:|:------:|
-|1|100%|60.7%|2.7%|2.5%|1.7%|
-|2|100%|59.2%|2.4%|2.7%|1.8%|
-|4|100%|48.1%|2.7%|1.8%|2.2%|
-|8|100%|45.4%|2.0%|1.7%|1.9%|
 
 ## Design rationale ##
 
- - Simple = fast = robust.
- - Asynchronous.
- - Low latency, fast for the caller thread.
- - No string formatting in the calling thread, the data is raw copied. No ostreams (a very ugly part of C++ for my liking).
+ - Simple. 
+ - Not over abstracted and feature packed, easy to figure out what the code is doing, easy to modify.
+ - Low latency, fast for the caller.
+ - Asynchronous (synchronous calls can be made for special messages, but they have grotesque overhead).
+ - No string formatting in the calling thread, the data is raw copied. 
  - One conditional call overhead for inactive severities.
- - No singleton by design, usable from dynamically loaded libraries. You provide the instace either explicitly or by using Koenig lookup.
- - Suitable for soft-realtime work. The fast-path is almost clear from heap allocations.
+ - No ostreams (a very ugly part of C++ for my liking), just format strings checked at compile time (if the compiler supports it) with type safe values.
+ - No singleton by design, usable from dynamically loaded libraries. You provide the instance either explicitly or by using Koenig lookup.
+ - Suitable for soft-realtime work. Once it's initialized the fast-path can be clear from heap allocations if you configure it properly.
  - File rotation-slicing
  - Targeting g++4.7 and VS 2010
  - Boost dependencies just for parts that will eventually go to the C++ standard.
@@ -54,7 +27,7 @@ Other libraries as "boost::log" and" g2log" have been tested to be slower by oth
 
 It just borrows ideas from many of the loggers out there.
 
-When the user is to write a log message, the size is precomputed (in most cases, when the user is not deep-copying the compiler will deduce it as a constant), then the memory is reclaimed either from the fixed size free-list or the heap (configurable) and then message is serialized and passed to the worker thread queue as an intrusive linked list node.
+When the user is to write a log message, the size is precomputed, then the memory is reclaimed either from the fixed size free-list or the heap (configurable) and then message is serialized and passed to the worker thread queue as an intrusive linked list node.
 
 The user thread doesn't format strings, just copies built-in type values and whole program duration C string pointers (Deep copies can be done if required too) to the message and appends data for the worker thread to be able to decode it. This is restrictive but gives other benefits too.
 
@@ -62,17 +35,22 @@ The messages are formatted by using printf-style strings, where the formatting s
 
 log_error ("the value of i is {} and the value of j is  {}", i, j);
 
-The function is type-safe, when "constexpr" is available, otherwise there is no way to parse the formatting string at compile time, so format errors are caught at run time.
+The function is type-safe, when "constexpr" and variadic template parameters are available it is matched with the parameters at compile time, otherwise the errors are caught at run time in the log file.
 
 > see this [example](https://github.com/RafaGago/ufo-log/blob/master/example/overview.cpp)
 
 I might work in applying a little "compression" to the integer types like protobuf does (but simpler) to try to pack the messages more in case no use of the heap is allowed.
 
+## Benchmarks ##
+I used to have some benchmarks here showing that "my new thing (TM)" is the best invention since sliced-bread, but as the benchmarks were mostly an apples-to-oranges comparison (e.g. comparing with glog which is half-synchronous) I just removed them.
+
+With the actual performance and for simple messages it takes the same time to retrieve the time stamp at the producer side with the chrono library than to build and enqueue the message. So I won't bother optimizing.
+
 ## File rotation ##
 
 The library can rotate fixed size log files.
 
-Using the current C++11 standard files can just be created, modified and deleted. There is no way to list a directory, so the user is required to pass at start time the list of files generated by previous runs. I may add support for boost::filesystem /std::filesystem, but just as an optional but ready external code, so everyone can skip this heavy dependency.
+Using the current C++11 standard files can just be created, modified and deleted. There is no way to list a directory, so the user is required to pass at start time the list of files generated by previous runs. I may add support for boost::filesystem /std::filesystem, but just as an optional but ready external code, so everyone can skip this heavy dependency. There is an example using boost::filesystem in the "/extras" folder
 
 ## Initialization ##
 
@@ -86,10 +64,25 @@ The name of the function can be changed at compile time, by defining UFO_GET_LOG
 
 Be aware that it's dangerous to have a dynamic library or executable loaded multiple times logging to the same folder and rotating files each other. Workarounds exists, you can prepend the folder name with the process name and ID, disable rotation and manage rotation externally (e.g. by using logrotate), etc.
 
+## Termination ##
+
+The worker blocks in its destructor until its work queue is empty when normally exiting a program.
+
+When a signal is sent you can call the frontend function  [on termination](https://github.com/RafaGago/ufo-log/blob/master/src/ufo_log/frontend.hpp) after shutting down your data/log producers. This will early interrupt any synchronous calls you made.
+
+
+## Errors ##
+
+As for now, every function returns a boolean if it succeeded or false if it didn't. A filtered out/below severity call returns true.
+
+The only two possible failures are either to be unable to allocate memory for a log entry or an asynchronous call that was interrupted by "on_termination".
+
+The functions never throw.
+
 ## Weaknesses ##
 
  1. No C++ ostream support. (not sure if it's a good or a bad thing...)
- 2. Limited formatting abilities for now (to keep the serialized message compact).
+ 2. Limited formatting abilities (it can be improved with more parser complexity).
  3. No way to output runtime strings/ memory regions without deep-copying them.
  
 The third point is the most restrictive for my liking, it's just inherent to the asynchronous/non-blocking design, there is no guarantee about the passed data lifetime.
@@ -98,13 +91,22 @@ It's possible to artificially increment the refcount of a shared_ptr by copying 
 
 ## Using the library ##
 
-Currently you need to compile "frontend_def.hpp" in your project or to a shared library/DLL. You can then include "ufo_log.hpp", see the example folder.
+You can compile the files in the "src" folder and make a .dll/.so file or just use the whole thing compiled in your project.
+
+If you want to compile the library inside your project you need to merge the "src" and "include" folders (or to add both as an include directory to the compiler) and to compile "frontend_def.hpp" in one translation unit.
+
+## Todo ##
+
+ - Test in Windows.
+ - makefile
+ - Visual Studio project.
 
 ## Disclaimer ##
 
-THIS PROJECT IS UNDER DEVELOPMENT AND SHOULDN'T BE CONSIDERED STABLE BY NOW. Even tough it seems to work flawlessly.
+THIS PROJECT IS UNDER DEVELOPMENT AND SHOULDN'T BE CONSIDERED STABLE BY NOW. Even tough it seems to work.
 
 > Written with [StackEdit](https://stackedit.io/).
+
 
 
 
