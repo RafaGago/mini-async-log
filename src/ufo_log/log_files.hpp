@@ -37,8 +37,9 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef UFO_LOG_LOG_FILES_HPP_
 #define UFO_LOG_LOG_FILES_HPP_
 
-#include <cstdio>
 #include <cstring>
+
+#include <cstdio>
 #include <string>
 #include <deque>
 #include <ostream>
@@ -46,6 +47,8 @@ either expressed or implied, of Rafael Gago Castano.
 #include <vector>
 
 #include <ufo_log/util/system.hpp>
+#include <ufo_log/util/side_effect_assert.hpp>
+#include <ufo_log/util/calendar_str.hpp>
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/atomic.hpp>
 #include <ufo_log/util/raw_circular_buffer.hpp>
@@ -165,10 +168,10 @@ public:
         return true;
     }
     //--------------------------------------------------------------------------
-    const char* new_filename_in_buffer (u64 cpu, u64 calendar)
+    const char* new_filename_in_buffer (u64 cpu, u64 calendar_us)
     {
         new_file_name_c_str_in_buffer(
-                m_folder, m_prefix, m_suffix, cpu, calendar
+                m_folder, m_prefix, m_suffix, cpu, calendar_us
                 );
         return filename_in_buffer();
     }
@@ -197,6 +200,11 @@ public:
         }
     }
     //--------------------------------------------------------------------------
+    void set_timestamp_base (u64 v)
+    {
+        m_cpu_time_base = v;
+    }
+    //--------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------
     void append_separator_if (std::string& folder)
@@ -217,7 +225,7 @@ private:
             const std::string& prefix,
             const std::string& suffix,
             u64                cpu,
-            u64                calendar
+            u64                calendar_us
             )
     {
         assert (m_buffer.size() >=
@@ -237,15 +245,23 @@ private:
         std::memcpy (str, &prefix[0], sz);
         str      += sz;
 
-        sz        = fixed_chars_in_name;
+        sz        = cpu_clock_chars_in_name + 1;
 #if defined (UFO_32)
-        snprintf (str, sz + 1, "%016llx-%016llx", calendar, cpu);
+        const char* fmt = "[%016llx][%016llx][";
 #elif defined (UFO_64)
-        snprintf (str, sz + 1, "%016lx-%016lx", calendar, cpu);
+        const char* fmt = "[c%016lx_b][%016lx][";
 #else
-    #error "fix util/system.hpp"
+    #error "fix util/system.hpp for your platform (if possible)"
 #endif
+        snprintf (str, sz + 1, fmt, cpu, m_cpu_time_base);
         str      += sz;
+
+        side_effect_assert(
+            calendar_str::write (str, calendar_str::c_str_size, calendar_us) > 0
+            );
+        str      += calendar_str::str_size;
+
+        *str++    = ']';
 
         sz        = suffix.size();
         std::memcpy (str, &suffix[0], sz);
@@ -254,11 +270,20 @@ private:
         *str      = 0;
     }
     //--------------------------------------------------------------------------
-    static const uword fixed_chars_in_name = 16 + 1 + 16;
+    static const uword cpu_clock_chars_in_name = 1 + 16 + 2 + 16 + 1;
+//                                               [   c    ][  base ]
+    static const uword fixed_chars_in_name     =
+                            cpu_clock_chars_in_name +
+                            1 + calendar_str::str_size + 1
+//                          [                            ]
+                            + 1 //extra room in case there is no suffix
+                            ;
+
     //--------------------------------------------------------------------------
     std::string         m_folder, m_prefix, m_suffix;
     std::vector<char>   m_buffer;
     raw_circular_buffer m_name_strings;
+    u64                 m_cpu_time_base;
     //--------------------------------------------------------------------------
 };
 //------------------------------------------------------------------------------

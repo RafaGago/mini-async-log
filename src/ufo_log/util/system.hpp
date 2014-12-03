@@ -39,8 +39,10 @@ either expressed or implied, of Rafael Gago Castano.
 #if defined (__GXX_EXPERIMENTAL_CXX0X__) &&\
     defined (__GNUC__) &&\
     (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
+
     #define UFO_HAS_CONSTEXPR 1
     #define UFO_HAS_VARIADIC_TEMPLATES 1
+    #define UFO_UNIX_LIKE //this is wrong but correct enough for now to just support win an linux
 
     #if __x86_64__ || __ppc64__
         #define UFO_64
@@ -72,6 +74,8 @@ MSVC++ 7.1  _MSC_VER == 1310 (Visual Studio 2003)
 #else
     #define UFO_32
 #endif
+
+    #define UFO_WINDOWS
 
 #if _MSC_VER >= 1800 //1600 >= vs2010
     #define UFO_HAS_VARIADIC_TEMPLATES 1

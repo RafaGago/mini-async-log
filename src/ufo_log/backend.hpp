@@ -206,6 +206,7 @@ public:
 
         m_writer.set_synchronizer (sync);
         m_writer.set_timestamp_base (timestamp_base);
+        m_files.set_timestamp_base (timestamp_base);
 
         m_status.store (initialized, mo_release);                               // I guess that all Kernels do this for me when launching a thread, just being on the safe side in case is not true
         m_log_thread = th::thread ([this](){ this->thread(); });
@@ -371,11 +372,11 @@ private:
     const char* new_file_name_to_buffer()
     {
         using namespace ch;
-        u64 cpu      = get_timestamp();
-        u64 calendar = duration_cast<microseconds>(
+        u64 cpu         = get_timestamp();
+        u64 calendar_us = duration_cast<microseconds>(
                         system_clock::now().time_since_epoch()
                         ).count();
-        return m_files.new_filename_in_buffer (cpu, calendar);
+        return m_files.new_filename_in_buffer (cpu, calendar_us);
     }
     //--------------------------------------------------------------------------
     void write_message (mpsc_node_hook& hook)
