@@ -134,18 +134,7 @@ public:
     //--------------------------------------------------------------------------
     void write (const void* d, uword sz)
     {
-        if (m_sev_current >= m_file_sev)
-        {
-            m_file.write ((const char*) d, sz);
-        }
-        if (m_sev_current >= m_stderr_sev)
-        {
-            std::cerr.write ((const char*) d, sz);
-        }
-        else if (m_sev_current >= m_stdout_sev)
-        {
-            std::cout.write ((const char*) d, sz);
-        }
+        write_impl (m_sev_current, d, sz);
     }
     //--------------------------------------------------------------------------
     void write (const char* str)
@@ -155,21 +144,56 @@ public:
     //--------------------------------------------------------------------------
     void raw_write (sev::severity s, const char* str)
     {
-        if (s >= m_file_sev)
+        static const uword max_str    = 2048;
+        static const uword block_max  = 64;
+        static const uword block_mask = block_max - 1;
+
+        if (str == nullptr || str[0] == 0) { return; }
+
+        uword i = 1;
+        for (; i <= max_str; ++i)
         {
-            m_file << str;
+            if ((i & block_mask) == 0)
+            {
+                uword last_block_first = ((i - 1) & ~block_mask);
+                write_impl (s, str + last_block_first, block_max);
+            }
+            if (str[i] == 0)
+            {
+                uword this_block_offset = i & block_mask;
+                write_impl (s, str + i - this_block_offset, this_block_offset); //if /0 is the first character of the block I perform a 0 length write.
+                return;
+            }
         }
-        if (s >= m_stderr_sev)
+
+        if (i == max_str + 1)
         {
-            std::cerr << str;
-        }
-        else if (s >= m_stdout_sev)
-        {
-            std::cout << str;
+            static const char too_long[] = " [logger err]->string too long";
+            write_impl (s, too_long, sizeof too_long - 1);
         }
     }
     //--------------------------------------------------------------------------
 private:
+    //--------------------------------------------------------------------------
+    void write_impl (sev::severity s, const void* d, uword sz)
+    {
+        if (sz && d)
+        {
+            if (s >= m_file_sev)
+            {
+                m_file.write ((const char*) d, sz);
+            }
+            if (s >= m_stderr_sev)
+            {
+                std::cerr.write ((const char*) d, sz);
+            }
+            else if (s >= m_stdout_sev)
+            {
+                std::cout.write ((const char*) d, sz);
+            }
+        }
+    }
+    //--------------------------------------------------------------------------
     sev::severity                    m_sev_current;
     mo_relaxed_atomic<sev::severity> m_stderr_sev;
     mo_relaxed_atomic<sev::severity> m_stdout_sev;
