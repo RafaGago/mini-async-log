@@ -24,7 +24,11 @@ void general_features()
     auto be_cfg                     = fe.get_backend_cfg();
     be_cfg.file.name_prefix         = "test-data.";
     be_cfg.file.name_suffix         = ".log.txt";
+#ifndef UFO_WINDOWS
     be_cfg.file.out_folder          = "./log_out/";                             //this folder has to exist before running
+#else
+    be_cfg.file.out_folder          = ".\\log_out\\";                             //this folder has to exist before running
+#endif
     be_cfg.file.aprox_size          = 512 * 1024;
     be_cfg.file.rotation.file_count = 0;
 
@@ -38,8 +42,8 @@ void general_features()
     int i = 0;
 
     std::string string = "this is deep copied";
+    
     log_error ("message {}, raw = {}", i, deep_copy (string)); ++i;
-
     log_error ("message {}, bool = {}", i, true); ++i;
 
     log_error ("message {}, u8  = {}", i, (u8) 8); ++i;
@@ -112,7 +116,7 @@ void general_features()
         (u64) -1
         );
     ++i;
-#ifndef UFO_COMPILE_TIME_FMT_CHECK
+#if !defined (UFO_COMPILE_TIME_FMT_CHECK) && defined (NDEBUG)
     log_error(
         "message {}, this could be corrected at compile time if all "
         "targeted compilers supported constexpr, now a runtime error "

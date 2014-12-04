@@ -43,8 +43,15 @@ either expressed or implied, of Rafael Gago Castano.
     #define UFO_COMPILE_TIME_FMT_CHECK
 #endif
 
-#define UFO_GET_ARG1_PRIVATE(arg, ...) arg
-#define UFO_GET_FMT_STR_PRIVATE(...) UFO_GET_ARG1_PRIVATE(__VA_ARGS__, dummy)
+#ifndef UFO_WINDOWS
+    #define UFO_GET_ARG1_PRIVATE(arg, ...) arg
+    #define UFO_GET_FMT_STR_PRIVATE(...)\
+        UFO_GET_ARG1_PRIVATE(__VA_ARGS__, dummy)
+#else
+    #define UFO_GET_ARG1_PRIVATE_MS(arg, ...) arg
+    #define UFO_GET_ARG1_PRIVATE(args) UFO_GET_ARG1_PRIVATE_MS args
+    #define UFO_GET_FMT_STR_PRIVATE(...) UFO_GET_ARG1_PRIVATE((__VA_ARGS__, dummy))
+#endif
 
 #ifdef UFO_COMPILE_TIME_FMT_CHECK
 
@@ -67,9 +74,16 @@ inline bool is_literal (const char (&arr)[N])
     return true;
 }
 
-inline bool is_literal (...)
+//inline bool is_literal (...)
+//{
+//    static_assert (true, "format string is not a compile time literal");
+//    return false;
+//}
+
+template <class T>
+inline bool is_literal (T val)
 {
-    static_assert (true, "format string is not a compile time literal");
+    static_assert (false, "format string is not a compile time literal");
     return false;
 }
 
