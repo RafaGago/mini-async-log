@@ -97,6 +97,7 @@ Those that are self-explanatory won't be explained.
  - *UFO_CACHE_LINE_SIZE*: The cache line size of the machine you are compiling for. This is just used for data structure padding. 64 is defaulted when undefined.
  - *UFO_GET_LOGGER_INSTANCE_FUNC*: See the "Initialization" chapter above.
  - *UFO_STRIP_LOG_SEVERITY*: Removes the entries of this severity and below at compile time. 0 is the "debug" severity, 5 is the "critical" severity. Stripping at level 5 leaves no log entries at all.
+ - *UFO_USE_BOOST_CSTDINT*: If your compiler doesn't have <cstdint> use boost.
  - *UFO_USE_BOOST_ATOMIC*
  - *UFO_USE_BOOST_CHRONO*
  - *UFO_USE_BOOST_THREAD*
