@@ -93,10 +93,8 @@ namespace ufo {
     #define UFO_LIB_EXPORTED_FUNC WINAPI  //using def files
     #if defined (UFO_DYNLIB_COMPILE)
         #define UFO_LIB_EXPORTED_CLASS __declspec(dllexport)
-    #elif defined (UFO_DYNLIB_LOADING)
-        #define UFO_LIB_EXPORTED_CLASS __declspec(dllimport)
     #else
-        #define UFO_LIB_EXPORTED_CLASS
+        #define UFO_LIB_EXPORTED_CLASS __declspec(dllimport)
     #endif
 #elif __GNUC__ >= 4
     #define UFO_LIB_EXPORTED_FUNC __attribute__ ((visibility ("default")))
