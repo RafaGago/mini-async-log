@@ -68,7 +68,7 @@ public:
     //--------------------------------------------------------------------------
     bool wait (sync_point& sync)
     {
-        th::unique_lock<boost::mutex> lock (m_lock);
+        th::unique_lock<th::mutex> lock (m_lock);
         try
         {
             auto pred = [&]()
@@ -86,15 +86,15 @@ public:
     //--------------------------------------------------------------------------
     void notify (sync_point& sync)
     {
-        th::unique_lock<boost::mutex> l (m_lock);
+        th::unique_lock<th::mutex> l (m_lock);
         sync.state = sync_point::touched;
         m_cond.notify_all();
     }
     //--------------------------------------------------------------------------
 private:
-    boost::condition_variable_any m_cond;
-    boost::mutex                  m_lock;
-    bool                          m_cancel_all;
+    th::condition_variable_any m_cond;
+    th::mutex                  m_lock;
+    bool                       m_cancel_all;
     //--------------------------------------------------------------------------
 };
 //------------------------------------------------------------------------------

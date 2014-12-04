@@ -8,13 +8,17 @@ CXX = g++
 
 UFO_VERSION = 0.0.1
 
-UFO_VARS = -DUFO_USE_BOOST_THREAD -DNDEBUG -DUFO_USE_BOOST_CHRONO -DBOOST_ALL_DYN_LINK -DBOOST_CHRONO_HEADER_ONLY #todo: this needs to be cleaner
+#UFO_VARS = -DUFO_USE_BOOST_THREAD -DNDEBUG -DUFO_USE_BOOST_CHRONO -DBOOST_ALL_DYN_LINK -DBOOST_CHRONO_HEADER_ONLY #todo: this needs to be cleaner
 
 FIXED_COMPILE_FLAGS =-Wall -std=c++0x $(UFO_VARS) -I$(UFO_LOG_PATH)/src -I$(UFO_LOG_PATH)/include -O3 -fmessage-length=0 -fvisibility=hidden -fPIC
 
-LINK_LIBS = -lboost_thread
+CXXFLAGS += $(FIXED_COMPILE_FLAGS)
 
-LINK_FLAGS = -Wl,--exclude-libs,ALL -shared
+LDFLAGS += -Wl,--exclude-libs,ALL -shared
+
+#LINK_LIBS = -lboost_thread
+
+
 
 STAGE = stage
 
@@ -37,13 +41,13 @@ post-build : so_file a_file
 	cp -Rf $(INCLUDE_PATH) .
 
 so_file: pre-build frontend_def.o
-	$(CXX) $(CXXFLAGS) -o $(LIB)/libufo-log.so.$(UFO_VERSION) $(STAGE)/frontend_def.o $(LINK_LIBS) $(LINK_FLAGS)
+	$(CXX) -o $(LIB)/libufo-log.so.$(UFO_VERSION) $(STAGE)/frontend_def.o $(LDLIBS) $(LDFLAGS)
 
 a_file: pre-build frontend_def.o
 	$(AR) rcs $(LIB)/libufo-log.a.$(UFO_VERSION) $(STAGE)/frontend_def.o
 
 frontend_def.o: $(STAGE)/frontend_def.cpp
-	$(CXX) $(CXXFLAGS) -c $(STAGE)/frontend_def.cpp -o $(STAGE)/frontend_def.o $(FIXED_COMPILE_FLAGS)
+	$(CXX) $(CXXFLAGS) -c $(STAGE)/frontend_def.cpp -o $(STAGE)/frontend_def.o
 
 clean:
 	rm -rf lib stage include
