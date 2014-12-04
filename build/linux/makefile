@@ -8,7 +8,7 @@ CXX = g++
 
 UFO_VERSION = 0.0.1
 
-FIXED_COMPILE_FLAGS =-Wall -std=c++0x $(UFO_VARS) -I$(UFO_LOG_PATH)/src -I$(UFO_LOG_PATH)/include -O3 -fmessage-length=0 -fvisibility=hidden -fPIC
+FIXED_COMPILE_FLAGS =-Wall -std=c++0x $(UFO_VARS) -I$(UFO_LOG_PATH)/src -I$(UFO_LOG_PATH)/include -O3 -fmessage-length=0 -fvisibility=hidden -fPIC -DUFO_DYNLIB_COMPILE
 
 override CXXFLAGS += $(FIXED_COMPILE_FLAGS)
 
