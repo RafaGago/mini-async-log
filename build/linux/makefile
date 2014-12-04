@@ -8,17 +8,11 @@ CXX = g++
 
 UFO_VERSION = 0.0.1
 
-#UFO_VARS = -DUFO_USE_BOOST_THREAD -DNDEBUG -DUFO_USE_BOOST_CHRONO -DBOOST_ALL_DYN_LINK -DBOOST_CHRONO_HEADER_ONLY #todo: this needs to be cleaner
-
 FIXED_COMPILE_FLAGS =-Wall -std=c++0x $(UFO_VARS) -I$(UFO_LOG_PATH)/src -I$(UFO_LOG_PATH)/include -O3 -fmessage-length=0 -fvisibility=hidden -fPIC
 
-CXXFLAGS += $(FIXED_COMPILE_FLAGS)
+override CXXFLAGS += $(FIXED_COMPILE_FLAGS)
 
-LDFLAGS += -Wl,--exclude-libs,ALL -shared
-
-#LINK_LIBS = -lboost_thread
-
-
+override LDFLAGS += -Wl,--exclude-libs,ALL -shared
 
 STAGE = stage
 
