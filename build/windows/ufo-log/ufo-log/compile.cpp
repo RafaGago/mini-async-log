@@ -1,0 +1,1 @@
+#include <ufo_log/frontend_def.hpp>

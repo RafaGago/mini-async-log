@@ -231,16 +231,16 @@ inline
 uint8_t next_pow2 (uint8_t x) { return next_pow2_8 (x); };
 //------------------------------------------------------------------------------
 inline
-uword keep_highest_bit (uint64_t x) { return keep_highest_bit_64 (x); };
+uint64_t keep_highest_bit (uint64_t x) { return keep_highest_bit_64 (x); };
 
 inline
-uword keep_highest_bit (uint32_t x) { return keep_highest_bit_32 (x); };
+uint32_t keep_highest_bit (uint32_t x) { return keep_highest_bit_32 (x); };
 
 inline
-uword keep_highest_bit (uint16_t x) { return keep_highest_bit_16 (x); };
+uint16_t keep_highest_bit (uint16_t x) { return keep_highest_bit_16 (x); };
 
 inline
-uword keep_highest_bit (uint8_t x) { return keep_highest_bit_8 (x); };
+uint8_t keep_highest_bit (uint8_t x) { return keep_highest_bit_8 (x); };
 //------------------------------------------------------------------------------
 inline
 uword highest_used_byte (uint64_t x) { return highest_used_byte_64 (x); };

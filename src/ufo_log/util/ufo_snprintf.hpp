@@ -1,7 +1,7 @@
 /*
 The BSD 3-clause license
---------------------------------------------------------------------------------
-Copyright (c) 2014 Rafael Gago Castano. All rights reserved.
+
+Copyright (c) 2013-2014 Diadrom AB. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
  are permitted provided that the following conditions are met:
@@ -17,10 +17,10 @@ Redistribution and use in source and binary forms, with or without modification,
       may be used to endorse or promote products derived from this software
       without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY RAFAEL GAGO CASTANO "AS IS" AND ANY EXPRESS OR
-IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+THIS SOFTWARE IS PROVIDED BY DIADROM AB "AS IS" AND ANY EXPRESS OR IMPLIED
+WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
-SHALL RAFAEL GAGO CASTANO OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+SHALL DIADROM AB OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
 LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
 OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
@@ -30,34 +30,27 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
-either expressed or implied, of Rafael Gago Castano.
+either expressed or implied, of Diadrom AB.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_SYNC_POINT_HPP_
-#define UFO_LOG_SYNC_POINT_HPP_
+#ifndef UFO_UFO_SNPRINTF_HPP_      
+#define UFO_UFO_SNPRINTF_HPP_
 
-#include <ufo_log/util/integer.hpp>
+#include <cstdio>
+#include <ufo_log/util/system.hpp>
 
-namespace ufo {
+#if defined (UFO_WINDOWS)
 
-//------------------------------------------------------------------------------
-class sync_point
-{
-public:
-    //--------------------------------------------------------------------------
-    enum { untouched, touched,};
-    //--------------------------------------------------------------------------
-    sync_point()
-    {
-        state = untouched;
-    }
-    //--------------------------------------------------------------------------
-private:
-    friend class async_to_sync;
-    u8 state;
-};
-//------------------------------------------------------------------------------
-} //namespaces
+#define ufo_snprintf(ptr, sz, ...) _snprintf (ptr, sz, __VA_ARGS__)
 
-#endif /* UFO_LOG_SYNC_POINT_HPP_ */
+#elif defined (UFO_UNIX_LIKE)
+
+#define ufo_snprintf snprintf
+
+#else
+    #error "unimplemented"
+#endif
+
+#endif /* UFO_SAFE_BOOL_HPP_ */
+

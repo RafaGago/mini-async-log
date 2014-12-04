@@ -87,7 +87,7 @@ public:
     //--------------------------------------------------------------------------
     uword file_bytes_written()
     {
-        return m_file.tellp();
+        return (uword) m_file.tellp();
     }
     //--------------------------------------------------------------------------
     void set_console_severity(

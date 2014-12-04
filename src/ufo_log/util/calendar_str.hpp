@@ -48,6 +48,7 @@ either expressed or implied, of Rafael Gago Castano.
     #error "unknown platform"
 #endif
 
+#include <ufo_log/util/ufo_snprintf.hpp>
 #include <ufo_log/util/system.hpp>
 #include <ufo_log/util/integer.hpp>
 
@@ -73,9 +74,9 @@ public:
         if (dst_capacity < c_str_size) { return -1; }
 
 #if defined (UFO_32)
-        const char* fmt = "%04d-%02d-%02d_%02d:%02d:%02d.%06d";
+        const char* fmt = "%04d-%02d-%02d_%02d-%02d-%02d.%06d";
 #elif defined (UFO_64)
-        const char* fmt = "%04d-%02d-%02d_%02d:%02d:%02d.%06d";
+        const char* fmt = "%04d-%02d-%02d_%02d-%02d-%02d.%06d";
 #else
     #error "fix util/system.hpp for your platform (if possible)"
 #endif
@@ -83,40 +84,25 @@ public:
         time_t t = (time_t) (epoch_us / 1000000);
         tm cal;
 #if defined (UFO_WINDOWS)
-        cal = *localtime (&t);                                                  //localtime is thread safe in win
+        localtime_s (&cal, &t);                                                  //localtime is thread safe in win
 #elif defined (UFO_UNIX_LIKE)
         localtime_r (&t, &cal);
 #else
-
+    #error "implement this"
 #endif
         auto micros = (int) (epoch_us - ((u64) t) * 1000000);
-#if defined (UFO_WINDOWS)
-        auto res = _snprintf(
-                     dst,
-                     dst_capacity,
-                     fmt,
-                     cal.tm_year + 1900,
-                     cal.tm_mon + 1,
-                     cal.tm_mday,
-                     cal.tm_hour,
-                     cal.tm_min,
-                     cal.tm_sec,
-                     micros
-                     );
-#elif defined (UFO_UNIX_LIKE)
-        auto res = snprintf(
-                     dst,
-                     dst_capacity,
-                     fmt,
-                     cal.tm_year + 1900,
-                     cal.tm_mon + 1,
-                     cal.tm_mday,
-                     cal.tm_hour,
-                     cal.tm_min,
-                     cal.tm_sec,
-                     micros
-                     );
-#endif
+        auto res    = ufo_snprintf(
+                         dst,
+                         dst_capacity,
+                         fmt,
+                         cal.tm_year + 1900,
+                         cal.tm_mon + 1,
+                         cal.tm_mday,
+                         cal.tm_hour,
+                         cal.tm_min,
+                         cal.tm_sec,
+                         micros
+                         );
         assert (res == (decltype (res)) str_size);
         return res;
     }

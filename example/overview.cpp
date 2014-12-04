@@ -1,7 +1,7 @@
 #define UFO_STRIP_LOG_SEVERITY 0
 
 #include <cassert>
-#include <ufo_log/frontend_def.hpp>                                             //compiled in place, but it could be in a separate library
+//#include <ufo_log/frontend_def.hpp>                                             //compiled in place, but it could be in a separate library
 #include <ufo_log/ufo_log.hpp>
 
 //------------------------------------------------------------------------------
@@ -15,6 +15,12 @@ void general_features()
 {
     using namespace ufo;
     ufo::frontend& fe               = get_ufo_logger_instance();
+
+    if (!fe.is_constructed())
+    {
+        return; //new failed in static initializator
+    }
+
     auto be_cfg                     = fe.get_backend_cfg();
     be_cfg.file.name_prefix         = "test-data.";
     be_cfg.file.name_suffix         = ".log.txt";
@@ -142,7 +148,7 @@ void general_features()
     }
 
     bool called           = false;
-    auto side_effect_expr = [&](){ called = true; return called; };
+    auto side_effect_expr = [&]()->bool { called = true; return called; };
 
     log_trace(
         "you shouldn't see this, this entry is below logged severity, as usual "

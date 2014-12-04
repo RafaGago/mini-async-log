@@ -38,6 +38,7 @@ either expressed or implied, of Rafael Gago Castano.
 #define UFO_LOG_LOG_FRONTEND_DEF_HPP_
 
 #include <utility>
+#include <cassert>
 #include <ufo_log/util/atomic.hpp>
 #include <ufo_log/util/thread.hpp>
 #include <ufo_log/frontend.hpp>
@@ -168,19 +169,19 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-    bool set_console_severity (sev::severity stderr, sev::severity stdout)
+    bool set_console_severity (sev::severity std_err, sev::severity std_out)
     {
-        if ((stdout >= sev::invalid || stderr >= sev::invalid))
+        if ((std_out >= sev::invalid || std_err >= sev::invalid))
         {
             assert (false);
             return false;
         }
-        else if ((stderr <= stdout) && (stdout != sev::off))
+        else if ((std_err <= std_out) && (std_out != sev::off))
         {
             assert (false);
             return false;
         }
-        m_back.set_console_severity (stderr, stdout);
+        m_back.set_console_severity (std_err, std_out);
         m_min_severity = m_back.min_severity();
         return true;
     }
@@ -236,65 +237,87 @@ private:
     async_to_sync            m_sync;
 };
 //------------------------------------------------------------------------------
-frontend::frontend() : m (new frontend::frontend_impl())
+UFO_LIB_EXPORTED_CLASS frontend::frontend()
 {
+    m = nullptr;
+    m = new frontend::frontend_impl();
 }
 //------------------------------------------------------------------------------
-frontend::~frontend()
+UFO_LIB_EXPORTED_CLASS frontend::~frontend()
 {
+    if (is_constructed())
+    {
+        delete m;
+    }
 }
 //------------------------------------------------------------------------------
-ser::exporter frontend::get_encoder (uword required_bytes)
+bool UFO_LIB_EXPORTED_CLASS frontend::is_constructed() const
 {
+    return m != nullptr;
+}
+//------------------------------------------------------------------------------
+ser::exporter UFO_LIB_EXPORTED_CLASS 
+    frontend::get_encoder (uword required_bytes)
+{
+    assert (is_constructed());
     return m->get_encoder (required_bytes);
 }
 //------------------------------------------------------------------------------
-void frontend::async_push_encoded (ser::exporter encoder)
+void UFO_LIB_EXPORTED_CLASS frontend::async_push_encoded (ser::exporter encoder)
 {
+    assert (is_constructed());
     m->async_push_encoded (encoder);
 }
 //--------------------------------------------------------------------------
-bool frontend::sync_push_encoded(
+bool UFO_LIB_EXPORTED_CLASS frontend::sync_push_encoded(
         ser::exporter encoder,
         sync_point&   sync
         )
 {
+    assert (is_constructed());
     return m->sync_push_encoded (encoder, sync);
 }
 //------------------------------------------------------------------------------
-backend_cfg frontend::get_backend_cfg()
+backend_cfg UFO_LIB_EXPORTED_CLASS frontend::get_backend_cfg()
 {
+    assert (is_constructed());
     return m->get_backend_cfg();
 }
 //------------------------------------------------------------------------------
-frontend::init_status frontend::init_backend (const backend_cfg& cfg)
+frontend::init_status UFO_LIB_EXPORTED_CLASS 
+    frontend::init_backend (const backend_cfg& cfg)
 {
+    assert (is_constructed());
     return m->init_backend (cfg);
 }
 //------------------------------------------------------------------------------
-sev::severity frontend::min_severity() const
+sev::severity UFO_LIB_EXPORTED_CLASS frontend::min_severity() const
 {
+    assert (is_constructed());
     return m->min_severity();
 }
 //--------------------------------------------------------------------------
-bool frontend::can_log (sev::severity s) const
+bool UFO_LIB_EXPORTED_CLASS frontend::can_log (sev::severity s) const
 {
+    assert (is_constructed());
     return m->can_log (s);
 }
 //------------------------------------------------------------------------------
-void frontend::set_file_severity (sev::severity s)
+void UFO_LIB_EXPORTED_CLASS frontend::set_file_severity (sev::severity s)
 {
+    assert (is_constructed());
     return m->set_file_severity (s);
 }
 //------------------------------------------------------------------------------
-bool frontend::set_console_severity(
-           sev::severity stderr, sev::severity stdout
+bool UFO_LIB_EXPORTED_CLASS frontend::set_console_severity(
+           sev::severity std_err, sev::severity std_out
            )
 {
-    return m->set_console_severity (stderr, stdout);
+    assert (is_constructed());
+    return m->set_console_severity (std_err, std_out);
 }
 //--------------------------------------------------------------------------
-timestamp_data frontend::get_timestamp_data() const
+timestamp_data UFO_LIB_EXPORTED_CLASS frontend::get_timestamp_data() const
 {
     timestamp_data d;
     d.producer_timestamps = m->producer_timestamp();
@@ -302,13 +325,15 @@ timestamp_data frontend::get_timestamp_data() const
     return d;
 }
 //------------------------------------------------------------------------------
-bool frontend::producer_timestamp (bool on)
+bool UFO_LIB_EXPORTED_CLASS frontend::producer_timestamp (bool on)
 {
+    assert (is_constructed());
     return m->producer_timestamp (on);
 }
 //------------------------------------------------------------------------------
-void frontend::on_termination()
+void UFO_LIB_EXPORTED_CLASS frontend::on_termination()
 {
+    assert (is_constructed());
     return m->on_termination();
 }
 //------------------------------------------------------------------------------

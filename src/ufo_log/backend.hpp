@@ -49,6 +49,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/spmc.hpp>
 #include <ufo_log/util/atomic.hpp>
 #include <ufo_log/util/chrono.hpp>
+#include <ufo_log/util/ufo_snprintf.hpp>
 
 #include <ufo_log/output.hpp>
 #include <ufo_log/frontend.hpp>
@@ -155,9 +156,9 @@ public:
         m_out.set_file_severity (s);
     }
     //--------------------------------------------------------------------------
-    void set_console_severity (sev::severity stderr, sev::severity stdout)
+    void set_console_severity (sev::severity std_err, sev::severity std_out)
     {
-        m_out.set_console_severity (stderr, stdout);
+        m_out.set_console_severity (std_err, std_out);
     }
     //--------------------------------------------------------------------------
     sev::severity min_severity() const
@@ -387,7 +388,7 @@ private:
     void write_alloc_fault (uword count)
     {
         char str[96];
-        std::snprintf(
+        ufo_snprintf(
                 str,
                 sizeof str,
                 "[%020llu] [logger_err] %u alloc faults detected",

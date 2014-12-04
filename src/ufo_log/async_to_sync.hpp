@@ -44,7 +44,7 @@ either expressed or implied, of Rafael Gago Castano.
 namespace ufo {
 
 //------------------------------------------------------------------------------
-struct async_to_sync
+class async_to_sync
 {
 public:
     //--------------------------------------------------------------------------

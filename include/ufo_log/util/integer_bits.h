@@ -318,28 +318,28 @@ uint8_t next_pow2_8 (uint8_t x) //can overflow
 }
 //------------------------------------------------------------------------------
 static inline
-unsigned keep_highest_bit_64 (uint64_t x)
+uint64_t keep_highest_bit_64 (uint64_t x)
 {
     x = set_from_msb_to_r_64 (x);
     return x - (x >> 1);
 }
 //------------------------------------------------------------------------------
 static inline
-unsigned keep_highest_bit_32 (uint32_t x)
+uint32_t keep_highest_bit_32 (uint32_t x)
 {
     x = set_from_msb_to_r_32 (x);
     return x - (x >> 1);
 }
 //------------------------------------------------------------------------------
 static inline
-unsigned keep_highest_bit_16 (uint16_t x)
+uint16_t keep_highest_bit_16 (uint16_t x)
 {
     x = set_from_msb_to_r_16 (x);
     return x - (x >> 1);
 }
 //------------------------------------------------------------------------------
 static inline
-unsigned keep_highest_bit_8 (uint8_t x)
+uint8_t keep_highest_bit_8 (uint8_t x)
 {
     x = set_from_msb_to_r_8 (x);
     return x - (x >> 1);

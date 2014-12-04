@@ -131,7 +131,7 @@ public:
     static typename enable_if_signed<T, T>::type
     reconstruct_negative (T val)
     {
-        static const T sign_mask = ((T) 1) << ((sizeof val * 8) - 1);
+        static const T sign_mask = ~(((T) -1) >> 1);
         return (~val) | sign_mask;
     }
     //--------------------------------------------------------------------------

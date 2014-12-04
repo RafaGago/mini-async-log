@@ -37,7 +37,6 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef UFO_LOG_LOG_FRONTEND_HPP_
 #define UFO_LOG_LOG_FRONTEND_HPP_
 
-#include <memory>
 #include <ufo_log/util/system.hpp>
 #include <ufo_log/serialization/exporter.hpp>
 #include <ufo_log/backend_cfg.hpp>
@@ -69,6 +68,8 @@ public:
     //--------------------------------------------------------------------------
     ~frontend();
     //--------------------------------------------------------------------------
+    bool is_constructed() const;
+    //--------------------------------------------------------------------------
     backend_cfg get_backend_cfg();
     //--------------------------------------------------------------------------
     init_status init_backend (const backend_cfg& cfg);
@@ -80,7 +81,7 @@ public:
     void set_file_severity (sev::severity s);
     //--------------------------------------------------------------------------
     bool set_console_severity(
-            sev::severity stderr, sev::severity stdout = sev::off
+            sev::severity std_err, sev::severity std_out = sev::off
             );
     //--------------------------------------------------------------------------
     ser::exporter get_encoder (uword required_bytes);
@@ -102,7 +103,7 @@ public:
     //--------------------------------------------------------------------------
 private:
     class frontend_impl;
-    std::unique_ptr<frontend_impl> m;
+    frontend_impl* m;
 
 }; //class log_backed
 //------------------------------------------------------------------------------

@@ -41,7 +41,7 @@ either expressed or implied, of Diadrom AB.
 
 #ifdef UFO_USE_BOOST_ATOMIC
     #include <boost/atomic.hpp>
-    #define UFO_ATOMIC_NAMESPACE ::boost::atomic
+    #define UFO_ATOMIC_NAMESPACE ::boost
 
 #else
     #include <atomic>

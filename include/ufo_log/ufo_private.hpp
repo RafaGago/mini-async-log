@@ -87,8 +87,8 @@ struct log_every_needs_values_greater_than
 {
     static const unsigned value = count - 1;
 };
-template <> struct log_every_needs_values_greater_than<0> {};                   //functions logging every n can't be used with values smaller than 2
-template <> struct log_every_needs_values_greater_than<1> {};                   //functions logging every n can't be used with values smaller than 2
+template <> struct log_every_needs_values_greater_than<(unsigned) 0> {};                   //functions logging every n can't be used with values smaller than 2
+template <> struct log_every_needs_values_greater_than<(unsigned) 1> {};                   //functions logging every n can't be used with values smaller than 2
 
 inline bool silence_warnings() { return true; }
 
@@ -98,6 +98,8 @@ inline bool silence_warnings() { return true; }
 #define UFO_LOG_IF_PRIVATE(condition, statement)\
     ((condition) ? (statement) : ::ufo::macro::silence_warnings())
 
+#if !defined (UFO_WINDOWS) || (defined (_MSC_VER) && _MSC_VER > 1600)
+
 #define UFO_LOG_EVERY_PRIVATE(line, count, statement)\
     ([&]() -> bool \
     { \
@@ -105,7 +107,20 @@ inline bool silence_warnings() { return true; }
             ::ufo::macro::log_every_needs_values_greater_than<count>::value; \
         ++counter##line = (counter##line != count) ? counter##line : 0; \
         return UFO_LOG_IF_PRIVATE (counter##line == 0, statement); \
-    }.operator ()());
+    }.operator ()())
+
+#else
+
+#define UFO_LOG_EVERY_PRIVATE(line, count, statement)\
+    static unsigned counter##line = \
+    ::ufo::macro::log_every_needs_values_greater_than<count>::value; \
+    ([&]() -> bool \
+    { \
+        ++counter##line = (counter##line != count) ? counter##line : 0; \
+        return UFO_LOG_IF_PRIVATE (counter##line == 0, statement); \
+    }.operator ()())
+
+#endif
 
 #define UFO_LOG_PRIVATE(instance, async, severity_, ...)\
     UFO_LOG_IF_PRIVATE(\
