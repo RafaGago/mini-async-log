@@ -68,7 +68,7 @@ Be aware that it's dangerous to have a dynamic library or executable loaded mult
 
 The worker blocks in its destructor until its work queue is empty when normally exiting a program.
 
-When a signal is sent you can call the frontend function  [on termination](https://github.com/RafaGago/ufo-log/blob/master/include/ufo_log/frontend.hpp) after shutting down your data/log producers. This will early interrupt any synchronous calls you made.
+When a signal is sent you can call the frontend function  [on termination](https://github.com/RafaGago/ufo-log/blob/master/src/ufo_log/frontend.hpp) after shutting down your data/log producers. This will early interrupt any synchronous calls you made.
 
 
 ## Errors ##
@@ -89,24 +89,38 @@ The third point is the most restrictive for my liking, it's just inherent to the
 
 It's possible to artificially increment the refcount of a shared_ptr by copying it to an instance created using "placement_new" and to decrement it in the worker using the same trick, I keep this idea on hold for now.
 
+
+## Compiler macros ##
+
+Those that are self-explanatory won't be explained.
+
+ - *UFO_CACHE_LINE_SIZE*: The cache line size of the machine you are compiling for. This is just used for data structure padding. 64 is defaulted when undefined.
+ - *UFO_GET_LOGGER_INSTANCE_FUNC*: See the "Initialization" chapter above.
+ - *UFO_STRIP_LOG_SEVERITY*: Removes the entries of this severity and below at compile time. 0 is the "debug" severity, 5 is the "critical" severity. Stripping at level 5 leaves no log entries at all.
+ - *UFO_USE_BOOST_ATOMIC*
+ - *UFO_USE_BOOST_CHRONO*
+ - *UFO_USE_BOOST_THREAD*
+ 
 ## Using the library ##
 
-You can compile the files in the "src" folder and make a .dll/.so file or just use the whole thing compiled in your project.
+You can compile the files in the "src" folder and make a library or just use compile everything in your project.
 
 If you want to compile the library inside your project you need to merge the "src" and "include" folders (or to add both as an include directory to the compiler) and to compile "frontend_def.hpp" in one translation unit.
+
+Otherwise you can use the makefile in the /build/linux folder, one example of command invocation could be:
+
+    make CXXFLAGS="-DNDEBUG -DUFO_USE_BOOST_THREAD -DUFO_USE_BOOST_CHRONO -DBOOST_ALL_DYN_LINK -DBOOST_CHRONO_HEADER_ONLY" LDLIBS="-lboost_thread" CXX="arm-linux-gnueabihf-g++"
+
+For Windows... TODO
 
 ## Todo ##
 
  - Test in Windows.
- - makefile
- - Visual Studio project.
+ - Build in Windows.
 
 ## Disclaimer ##
 
 THIS PROJECT IS UNDER DEVELOPMENT AND SHOULDN'T BE CONSIDERED STABLE BY NOW. Even tough it seems to work.
 
 > Written with [StackEdit](https://stackedit.io/).
-
-
-
 
