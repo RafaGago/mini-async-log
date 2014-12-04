@@ -1,25 +1,26 @@
 
 Useful Features Only (UFO) Logger
 -----------
-A feature reduced asynchronous data logger. Sponsored by my employer **Diadrom AB.**
+A non feature-bloated asynchronous data logger. Sponsored by my employer **Diadrom AB.**
 
-We just wanted an asynchronous logger that can be used from many dynamically loaded libraries without doing link-time hacks like linking static and hiding symbols and some other features.
+We just wanted an asynchronous logger that can be used from many dynamically loaded libraries without doing link-time hacks like linking static and hiding symbols and some other "niceties".
 
-After having maintained a slightly modified version of glog and given the fact that this is a very small project we decided that existing wheels weren't round enough.
+After having maintained a slightly modified version of google log and given the fact that this is a very small project we decided that existing wheels weren't round enough.
 
 
 ## Design rationale ##
 
  - Simple. 
- - Not over abstracted and feature packed, easy to figure out what the code is doing, easy to modify.
+ - Not over abstracted and feature bloated, easy to figure out what the code is doing, easy to modify.
  - Low latency, fast for the caller.
  - Asynchronous (synchronous calls can be made for special messages, but they have grotesque overhead).
- - No string formatting in the calling thread, the data is raw copied. 
+ - Minimum string formatting in the calling thread for the most common use cases. 
  - One conditional call overhead for inactive severities.
+ - Lazy parameter evaluation.
  - No ostreams (a very ugly part of C++ for my liking), just format strings checked at compile time (if the compiler supports it) with type safe values.
- - No singleton by design, usable from dynamically loaded libraries. You provide the instance either explicitly or by using Koenig lookup.
- - Suitable for soft-realtime work. Once it's initialized the fast-path can be clear from heap allocations if you configure it properly.
- - File rotation-slicing
+ - No singleton by design, usable from dynamically loaded libraries. You provide the instance either explicitly or by a global function (Koenig lookup).
+ - Suitable for soft-realtime work. Once it's initialized the fast-path can be clear from heap allocations if properly configured.
+ - File rotation-slicing.
  - Targeting g++4.7 and VS 2010
  - Boost dependencies just for parts that will eventually go to the C++ standard.
 
