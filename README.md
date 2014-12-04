@@ -101,6 +101,7 @@ Those that are self-explanatory won't be explained.
  - *UFO_USE_BOOST_ATOMIC*
  - *UFO_USE_BOOST_CHRONO*
  - *UFO_USE_BOOST_THREAD*
+ - *UFO_NO_VARIABLE_INTEGER_WIDTH*: Integers are not encoded ignoring the number trailing bytes set to zeros but based on its data type size. When this isn't defined e.g. encoding a u64 with a value up to 255 takes one byte (plus 1 byte header), otherwise it takes the full 8 bytes (plus header).
  
 ## Using the library ##
 
