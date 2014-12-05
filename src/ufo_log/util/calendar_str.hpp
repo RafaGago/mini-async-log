@@ -48,7 +48,7 @@ either expressed or implied, of Rafael Gago Castano.
     #error "unknown platform"
 #endif
 
-#include <ufo_log/util/ufo_snprintf.hpp>
+#include <ufo_log/util/mem_printf.hpp>
 #include <ufo_log/util/system.hpp>
 #include <ufo_log/util/integer.hpp>
 
@@ -60,12 +60,7 @@ public:
     static const uword str_size =                                               //non-null terminated
             4 + 1 + 2 + 1 + 2 + 1 + 2 + 1 + 2 + 1 + 2 + 1 + 6;
     //      Y   -   M   -   D   _   H   :  min  :   s   .   us
-
-#if defined (UFO_WINDOWS)
-    static const uword c_str_size = str_size;
-#elif defined (UFO_UNIX_LIKE)
     static const uword c_str_size = str_size + 1;
-#endif
 
     static int write (char* dst, uword dst_capacity, u64 epoch_us)              //writes the non-null terminated str in dst
     {
@@ -91,7 +86,7 @@ public:
     #error "implement this"
 #endif
         auto micros = (int) (epoch_us - ((u64) t) * 1000000);
-        auto res    = ufo_snprintf(
+        auto res    = mem_printf(
                          dst,
                          dst_capacity,
                          fmt,

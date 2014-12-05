@@ -49,7 +49,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/spmc.hpp>
 #include <ufo_log/util/atomic.hpp>
 #include <ufo_log/util/chrono.hpp>
-#include <ufo_log/util/ufo_snprintf.hpp>
+#include <ufo_log/util/mem_printf.hpp>
 
 #include <ufo_log/output.hpp>
 #include <ufo_log/frontend.hpp>
@@ -388,14 +388,13 @@ private:
     void write_alloc_fault (uword count)
     {
         char str[96];
-        ufo_snprintf(
+        mem_printf(
                 str,
                 sizeof str,
                 "[%020llu] [logger_err] %u alloc faults detected",
                 get_timestamp(),
                 count
                 );
-        str[sizeof str - 1] = 0;
         m_out.raw_write (sev::error, str);
     }
     //--------------------------------------------------------------------------

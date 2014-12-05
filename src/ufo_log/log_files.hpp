@@ -53,7 +53,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/atomic.hpp>
 #include <ufo_log/util/raw_circular_buffer.hpp>
 #include <ufo_log/util/thread.hpp>
-#include <ufo_log/util/ufo_snprintf.hpp>
+#include <ufo_log/util/mem_printf.hpp>
 
 namespace ufo {
 
@@ -254,7 +254,7 @@ private:
 #else
     #error "fix util/system.hpp for your platform (if possible)"
 #endif
-        ufo_snprintf (str, sz + 1, fmt, cpu, m_cpu_time_base);
+        mem_printf (str, sz + 1, fmt, cpu, m_cpu_time_base);
         str      += sz;
 
         side_effect_assert(

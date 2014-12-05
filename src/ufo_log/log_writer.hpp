@@ -37,7 +37,7 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef UFO_LOG_WRITER_HPP_
 #define UFO_LOG_WRITER_HPP_
 
-#include <ufo_log/util/ufo_snprintf.hpp>
+#include <ufo_log/util/mem_printf.hpp>
 #include <ufo_log/serialization/printf_modifiers.hpp>
 #include <ufo_log/serialization/byte_stream_convert.hpp>
 #include <ufo_log/serialization/importer.hpp>
@@ -429,8 +429,7 @@ private:
     static bool output_num (output& o, T val, const char* fmt)
     {
         char buff[64];                                                          //just to skip thinking, never is going to be that big.
-        uword adv             = ufo_snprintf (buff, sizeof buff, fmt, val);
-        buff[sizeof buff - 1] = 0;
+        uword adv = mem_printf (buff, sizeof buff, fmt, val);
         if (adv > 0)
         {
             o.write (buff, adv);
