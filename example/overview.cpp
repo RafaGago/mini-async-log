@@ -2,7 +2,8 @@
 
 #include <cassert>
 #include <ufo_log/ufo_log.hpp>
-#include <ufo_log/frontend_def.hpp> //UNCOMMENT IF YOU DON'T WANT TO COMPILE THE LIB SEPARATELY
+#include <ufo_log/frontend_def.hpp> //UNCOMMENT IF YOU DON'T WANT TO COMPILE THE LIB SEPARATELY, COMMENT IF YOU DO
+#include <ufo_log/util/stack_ostream.hpp>
 
 //------------------------------------------------------------------------------
 inline ufo::frontend& get_ufo_logger_instance()
@@ -27,7 +28,7 @@ void general_features()
 #ifndef UFO_WINDOWS
     be_cfg.file.out_folder          = "./log_out/";                             //this folder has to exist before running
 #else
-    be_cfg.file.out_folder          = ".\\log_out\\";                             //this folder has to exist before running
+    be_cfg.file.out_folder          = ".\\log_out\\";                           //this folder has to exist before running
 #endif
     be_cfg.file.aprox_size          = 512 * 1024;
     be_cfg.file.rotation.file_count = 0;
@@ -40,10 +41,7 @@ void general_features()
     fe.set_file_severity (sev::notice);
     fe.set_console_severity (sev::notice);
     int i = 0;
-
-    std::string string = "this is deep copied";
     
-    log_error ("message {}, raw = {}", i, deep_copy (string)); ++i;
     log_error ("message {}, bool = {}", i, true); ++i;
 
     log_error ("message {}, u8  = {}", i, (u8) 8); ++i;
@@ -93,6 +91,9 @@ void general_features()
     const char* a_decayed_literal = "a compile time literal";
 
     log_error ("message {}, c_str = {}", i, lit (a_decayed_literal)); ++i;
+
+    std::string string = "this is deep copied";
+    log_error ("message {}, raw = {}", i, deep_copy (string)); ++i;
 
     u8 deep_copied_bytes[] =
     {
@@ -188,6 +189,24 @@ void general_features()
         "you use the \"_sync\" calls often consider switching to a synchronous "
         "data logger."
         );
+
+    stack_ostream<32> ostr;
+    log_error(
+        "I claim no support for ostreams because this is a very last resort "
+        "hack to be able to print classes that doesn't expose members but are "
+        "ostreamable. It still is stack based and lazy evaluated. Use only "
+        "through the ugly macro like is done here. {}",
+        ostr_deep_copy (ostr, "ostream hack: " << 1 << " " << 2 << " " << 3)
+        );
+    assert (!ostr.fail() && "this one wasn't truncated");
+
+    ostr.reuse();
+    log_error(
+        "Now the stream will be truncated, you can check the fail bit. "
+        "stream = {}",
+        ostr_deep_copy (ostr, "1234567890123456789012345678901234567890")
+        );
+    assert (ostr.fail());
 }
 //------------------------------------------------------------------------------
 int main (int argc, const char* argv[])
