@@ -42,8 +42,6 @@ either expressed or implied, of Rafael Gago Castano.
 
 namespace ufo { namespace ser {
 //------------------------------------------------------------------------------
-static const uword arity_bits         = 5;
-static const uword severity_bits      = 3;
 static const uword numeric_bytes_bits = 3;
 //------------------------------------------------------------------------------
 struct header_field

@@ -56,6 +56,7 @@ struct header_data
     sev::severity severity;
     uword         arity;
     sync_point*   sync;
+    uword         msg_size;
 };
 //------------------------------------------------------------------------------
 inline header_data make_header_data(
