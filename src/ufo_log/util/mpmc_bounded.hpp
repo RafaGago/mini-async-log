@@ -213,7 +213,7 @@ public:
             ++m_dequeue_pos;
             data = cell->m_data;
             cell->m_sequence.store(
-                    m_dequeue_pos + m_buffer_mask + 1, mo_release
+                    m_dequeue_pos + m_buffer_mask, mo_release
                     );
             return true;
         }
