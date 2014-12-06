@@ -43,7 +43,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <vector>
 #include <algorithm>
 #include <ufo_log/util/mpsc.hpp>
-#include <ufo_log/util/spmc.hpp>
+#include <ufo_log/util/mpmc_bounded.hpp>
 #include <ufo_log/util/integer_bits.hpp>
 #include <ufo_log/util/on_stack_dynamic.hpp>
 
@@ -133,7 +133,7 @@ public:
 #endif
         for (uword i = 0; i < entries; ++i)
         {
-            m_free->bounded_push (m_fixed_begin + (i * m_entry_size));
+            m_free->sp_bounded_push (m_fixed_begin + (i * m_entry_size));
         }
         return true;
     }
@@ -156,7 +156,7 @@ public:
         if (size)
         {
             void* ret;
-            if ((size <= m_entry_size) && m_free->pop (ret))                    //TODO: profile if this scenario beats the heap
+            if ((size <= m_entry_size) && m_free->mc_pop (ret))                 //TODO: profile if this scenario beats the heap
             {
                 return ret;
             }
@@ -180,7 +180,7 @@ public:
             if ((addr & (m_entry_size - 1)) == 0)
             {
 #ifndef EXPERIMENTAL_ORDERING_CACHE
-                m_free->bounded_push (p);
+                m_free->sp_bounded_push (p);
 #else
                 fixed_deallocate (p);
 #endif
@@ -226,7 +226,7 @@ private:
         std::sort (m_reorder.begin(), m_reorder.end());                         //naive in-place is fine for the used sizes
         for (uword i = 0; i < m_reorder.size(); ++i)
         {
-            m_free->bounded_push ((void*) m_reorder[i]);
+            m_free->sp_bounded_push ((void*) m_reorder[i]);
         }
         m_reorder.clear();
     }
@@ -248,7 +248,7 @@ private:
     ufo_allocator (const ufo_allocator& other);
     ufo_allocator& operator= (const ufo_allocator& other);
 
-    typedef spmc_b_fifo<void*> free_list;
+    typedef mpmc_b_fifo<void*> free_list;
     //--------------------------------------------------------------------------
     placement_new<void*, cache_line_size> m_pad1;
     uword                                 m_entry_size;

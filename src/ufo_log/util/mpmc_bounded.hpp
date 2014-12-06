@@ -36,9 +36,9 @@ either expressed or implied, of Dmitry Vyukov.
 --------------------------------------------------------------------------------
 The code in its current form adds the license below:
 
-BSD 3-clause license
-
-Copyright (c) 2013-2014 Diadrom AB. All rights reserved.
+The BSD 3-clause license
+--------------------------------------------------------------------------------
+Copyright (c) 2014 Rafael Gago Castano. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
  are permitted provided that the following conditions are met:
@@ -54,10 +54,10 @@ Redistribution and use in source and binary forms, with or without modification,
       may be used to endorse or promote products derived from this software
       without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY DIADROM AB "AS IS" AND ANY EXPRESS OR IMPLIED
-WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+THIS SOFTWARE IS PROVIDED BY RAFAEL GAGO CASTANO "AS IS" AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
-SHALL DIADROM AB OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+SHALL RAFAEL GAGO CASTANO OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
 LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
 OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
@@ -67,25 +67,31 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
-either expressed or implied, of Diadrom AB.
+either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_SPMC_HPP_
-#define UFO_SPMC_HPP_
+#ifndef UFO_LOG_MPSC_BOUNDED_HPP_
+#define UFO_LOG_MPSC_BOUNDED_HPP_
 
 #include <cassert>
 #include <ufo_log/util/atomic.hpp>
 
 namespace ufo {
 
+// This is the Djukov MPMC queue that adds the trivial conversion to single
+// producer or single consumer funcions so it can be used as a mpmc, spmc or
+// mpsc. Of course you can't mix two different producer modes on the same queue.
+//
+// I just didn't want to add template policies but it can be easily done.
+
 //------------------------------------------------------------------------------
 template<typename T>
-class spmc_b_fifo
+class mpmc_b_fifo
 {
 public:
     //--------------------------------------------------------------------------
-    spmc_b_fifo (size_t buffer_size) :
+    mpmc_b_fifo (size_t buffer_size) :
           m_buffer      (nullptr),
           m_buffer_mask (buffer_size - 1)
     {
@@ -102,7 +108,7 @@ public:
         m_dequeue_pos = 0;
     }
     //--------------------------------------------------------------------------
-    ~spmc_b_fifo()
+    ~mpmc_b_fifo()
     {
         if (m_buffer)
         {
@@ -110,7 +116,41 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-    bool bounded_push (T const& data)
+    bool mp_bounded_push (T const& data)
+    {
+        assert (m_buffer);
+        cell_t* cell;
+        size_t pos = m_enqueue_pos;
+        for (;;)
+        {
+            cell          = &m_buffer[pos & m_buffer_mask];
+            size_t seq    = cell->m_sequence.load (mo_acquire);
+            intptr_t diff = (intptr_t) seq - (intptr_t) pos;
+            if (diff == 0)
+            {
+                if (m_enqueue_pos.compare_exchange_weak(
+                    pos, pos + 1, mo_relaxed
+                    ))
+                {
+                    break;
+                }
+            }
+            else if (diff < 0)
+            {
+                return false;
+            }
+            else
+            {
+                pos = m_enqueue_pos;
+            }
+        }
+        cell->m_data = data;
+        cell->m_sequence.store (pos + 1, mo_release);
+
+        return true;
+    }
+    //--------------------------------------------------------------------------
+    bool sp_bounded_push (T const& data)
     {
         assert (m_buffer);
         cell_t* cell  = &m_buffer[m_enqueue_pos & m_buffer_mask];
@@ -127,7 +167,7 @@ public:
         return false;
     }
     //--------------------------------------------------------------------------
-    bool pop (T& data)
+    bool mc_pop (T& data)
     {
         assert (m_buffer);
         cell_t* cell;
@@ -162,6 +202,25 @@ public:
         return true;
     }
     //--------------------------------------------------------------------------
+    bool sc_pop (T& data)
+    {
+        assert (m_buffer);
+        cell_t* cell  = &m_buffer[m_dequeue_pos & m_buffer_mask];
+        size_t seq    = cell->m_sequence.load (mo_acquire);
+        intptr_t diff = (intptr_t) seq - (intptr_t) (m_dequeue_pos + 1);
+        if (diff == 0)
+        {
+            ++m_dequeue_pos;
+            data = cell->m_data;
+            cell->m_sequence.store(
+                    m_dequeue_pos + m_buffer_mask + 1, mo_release
+                    );
+            return true;
+        }
+        assert (diff < 0);
+        return false;
+    }
+    //--------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------
     struct cell_t
@@ -187,10 +246,10 @@ private:
 
     cacheline_pad_t           m_pad3;
 
-    spmc_b_fifo (spmc_b_fifo const&);
-    void operator= (spmc_b_fifo const&);
+    mpmc_b_fifo (mpmc_b_fifo const&);
+    void operator= (mpmc_b_fifo const&);
 };
 //------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* SPMC_HPP_ */
+#endif /* UFO_LOG_MPSC_BOUNDED_HPP_ */
