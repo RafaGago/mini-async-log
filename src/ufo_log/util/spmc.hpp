@@ -77,8 +77,6 @@ either expressed or implied, of Diadrom AB.
 #include <cassert>
 #include <ufo_log/util/atomic.hpp>
 
-
-
 namespace ufo {
 
 //------------------------------------------------------------------------------
