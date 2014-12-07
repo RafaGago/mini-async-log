@@ -103,7 +103,6 @@ public:
         {
             m_buffer[i].m_sequence = i;
         }
-
         m_enqueue_pos = 0;
         m_dequeue_pos = 0;
     }

@@ -22,11 +22,11 @@ namespace ufo {
 // two parts or with order wording, made half intrusive.
 //
 //--------------------------------------------------------------------------
-class memory_mpmc_b_fifo_entry
+class mem_mpmc_b_prepared
 {
 public:
     //----------------------------------------------------------------------
-    transaction_data()
+    mem_mpmc_b_prepared()
     {
         cell = mem = nullptr;
         size = pos = 0;
@@ -37,17 +37,17 @@ public:
     //----------------------------------------------------------------------
 private:
     //----------------------------------------------------------------------
-    friend class memory_mpmc_b_fifo;
+    friend class mem_mpmc_b_fifo;
     void*  cell;
     size_t pos;
     //----------------------------------------------------------------------
 };
 //------------------------------------------------------------------------------
-class memory_mpmc_b_fifo
+class mem_mpmc_b_fifo
 {
 public:
     //--------------------------------------------------------------------------
-    memory_mpmc_b_fifo()
+    mem_mpmc_b_fifo()
     {
         m_buffer      = nullptr;
         m_mem         = nullptr;
@@ -57,7 +57,7 @@ public:
         m_dequeue_pos = 0;
     }
     //--------------------------------------------------------------------------
-    ~memory_mpmc_b_fifo()
+    ~mem_mpmc_b_fifo()
     {
         clear();
     }
@@ -113,10 +113,10 @@ public:
     //--------------------------------------------------------------------------
     size_t entry_size() const { return m_entry_size; }
     //--------------------------------------------------------------------------
-    memory_mpmc_b_fifo_entry acquire_mp_bounded_push_data()
+    mem_mpmc_b_prepared mp_bounded_push_prepare()
     {
         assert (m_buffer);
-        memory_mpmc_b_fifo_entry e;
+        mem_mpmc_b_prepared pp;
         cell_t* cell;
         size_t pos = m_enqueue_pos;
         for (;;)
@@ -135,52 +135,52 @@ public:
             }
             else if (diff < 0)
             {
-                return e;
+                return pp;
             }
             else
             {
                 pos = m_enqueue_pos;
             }
         }
-        e.cell = cell;
-        e.pos  = pos + 1;
-        e.mem  = cell->mem;
-        e.size = entry_size();
-        return e;
+        pp.cell = cell;
+        pp.pos  = pos + 1;
+        pp.mem  = cell->mem;
+        pp.size = entry_size();
+        return pp;
     }
     //--------------------------------------------------------------------------
-    memory_mpmc_b_fifo_entry acquire_sp_bounded_push_data()
+    mem_mpmc_b_prepared sp_bounded_push_prepare()
     {
         assert (m_buffer);
-        memory_mpmc_b_fifo_entry e;
+        mem_mpmc_b_prepared pp;
         cell_t* cell  = &m_buffer[m_enqueue_pos & m_buffer_mask];
         size_t seq    = cell->sequence.load (mo_acquire);
         intptr_t diff = (intptr_t) seq - (intptr_t) m_enqueue_pos;
         if (diff == 0)
         {
             ++m_enqueue_pos;
-            e.cell = cell;
-            e.pos  = m_enqueue_pos;
-            e.mem  = cell->mem;
-            e.size = entry_size();
-            return e;
+            pp.cell = cell;
+            pp.pos  = m_enqueue_pos;
+            pp.mem  = cell->mem;
+            pp.size = entry_size();
+            return pp;
         }
         assert (diff < 0);
-        return e;
+        return pp;
     }
     //--------------------------------------------------------------------------
-    void do_push (const memory_mpmc_b_fifo_entry& e)
+    void bounded_push_commit (const mem_mpmc_b_prepared& pp)
     {
-        if (e.cell)
+        if (pp.cell)
         {
-            ((cell_t*) e.cell)->sequence.store (e.pos, mo_release);
+            ((cell_t*) pp.cell)->sequence.store (pp.pos, mo_release);
         }
     }
     //--------------------------------------------------------------------------
-    bool acquire_mc_pop_data()
+    mem_mpmc_b_prepared mc_pop_prepare()
     {
         assert (m_buffer);
-        memory_mpmc_b_fifo_entry e;
+        mem_mpmc_b_prepared pp;
         cell_t* cell;
         size_t pos = m_dequeue_pos;
         for (;;)
@@ -199,45 +199,45 @@ public:
             }
             else if (diff < 0)
             {
-                return e;
+                return pp;
             }
             else
             {
                 pos = m_dequeue_pos;
             }
         }
-        e.cell = cell;
-        e.pos  = pos + m_buffer_mask + 1;
-        e.mem  = cell->mem;
-        e.size = entry_size();
-        return e;
+        pp.cell = cell;
+        pp.pos  = pos + m_buffer_mask + 1;
+        pp.mem  = cell->mem;
+        pp.size = entry_size();
+        return pp;
     }
     //--------------------------------------------------------------------------
-    bool acquire_sc_pop_data()
+    mem_mpmc_b_prepared sc_pop_prepare()
     {
         assert (m_buffer);
-        memory_mpmc_b_fifo_entry e;
+        mem_mpmc_b_prepared pp;
         cell_t* cell  = &m_buffer[m_dequeue_pos & m_buffer_mask];
         size_t seq    = cell->sequence.load (mo_acquire);
         intptr_t diff = (intptr_t) seq - (intptr_t) (m_dequeue_pos + 1);
         if (diff == 0)
         {
             ++m_dequeue_pos;
-            e.cell = cell;
-            e.pos  = m_dequeue_pos + m_buffer_mask;
-            e.mem  = cell->mem;
-            e.size = entry_size();
-            return e;
+            pp.cell = cell;
+            pp.pos  = m_dequeue_pos + m_buffer_mask;
+            pp.mem  = cell->mem;
+            pp.size = entry_size();
+            return pp;
         }
         assert (diff < 0);
-        return e;
+        return pp;
     }
     //--------------------------------------------------------------------------
-    void release_pop (const memory_mpmc_b_fifo_entry& e)
+    void pop_commit (const mem_mpmc_b_prepared& pp)
     {
-        if (e.cell)
+        if (pp.cell)
         {
-            ((cell_t*) e.cell)->sequence.store (e.pos, mo_release);
+            ((cell_t*) pp.cell)->sequence.store (pp.pos, mo_release);
         }
     }
     //--------------------------------------------------------------------------

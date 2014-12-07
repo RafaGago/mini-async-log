@@ -16,12 +16,10 @@ void general_features()
 {
     using namespace ufo;
     ufo::frontend& fe               = get_ufo_logger_instance();
-
     if (!fe.is_constructed())
     {
         return; //new failed in static initializator
     }
-
     auto be_cfg                     = fe.get_backend_cfg();
     be_cfg.file.name_prefix         = "test-data.";
     be_cfg.file.name_suffix         = ".log.txt";
