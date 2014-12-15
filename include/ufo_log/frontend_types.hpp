@@ -70,63 +70,18 @@ struct deep_copy_bytes : public delimited_mem {};
 //------------------------------------------------------------------------------
 struct deep_copy_string : public delimited_mem {};
 //------------------------------------------------------------------------------
-inline deep_copy_bytes bytes (void* mem, uword size)
-{
-    assert (mem && size);
-    deep_copy_bytes b;
-    b.mem  = mem;
-    b.size = size;
-    return b;
-}
-//------------------------------------------------------------------------------
-inline deep_copy_string deep_copy (const char* mem, uword size_no_null_term)
-{
-    assert (mem && size_no_null_term);
-    assert (mem[size_no_null_term - 1] != 0);
-    deep_copy_string s;
-    s.mem  = mem;
-    s.size = size_no_null_term;
-    return s;
-}
-//------------------------------------------------------------------------------
-inline deep_copy_string deep_copy (const char* str)                             //you should be avoiding strlen by taking the overload that takes the size if possible, this function is just written for cases where there really is something better.
-{
-    assert (str);
-    return deep_copy (str, strlen (str));
-}
-//------------------------------------------------------------------------------
-inline deep_copy_string deep_copy (const std::string& str)
-{
-    assert (str.size());
-    return (deep_copy (&str[0], str.size()));
-}
-//------------------------------------------------------------------------------
 struct literal_wrapper
 {
     const char* lit;
 };
-//------------------------------------------------------------------------------
-inline literal_wrapper lit (const char* literal)                                //this is because: 1-I don't want the user to remember that the const char* must point to a decayed literal 2-make clear when to print a pointer
-{
-    assert (literal);
-    literal_wrapper l;
-    l.lit = literal;
-    return l;
-}
 //------------------------------------------------------------------------------
 struct ptr_wrapper
 {
     const void* ptr;
 };
 //------------------------------------------------------------------------------
-inline ptr_wrapper ptr (const void* pointer)                                //The pointers have to be marked explicitly, I could add a modifier in the fmt string (less verbose), but the code has to work in compilers that can't run the compile time validation
-{
-    ptr_wrapper l;
-    l.ptr = pointer;
-    return l;
-}
+#include <ufo_log/frontend_types_convenience_funcs_to_current_namespace.hpp>
 //------------------------------------------------------------------------------
-
 } //namespaces
 
 #endif /* UFO_LOG_FRONTEND_TYPES_HPP_ */

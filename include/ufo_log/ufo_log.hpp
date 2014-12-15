@@ -75,12 +75,28 @@ either expressed or implied, of Rafael Gago Castano.
 #define log_debug_sync(...)\
     log_debug_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
+#define log_debug_i_if(condition, instance, ...)\
+    log_if (condition, log_debug_i (instance, __VA_ARGS__))
+
+#define log_debug_sync_i_if(condition, instance, ...)\
+    log_if (condition, log_debug_sync_i (instance, __VA_ARGS__))
+
+#define log_debug_if(condition, ...)\
+    log_if (condition, log_debug (__VA_ARGS__))
+
+#define log_debug_sync_if(condition, ...)\
+    log_if (condition, log_debug_sync (__VA_ARGS__))
+
 #else
 
-    #define log_debug_i(...)      ::ufo::macro::silence_warnings()
-    #define log_debug_sync_i(...) ::ufo::macro::silence_warnings()
-    #define log_debug(...)        ::ufo::macro::silence_warnings()
-    #define log_debug_sync(...)   ::ufo::macro::silence_warnings()
+    #define log_debug_i(...)         ::ufo::macro::silence_warnings()
+    #define log_debug_sync_i(...)    ::ufo::macro::silence_warnings()
+    #define log_debug(...)           ::ufo::macro::silence_warnings()
+    #define log_debug_sync(...)      ::ufo::macro::silence_warnings()
+	#define log_debug_i_if(...)      ::ufo::macro::silence_warnings()
+    #define log_debug_sync_i_if(...) ::ufo::macro::silence_warnings()
+    #define log_debug_if(...)        ::ufo::macro::silence_warnings()
+	#define log_debug_sync_if(...)   ::ufo::macro::silence_warnings()
 
 #endif //UFO_STRIP_LOG_SEVERITY
 //------------------------------------------------------------------------------
@@ -98,12 +114,28 @@ either expressed or implied, of Rafael Gago Castano.
 #define log_trace_sync(...)\
     log_trace_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
+#define log_trace_i_if(condition, instance, ...)\
+    log_if (condition, log_trace_i (instance, __VA_ARGS__))
+
+#define log_trace_sync_i_if(condition, instance, ...)\
+    log_if (condition, log_trace_sync_i (instance, __VA_ARGS__))
+
+#define log_trace_if(condition, ...)\
+    log_if (condition, log_trace (__VA_ARGS__))
+
+#define log_trace_sync_if(condition, ...)\
+    log_if (condition, log_trace_sync (__VA_ARGS__))
+
 #else
 
-    #define log_trace_i(...)      ::ufo::macro::silence_warnings()
-    #define log_trace_sync_i(...) ::ufo::macro::silence_warnings()
-    #define log_trace(...)        ::ufo::macro::silence_warnings()
-    #define log_trace_sync(...)   ::ufo::macro::silence_warnings()
+    #define log_trace_i(...)         ::ufo::macro::silence_warnings()
+    #define log_trace_sync_i(...)    ::ufo::macro::silence_warnings()
+    #define log_trace(...)           ::ufo::macro::silence_warnings()
+    #define log_trace_sync(...)      ::ufo::macro::silence_warnings()
+	#define log_trace_i_if(...)      ::ufo::macro::silence_warnings()
+    #define log_trace_sync_i_if(...) ::ufo::macro::silence_warnings()
+    #define log_trace_if(...)        ::ufo::macro::silence_warnings()
+	#define log_trace_sync_if(...)   ::ufo::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
@@ -121,12 +153,28 @@ either expressed or implied, of Rafael Gago Castano.
 #define log_notice_sync(...)\
     log_notice_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
+#define log_notice_i_if(condition, instance, ...)\
+    log_if (condition, log_notice_i (instance, __VA_ARGS__))
+
+#define log_notice_sync_i_if(condition, instance, ...)\
+    log_if (condition, log_notice_sync_i (instance, __VA_ARGS__))
+
+#define log_notice_if(condition, ...)\
+    log_if (condition, log_notice (__VA_ARGS__))
+
+#define log_notice_sync_if(condition, ...)\
+    log_if (condition, log_notice_sync (__VA_ARGS__))
+
 #else
 
-    #define log_notice_i(...)      ::ufo::macro::silence_warnings()
-    #define log_notice_sync_i(...) ::ufo::macro::silence_warnings()
-    #define log_notice(...)        ::ufo::macro::silence_warnings()
-    #define log_notice_sync(...)   ::ufo::macro::silence_warnings()
+    #define log_notice_i(...)         ::ufo::macro::silence_warnings()
+    #define log_notice_sync_i(...)    ::ufo::macro::silence_warnings()
+    #define log_notice(...)           ::ufo::macro::silence_warnings()
+    #define log_notice_sync(...)      ::ufo::macro::silence_warnings()
+	#define log_notice_i_if(...)      ::ufo::macro::silence_warnings()
+    #define log_notice_sync_i_if(...) ::ufo::macro::silence_warnings()
+    #define log_notice_if(...)        ::ufo::macro::silence_warnings()
+	#define log_notice_sync_if(...)   ::ufo::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
@@ -144,12 +192,28 @@ either expressed or implied, of Rafael Gago Castano.
 #define log_warning_sync(...)\
     log_warning_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
+#define log_warning_i_if(condition, instance, ...)\
+    log_if (condition, log_warning_i (instance, __VA_ARGS__))
+
+#define log_warning_sync_i_if(condition, instance, ...)\
+    log_if (condition, log_warning_sync_i (instance, __VA_ARGS__))
+
+#define log_warning_if(condition, ...)\
+    log_if (condition, log_warning (__VA_ARGS__))
+
+#define log_warning_sync_if(condition, ...)\
+    log_if (condition, log_warning_sync (__VA_ARGS__))
+
 #else
 
-    #define log_warning_i(...)      ::ufo::macro::silence_warnings()
-    #define log_warning_sync_i(...) ::ufo::macro::silence_warnings()
-    #define log_warning(...)        ::ufo::macro::silence_warnings()
-    #define log_warning_sync(...)   ::ufo::macro::silence_warnings()
+    #define log_warning_i(...)         ::ufo::macro::silence_warnings()
+    #define log_warning_sync_i(...)    ::ufo::macro::silence_warnings()
+    #define log_warning(...)           ::ufo::macro::silence_warnings()
+    #define log_warning_sync(...)      ::ufo::macro::silence_warnings()
+	#define log_warning_i_if(...)      ::ufo::macro::silence_warnings()
+    #define log_warning_sync_i_if(...) ::ufo::macro::silence_warnings()
+    #define log_warning_if(...)        ::ufo::macro::silence_warnings()
+	#define log_warning_sync_if(...)   ::ufo::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
@@ -167,12 +231,28 @@ either expressed or implied, of Rafael Gago Castano.
 #define log_error_sync(...)\
     log_error_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
+#define log_error_i_if(condition, instance, ...)\
+    log_if (condition, log_error_i (instance, __VA_ARGS__))
+
+#define log_error_sync_i_if(condition, instance, ...)\
+    log_if (condition, log_error_sync_i (instance, __VA_ARGS__))
+
+#define log_error_if(condition, ...)\
+    log_if (condition, log_error (__VA_ARGS__))
+
+#define log_error_sync_if(condition, ...)\
+    log_if (condition, log_error_sync (__VA_ARGS__))
+
 #else
 
-    #define log_error_i(...)      ::ufo::macro::silence_warnings()
-    #define log_error_sync_i(...) ::ufo::macro::silence_warnings()
-    #define log_error(...)        ::ufo::macro::silence_warnings()
-    #define log_error_sync(...)   ::ufo::macro::silence_warnings()
+    #define log_error_i(...)         ::ufo::macro::silence_warnings()
+    #define log_error_sync_i(...)    ::ufo::macro::silence_warnings()
+    #define log_error(...)           ::ufo::macro::silence_warnings()
+    #define log_error_sync(...)      ::ufo::macro::silence_warnings()
+	#define log_error_i_if(...)      ::ufo::macro::silence_warnings()
+    #define log_error_sync_i_if(...) ::ufo::macro::silence_warnings()
+    #define log_error_if(...)        ::ufo::macro::silence_warnings()
+	#define log_error_sync_if(...)   ::ufo::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
@@ -190,12 +270,28 @@ either expressed or implied, of Rafael Gago Castano.
 #define log_critical_sync(...)\
     log_critical_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
+#define log_critical_i_if(condition, instance, ...)\
+    log_if (condition, log_critical_i (instance, __VA_ARGS__))
+
+#define log_critical_sync_i_if(condition, instance, ...)\
+    log_if (condition, log_critical_sync_i (instance, __VA_ARGS__))
+
+#define log_critical_if(condition, ...)\
+    log_if (condition, log_critical (__VA_ARGS__))
+
+#define log_critical_sync_if(condition, ...)\
+    log_if (condition, log_critical_sync (__VA_ARGS__))
+
 #else
 
-    #define log_critical_i(...)      ::ufo::macro::silence_warnings()
-    #define log_critical_sync_i(...) ::ufo::macro::silence_warnings()
-    #define log_critical(...)        ::ufo::macro::silence_warnings()
-    #define log_critical_sync(...)   ::ufo::macro::silence_warnings()
+    #define log_critical_i(...)         ::ufo::macro::silence_warnings()
+    #define log_critical_sync_i(...)    ::ufo::macro::silence_warnings()
+    #define log_critical(...)           ::ufo::macro::silence_warnings()
+    #define log_critical_sync(...)      ::ufo::macro::silence_warnings()
+	#define log_critical_i_if(...)      ::ufo::macro::silence_warnings()
+    #define log_critical_sync_i_if(...) ::ufo::macro::silence_warnings()
+    #define log_critical_if(...)        ::ufo::macro::silence_warnings()
+	#define log_critical_sync_if(...)   ::ufo::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------

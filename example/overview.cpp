@@ -142,8 +142,8 @@ void general_features()
     ++i;
 #endif //UFO_COMPILE_TIME_FMT_CHECK
     log_error ("message {}, this isn't interpreted as a placeholder {ww}", i);
-    log_if (true, log_notice ("you should see this conditional entry..."));
-    log_if (false, log_notice ("...but not this one"));
+    log_notice_if (true, "you should see this conditional entry...");
+    log_notice_if (false, "...but not this one");
 
     for (unsigned j = 0; j < 15; ++j)
     {
