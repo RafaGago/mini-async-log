@@ -122,7 +122,8 @@ public:
         if (m_state.compare_exchange_strong (actual, on_init, mo_acquire))
         {
             m_timestamp_base = get_timestamp();
-            if (m_back.init (cfg, m_sync, m_timestamp_base))
+            auto sev_ch = [=]() { this->severity_updated_event(); };
+            if (m_back.init (cfg, m_sync, m_timestamp_base, sev_ch))
             {
                 m_prints_timestamp = cfg.display.show_timestamp;
                 m_state.store (init, mo_release);
@@ -223,6 +224,12 @@ public:
     }
     //--------------------------------------------------------------------------
 private:
+    //--------------------------------------------------------------------------
+    void severity_updated_event()
+    {
+        m_min_severity = m_back.min_severity();
+    }
+    //--------------------------------------------------------------------------
     enum state
     {
         no_init,

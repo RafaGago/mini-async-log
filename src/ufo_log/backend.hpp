@@ -39,6 +39,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <cstring>
 #include <cassert>
+#include <functional>
 #include <new>
 #include <ostream>
 
@@ -65,6 +66,7 @@ class async_to_sync;
 class backend_impl
 {
 public:
+    typedef std::function<void()> sev_update_evt;
     //--------------------------------------------------------------------------
     backend_impl()
     {
@@ -129,7 +131,12 @@ public:
         return m_cfg;
     }
     //--------------------------------------------------------------------------
-    bool init (const backend_cfg& c, async_to_sync& sync, u64 timestamp_base)
+    bool init(
+        const backend_cfg&    c,
+        async_to_sync&        sync,
+        u64                   timestamp_base,
+        const sev_update_evt& su
+        )
     {
         if (!validate_cfg (c)) { return false; }
 
@@ -174,6 +181,7 @@ public:
         m_files.set_timestamp_base (timestamp_base);
 
         m_status.store (initialized, mo_release);                               // I guess that all Kernels do this for me when launching a thread, just being on the safe side in case is not true
+        m_sev_evt    = su;
         m_log_thread = th::thread ([this](){ this->thread(); });
 
         while (m_status.load (mo_relaxed) == initialized)
@@ -271,6 +279,7 @@ private:
         m_status.store (running, mo_relaxed);
         uword alloc_fault = m_alloc_fault.load (mo_relaxed);
         auto  next_flush  = ch::steady_clock::now() + ch::milliseconds (1000);
+        auto  sev_check   = ch::steady_clock::now() + ch::milliseconds (1000);
         new_file_name_to_buffer();
 
         while (true)
@@ -301,6 +310,11 @@ private:
                     {
                         next_flush = now + ch::milliseconds (1000);
                         m_out.flush();
+                    }
+                    if (now >= sev_check)
+                    {
+                        sev_check = now + ch::milliseconds (1000);
+                        severity_check();
                     }
                 }
                 m_wait.block();
@@ -405,6 +419,65 @@ private:
         }
     }
     //--------------------------------------------------------------------------
+    void severity_check()
+    {
+        sev::severity err_prev, out_prev, file_prev, err, out, file;
+        err  = err_prev  = m_out.stderr_sev();
+        out  = out_prev  = m_out.stdout_sev();
+        file = file_prev = m_out.file_sev();
+
+        sev_read (file, m_cfg.sev.file_sev_fd);
+        sev_read (err, m_cfg.sev.stderr_sev_fd);
+        sev_read (out, m_cfg.sev.stdout_sev_fd);
+
+        bool change = false;
+
+        if (err_prev != err || out_prev != out)
+        {
+            if (out < err || out == sev::off)
+            {
+                m_out.set_console_severity (err, out);
+                change = true;
+            }
+        }
+
+        if (file_prev != file)
+        {
+            m_out.set_file_severity (file);
+            change = true;
+        }
+
+        if (change && m_sev_evt)
+        {
+            m_sev_evt();
+        }
+    }
+    //--------------------------------------------------------------------------
+    void sev_read (sev::severity& s, const std::string& fd)
+    {
+        if (fd.size())
+        {
+            int rs = sev_fd_check (fd.c_str());
+            if (rs >= sev::debug && rs < sev::invalid)
+            {
+                s = (sev::severity) rs;
+            }
+        }
+    }
+    //--------------------------------------------------------------------------
+    int sev_fd_check (const char* fd_path)
+    {
+        assert (fd_path);
+        int v = -1;
+        std::ifstream fd (fd_path);
+        if (fd.is_open())
+        {
+            fd >> v;
+            return v;
+        }
+        return -1;
+    }
+    //--------------------------------------------------------------------------
     enum status
     {
         constructed,
@@ -417,6 +490,7 @@ private:
     //--------------------------------------------------------------------------
     output            m_out;
     log_writer        m_writer;
+    sev_update_evt    m_sev_evt;
     backend_cfg       m_cfg;
     log_files         m_files;
     th::thread        m_log_thread;

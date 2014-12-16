@@ -89,11 +89,19 @@ struct backend_visualization_config
     bool show_severity;
 };
 //------------------------------------------------------------------------------
+struct backend_severity_files                                                   //These files will be tried to read periodically by the worker when idle to set update the log priority if required. If for some reason you want to save disk accesses you can make them memory mapped.
+{
+    std::string file_sev_fd;
+    std::string stdout_sev_fd;
+    std::string stderr_sev_fd;
+};
+//------------------------------------------------------------------------------
 struct backend_cfg
 {
     backend_file_config            file;
     backend_log_entry_alloc_config alloc;
     backend_visualization_config   display;
+    backend_severity_files         sev;
     mpsc_hybrid_wait_cfg           blocking;
 }; //class log_backend_cfg
 //------------------------------------------------------------------------------

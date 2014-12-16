@@ -108,12 +108,27 @@ public:
         m_file_sev = sev;
     }
     //--------------------------------------------------------------------------
+    sev::severity stderr_sev() const
+    {
+        return (sev::severity) m_stderr_sev;
+    }
+    //--------------------------------------------------------------------------
+    sev::severity stdout_sev() const
+    {
+        return (sev::severity) m_stdout_sev;
+    }
+    //--------------------------------------------------------------------------
+    sev::severity file_sev() const
+    {
+        return (sev::severity) m_file_sev;
+    }
+    //--------------------------------------------------------------------------
     sev::severity min_severity() const
     {
         sev::severity err, out, file;
-        err   = (sev::severity) m_stderr_sev;
-        out   = (sev::severity) m_stdout_sev;
-        file  = (sev::severity) m_file_sev;
+        err   = stderr_sev();
+        out   = stdout_sev();
+        file  = file_sev();
 
         auto min = (err <= out)  ? err : out;
         min      = (min <= file) ? min : file;
