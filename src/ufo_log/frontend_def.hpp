@@ -68,23 +68,27 @@ public:
     {
         assert (m_state.load (mo_relaxed) == init);
         ser::exporter e;
-        uint8* mem = m_back.allocate_entry (required_bytes);
-        if (mem)
+        auto commit_data = m_back.allocate_entry (required_bytes);
+        if (commit_data.get_mem())
         {
-            e.init (mem, required_bytes);
+            e.init (commit_data.get_mem(), required_bytes);
+            e.opaque_data.write (commit_data);
         }
+        static_assert(
+            decltype (e.opaque_data)::bytes >= sizeof commit_data,
+            "not enough opaque storage"
+            );
         return e;
     }
     //--------------------------------------------------------------------------
     bool sync_push_encoded(
-            ser::exporter encoder, sync_point& sync
+            ser::exporter& encoder, sync_point& sync
             )
     {
         assert (m_state.load (mo_relaxed) == init);
         if (encoder.has_memory())
         {
-            uint8* mem = encoder.get_memory();
-            m_back.push_allocated_entry (mem);
+            m_back.push_entry (encoder.opaque_data.read_as<queue_prepared>());
             return m_sync.wait (sync);
         }
         else
@@ -94,13 +98,12 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-    void async_push_encoded (ser::exporter encoder)
+    void async_push_encoded (ser::exporter& encoder)
     {
         assert (m_state.load (mo_relaxed) == init);
         if (encoder.has_memory())
         {
-            uint8* mem = encoder.get_memory();
-            m_back.push_allocated_entry (mem);
+            m_back.push_entry (encoder.opaque_data.read_as<queue_prepared>());
         }
         else
         {
@@ -263,15 +266,17 @@ ser::exporter UFO_LIB_EXPORTED_CLASS
     return m->get_encoder (required_bytes);
 }
 //------------------------------------------------------------------------------
-void UFO_LIB_EXPORTED_CLASS frontend::async_push_encoded (ser::exporter encoder)
+void UFO_LIB_EXPORTED_CLASS frontend::async_push_encoded(
+        ser::exporter& encoder
+        )
 {
     assert (is_constructed());
     m->async_push_encoded (encoder);
 }
 //--------------------------------------------------------------------------
 bool UFO_LIB_EXPORTED_CLASS frontend::sync_push_encoded(
-        ser::exporter encoder,
-        sync_point&   sync
+        ser::exporter& encoder,
+        sync_point&    sync
         )
 {
     assert (is_constructed());

@@ -86,11 +86,11 @@ public:
     //--------------------------------------------------------------------------
     ser::exporter get_encoder (uword required_bytes);
     //--------------------------------------------------------------------------
-    void async_push_encoded (ser::exporter encoder);
+    void async_push_encoded (ser::exporter& encoder);
     //--------------------------------------------------------------------------
     bool sync_push_encoded(                                                     //this is an emergency call that blocks the caller until the entry is dequeued by the file worker, it has more overhead and scales very poorly, so if you are using this often you may need to switch to a traditional synchronous-logger. returns false if interrupted/on termination.
-            ser::exporter encoder,
-            sync_point&   syncer
+            ser::exporter& encoder,
+            sync_point&    syncer
             );
     //--------------------------------------------------------------------------
     void on_termination();                                                      //you may want to call this from e.g. SIGTERM handlers, be aware that all the data generators/producer should be stopped before to guarantee that the queue can be left completely empty (no memory leaks).

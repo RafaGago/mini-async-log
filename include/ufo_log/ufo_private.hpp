@@ -64,7 +64,7 @@ either expressed or implied, of Rafael Gago Castano.
                 UFO_DECLTYPE_WRAP (__VA_ARGS__)\
                     > (UFO_GET_FMT_STR_PRIVATE (__VA_ARGS__))>()
 
-#else //Microsoft crippled mode
+#else //Microsoft (mostly) mode
 
 namespace ufo { namespace macro {
 
@@ -101,8 +101,8 @@ struct log_every_needs_values_greater_than
 {
     static const unsigned value = count - 1;
 };
-template <> struct log_every_needs_values_greater_than<(unsigned) 0> {};                   //functions logging every n can't be used with values smaller than 2
-template <> struct log_every_needs_values_greater_than<(unsigned) 1> {};                   //functions logging every n can't be used with values smaller than 2
+template <> struct log_every_needs_values_greater_than<(unsigned) 0> {};        //functions logging every n can't be used with values smaller than 2
+template <> struct log_every_needs_values_greater_than<(unsigned) 1> {};        //functions logging every n can't be used with values smaller than 2
 
 inline bool silence_warnings() { return true; }
 

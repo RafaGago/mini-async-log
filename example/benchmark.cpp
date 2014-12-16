@@ -388,48 +388,58 @@ void ufo_tests (ufo::uword msgs)
 {
     ufo_tester ufo_test;
 
-    std::printf ("no heap------------------------------------------\n");
-
-    ufo_test.set_params (64 * 1024 * 1024, 32, false);
-    ufo_test.run (msgs, 1);
-
-    ufo_test.set_params (64 * 1024 * 1024, 32, false);
-    ufo_test.run (msgs, 2);
-
-    ufo_test.set_params (64 * 1024 * 1024, 32, false);
-    ufo_test.run (msgs, 4);
-
-    ufo_test.set_params (64 * 1024 * 1024, 32, false);
-    ufo_test.run (msgs, 8);
-
-    std::printf ("pure heap----------------------------------------\n");
-
-    ufo_test.set_params (0, 0, true);
-    ufo_test.run (msgs, 1);
-
-    ufo_test.set_params (0, 0, true);
-    ufo_test.run (msgs, 2);
-
-    ufo_test.set_params (0, 0, true);
-    ufo_test.run (msgs, 4);
-
-    ufo_test.set_params (0, 0, true);
-    ufo_test.run (msgs, 8);
-
-    std::printf ("hybrid-------------------------------------------\n");
-
-    ufo_test.set_params (1024 * 128, 32, true);
-    ufo_test.run (msgs, 1);
+//    std::printf ("pure heap----------------------------------------\n");
+//
+//    ufo_test.set_params (0, 0, true);
+//    ufo_test.run (msgs, 1);
+//
+//    ufo_test.set_params (0, 0, true);
+//    ufo_test.run (msgs, 2);
+//
+//    ufo_test.set_params (0, 0, true);
+//    ufo_test.run (msgs, 4);
+//
+//    ufo_test.set_params (0, 0, true);
+//    ufo_test.run (msgs, 8);
+//
+//    ufo_test.set_params (0, 0, true);
+//    ufo_test.run (msgs, 16);
+//
+//    std::printf ("hybrid-------------------------------------------\n");
+//
+//    ufo_test.set_params (1024 * 128, 32, true);
+//    ufo_test.run (msgs, 1);
+//
+//    ufo_test.set_params (1024 * 128, 32, true);
+//    ufo_test.run (msgs, 2);
+//
+//    ufo_test.set_params (1024 * 128, 32, true);
+//    ufo_test.run (msgs, 4);
+//
+//    ufo_test.set_params (1024 * 128, 32, true);
+//    ufo_test.run (msgs, 8);
 
     ufo_test.set_params (1024 * 128, 32, true);
-    ufo_test.run (msgs, 2);
+    ufo_test.run (msgs, 16);
 
-    ufo_test.set_params (1024 * 128, 32, true);
-    ufo_test.run (msgs, 4);
-
-    ufo_test.set_params (1024 * 128, 32, true);
-    ufo_test.run (msgs, 8);
+//    std::printf ("no heap------------------------------------------\n");
+//
+//    ufo_test.set_params (64 * 1024 * 1024, 32, false);
+//    ufo_test.run (msgs, 1);
+//
+//    ufo_test.set_params (64 * 1024 * 1024, 32, false);
+//    ufo_test.run (msgs, 2);
+//
+//    ufo_test.set_params (64 * 1024 * 1024, 32, false);
+//    ufo_test.run (msgs, 4);
+//
+//    ufo_test.set_params (64 * 1024 * 1024, 32, false);
+//    ufo_test.run (msgs, 8);
+//
+//    ufo_test.set_params (64 * 1024 * 1024, 32, false);
+//    ufo_test.run (msgs, 16);
 }
+
 //------------------------------------------------------------------------------
 void do_a_pause()                                                               //time for the OS to finish some file io, otherwise some results were weird.
 {

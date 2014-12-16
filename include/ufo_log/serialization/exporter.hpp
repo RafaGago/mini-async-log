@@ -45,6 +45,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/serialization/basic_encoder_decoder.hpp>
 #include <ufo_log/serialization/importer_exporter.hpp>
 #include <ufo_log/util/integral_enable_if.hpp>
+#include <ufo_log/util/opaque_pod.hpp>
 
 #ifndef UFO_NO_VARIABLE_INTEGER_WIDTH
     #include <ufo_log/util/integer_bits.hpp>
@@ -295,6 +296,8 @@ public:
     {
         encode_delimited ((delimited_mem) s, f);
     }
+    //--------------------------------------------------------------------------
+    opaque_pod<16> opaque_data;
     //--------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 /*
 --------------------------------------------------------------------------------
 The code as presented here:
-http://www.1024cores.net/home/lock-free-algorithms/queues/bounded-mpmc-queue
+http://www.1024cores.net/home/lock-free-algorithms/queues/intrusive-mpsc-node-based-queue
 is licensed by Dmitry Vyukov under the terms below:
 
 BSD 2-clause license
@@ -37,8 +37,8 @@ either expressed or implied, of Dmitry Vyukov.
 The code in its current form adds the license below:
 
 The BSD 3-clause license
---------------------------------------------------------------------------------
-Copyright (c) 2014 Rafael Gago Castano. All rights reserved.
+
+Copyright (c) 2013-2014 Rafael Gago Castano. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
  are permitted provided that the following conditions are met:
@@ -73,59 +73,125 @@ either expressed or implied, of Rafael Gago Castano.
 
 #if THIS_IS_UNUSED
 
-#ifndef UFO_LOG_MPSC_BOUNDED_HPP_
-#define UFO_LOG_MPSC_BOUNDED_HPP_
+#ifndef UFO_LOG_MEMORY_MPMC_BOUNDED_HPP_
+#define UFO_LOG_MEMORY_MPMC_BOUNDED_HPP_
 
 #include <cassert>
+#include <new>
+#include <stddef.h>
+#include <ufo_log/util/system.hpp>
 #include <ufo_log/util/atomic.hpp>
 
 namespace ufo {
 
 // This is the Djukov MPMC queue that adds the trivial conversion to single
-// producer or single consumer funcions so it can be used as a mpmc, spmc or
+// producer or single consumer functions so it can be used as a mpmc, spmc or
 // mpsc. Of course you can't mix two different producer modes on the same queue.
 //
-// I just didn't want to add template policies but it can be easily done.
-
+// todo: if this is to be used some day move both buffer to be a contiguous
+// chunk for better memory locality.
+//--------------------------------------------------------------------------
+class mem_mpmc_b_prepared
+{
+public:
+    //----------------------------------------------------------------------
+    mem_mpmc_b_prepared()
+    {
+        cell = mem = nullptr;
+        size = pos = 0;
+    }
+    //----------------------------------------------------------------------
+    u8*    mem;
+    size_t size;
+    //----------------------------------------------------------------------
+private:
+    //----------------------------------------------------------------------
+    friend class mem_mpmc_b;
+    void*  cell;
+    size_t pos;
+    //----------------------------------------------------------------------
+};
 //------------------------------------------------------------------------------
-template<typename T>
-class mpmc_b_fifo
+class mem_mpmc_b
 {
 public:
     //--------------------------------------------------------------------------
-    mpmc_b_fifo (size_t buffer_size) :
-          m_buffer      (nullptr),
-          m_buffer_mask (buffer_size - 1)
+    mem_mpmc_b()
     {
-        assert ((buffer_size >= 2) && ((buffer_size & (buffer_size - 1)) == 0));
-
-        m_buffer = new cell_t [buffer_size];
-
-        for (size_t i = 0; i != buffer_size; i += 1)
-        {
-            m_buffer[i].m_sequence = i;
-        }
+        m_buffer      = nullptr;
+        m_mem         = nullptr;
+        m_buffer_mask = 0;
+        m_entry_size  = 0;
         m_enqueue_pos = 0;
         m_dequeue_pos = 0;
     }
     //--------------------------------------------------------------------------
-    ~mpmc_b_fifo()
+    ~mem_mpmc_b()
+    {
+        clear();
+    }
+    //--------------------------------------------------------------------------
+    void clear()                                                                //Dangerous, just to be used after failed initializations
     {
         if (m_buffer)
         {
             delete [] m_buffer;
         }
+        if (m_mem)
+        {
+            ::operator delete (m_mem);
+        }
     }
     //--------------------------------------------------------------------------
-    bool mp_bounded_push (T const& data)
+    bool init (size_t total_bytes, size_t entries)
+    {
+        if ((entries >= 2) &&
+            ((entries & (entries - 1)) == 0) &&
+            (total_bytes >= entries) &&
+            !initialized()
+            )
+        {
+            clear();
+            auto real_bytes = (total_bytes / entries) * entries;
+
+            m_entry_size  = real_bytes / entries;
+            m_enqueue_pos = 0;
+            m_dequeue_pos = 0;
+            m_buffer_mask = entries - 1;
+
+            m_buffer = new (std::nothrow) cell_t [entries];
+            if (!m_buffer) { return false; }
+
+            m_mem = (u8*) ::operator new (real_bytes, std::nothrow);
+            if (!m_mem) { return false; }
+
+            for (size_t i = 0; i != entries; i += 1)
+            {
+                m_buffer[i].sequence = i;
+                m_buffer[i].mem      = m_mem + (i * m_entry_size);
+            }
+            return true;
+        }
+        return false;
+    }
+    //--------------------------------------------------------------------------
+    bool initialized() const
+    {
+        return m_buffer && m_mem;
+    }
+    //--------------------------------------------------------------------------
+    size_t entry_size() const { return m_entry_size; }
+    //--------------------------------------------------------------------------
+    mem_mpmc_b_prepared mp_bounded_push_prepare()
     {
         assert (m_buffer);
+        mem_mpmc_b_prepared pp;
         cell_t* cell;
         size_t pos = m_enqueue_pos;
         for (;;)
         {
             cell          = &m_buffer[pos & m_buffer_mask];
-            size_t seq    = cell->m_sequence.load (mo_acquire);
+            size_t seq    = cell->sequence.load (mo_acquire);
             intptr_t diff = (intptr_t) seq - (intptr_t) pos;
             if (diff == 0)
             {
@@ -138,45 +204,58 @@ public:
             }
             else if (diff < 0)
             {
-                return false;
+                return pp;
             }
             else
             {
                 pos = m_enqueue_pos;
             }
         }
-        cell->m_data = data;
-        cell->m_sequence.store (pos + 1, mo_release);
-
-        return true;
+        pp.cell = cell;
+        pp.pos  = pos + 1;
+        pp.mem  = (u8*) cell->mem;
+        pp.size = entry_size();
+        return pp;
     }
     //--------------------------------------------------------------------------
-    bool sp_bounded_push (T const& data)
+    mem_mpmc_b_prepared sp_bounded_push_prepare()
     {
         assert (m_buffer);
+        mem_mpmc_b_prepared pp;
         cell_t* cell  = &m_buffer[m_enqueue_pos & m_buffer_mask];
-        size_t seq    = cell->m_sequence.load (mo_acquire);
+        size_t seq    = cell->sequence.load (mo_acquire);
         intptr_t diff = (intptr_t) seq - (intptr_t) m_enqueue_pos;
         if (diff == 0)
         {
             ++m_enqueue_pos;
-            cell->m_data = data;
-            cell->m_sequence.store (m_enqueue_pos, mo_release);
-            return true;
+            pp.cell = cell;
+            pp.pos  = m_enqueue_pos;
+            pp.mem  = (u8*) cell->mem;
+            pp.size = entry_size();
+            return pp;
         }
         assert (diff < 0);
-        return false;
+        return pp;
     }
     //--------------------------------------------------------------------------
-    bool mc_pop (T& data)
+    void bounded_push_commit (const mem_mpmc_b_prepared& pp)
+    {
+        if (pp.cell)
+        {
+            ((cell_t*) pp.cell)->sequence.store (pp.pos, mo_release);
+        }
+    }
+    //--------------------------------------------------------------------------
+    mem_mpmc_b_prepared mc_pop_prepare()
     {
         assert (m_buffer);
+        mem_mpmc_b_prepared pp;
         cell_t* cell;
         size_t pos = m_dequeue_pos;
         for (;;)
         {
             cell          = &m_buffer[pos & m_buffer_mask];
-            size_t seq    = cell->m_sequence.load (mo_acquire);
+            size_t seq    = cell->sequence.load (mo_acquire);
             intptr_t diff = (intptr_t) seq - (intptr_t) (pos + 1);
             if (diff == 0)
             {
@@ -189,45 +268,54 @@ public:
             }
             else if (diff < 0)
             {
-                return false;
+                return pp;
             }
             else
             {
                 pos = m_dequeue_pos;
             }
         }
-
-        data = cell->m_data;
-        cell->m_sequence.store (pos + m_buffer_mask + 1, mo_release);
-
-        return true;
+        pp.cell = cell;
+        pp.pos  = pos + m_buffer_mask + 1;
+        pp.mem  = (u8*) cell->mem;
+        pp.size = entry_size();
+        return pp;
     }
     //--------------------------------------------------------------------------
-    bool sc_pop (T& data)
+    mem_mpmc_b_prepared sc_pop_prepare()
     {
         assert (m_buffer);
+        mem_mpmc_b_prepared pp;
         cell_t* cell  = &m_buffer[m_dequeue_pos & m_buffer_mask];
-        size_t seq    = cell->m_sequence.load (mo_acquire);
+        size_t seq    = cell->sequence.load (mo_acquire);
         intptr_t diff = (intptr_t) seq - (intptr_t) (m_dequeue_pos + 1);
         if (diff == 0)
         {
             ++m_dequeue_pos;
-            data = cell->m_data;
-            cell->m_sequence.store(
-                    m_dequeue_pos + m_buffer_mask, mo_release
-                    );
-            return true;
+            pp.cell = cell;
+            pp.pos  = m_dequeue_pos + m_buffer_mask;
+            pp.mem  = (u8*) cell->mem;
+            pp.size = entry_size();
+            return pp;
         }
         assert (diff < 0);
-        return false;
+        return pp;
+    }
+    //--------------------------------------------------------------------------
+    void pop_commit (const mem_mpmc_b_prepared& pp)
+    {
+        if (pp.cell)
+        {
+            ((cell_t*) pp.cell)->sequence.store (pp.pos, mo_release);
+        }
     }
     //--------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------
     struct cell_t
     {
-        at::atomic<size_t> m_sequence;
-        T                  m_data;
+        at::atomic<size_t> sequence;
+        void*              mem;
     };
     //--------------------------------------------------------------------------
     typedef char cacheline_pad_t [cache_line_size];
@@ -235,7 +323,9 @@ private:
     cacheline_pad_t           m_pad0;
 
     cell_t*                   m_buffer;
-    size_t const              m_buffer_mask;
+    size_t                    m_buffer_mask;
+    size_t                    m_entry_size;
+    u8*                       m_mem;
 
     cacheline_pad_t           m_pad1;
 
@@ -247,12 +337,12 @@ private:
 
     cacheline_pad_t           m_pad3;
 
-    mpmc_b_fifo (mpmc_b_fifo const&);
-    void operator= (mpmc_b_fifo const&);
+    mem_mpmc_b (mem_mpmc_b const&);
+    void operator= (mem_mpmc_b const&);
 };
 //------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* UFO_LOG_MPSC_BOUNDED_HPP_ */
+#endif /* UFO_LOG_MEMORY_MPMC_BOUNDED_HPP_ */
 
 #endif
