@@ -445,7 +445,7 @@ private:
         {
         case sev::debug   :
         {
-            char str[] = "[dbg-] ";
+            char str[] = "[dbug] ";
             o.write (str, sizeof str - 1);
             break;
         }
@@ -469,7 +469,7 @@ private:
         }
         case sev::error   :
         {
-            char str[] = "[err-] ";
+            char str[] = "[err_] ";
             o.write (str, sizeof str - 1);
             break;
         }
@@ -496,9 +496,9 @@ private:
     {
         const u64 ns_sec = 1000000000;
         u64 s = t / ns_sec;
-        output_num (o, s, "[%011llu.");
+        output_num (o, s, "%011llu.");
         t -= (s * ns_sec);
-        output_num (o, t, "%09llu] ");
+        output_num (o, t, "%09llu ");
     }
     //--------------------------------------------------------------------------
     u64            m_timestamp_base;

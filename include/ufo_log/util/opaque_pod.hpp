@@ -14,10 +14,12 @@
 namespace ufo {
 
 //------------------------------------------------------------------------------
-template<uword bytes>
+template<uword payload_bytes>
 class opaque_pod
 {
 public:
+    //--------------------------------------------------------------------------
+    static const uword bytes = payload_bytes;
     //--------------------------------------------------------------------------
     template <class T>
     void write (T val)

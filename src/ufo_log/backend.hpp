@@ -44,16 +44,15 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/thread.hpp>
-#include <ufo_log/util/mpsc.hpp>
-#include <ufo_log/util/mpsc_hybrid_wait.hpp>
 #include <ufo_log/util/atomic.hpp>
 #include <ufo_log/util/chrono.hpp>
 #include <ufo_log/util/mem_printf.hpp>
+#include <ufo_log/util/mpsc_hybrid_wait.hpp>
 
 #include <ufo_log/output.hpp>
 #include <ufo_log/frontend.hpp>
 #include <ufo_log/log_writer.hpp>
-#include <ufo_log/allocator.hpp>
+#include <ufo_log/queue.hpp>
 #include <ufo_log/backend_cfg.hpp>
 #include <ufo_log/log_files.hpp>
 #include <ufo_log/timestamp.hpp>
@@ -62,32 +61,6 @@ namespace ufo {
 
 class async_to_sync;
 
-//------------------------------------------------------------------------------
-struct node : public mpsc_node_hook
-{
-    //--------------------------------------------------------------------------
-    u8* storage()
-    {
-        return ((u8*) this) + sizeof *this;
-    }
-    //--------------------------------------------------------------------------
-    static node* from_storage (u8* mem)
-    {
-        return (node*) (mem - sizeof (node));
-    }
-    //--------------------------------------------------------------------------
-    static uword strict_total_size (uword effective_size)
-    {
-        return sizeof (node) + effective_size;
-    }
-    //--------------------------------------------------------------------------
-    static uword effective_size (uword total_size)
-    {
-        auto v = total_size - sizeof (node);
-        return (v < total_size) ? v : 0;
-    }
-    //--------------------------------------------------------------------------
-};
 //------------------------------------------------------------------------------
 class backend_impl
 {
@@ -118,36 +91,22 @@ public:
         on_termination();
     }
     //--------------------------------------------------------------------------
-    uint8* allocate_entry (uword size)
+    queue_prepared allocate_entry (uword size)
     {
         if (size)
         {
-            void* mem = m_alloc.allocate (node::strict_total_size (size));
-            if (mem)
-            {
-                return ((node*) mem)->storage();
-            }
-            else
-            {
-                m_alloc_fault.fetch_add (1, mo_relaxed);
-                return nullptr;
-            }
+            return m_fifo.mp_bounded_push_prepare (size);
         }
         else
         {
             assert (false && "invalid size");
-            return nullptr;
+            return queue_prepared();
         }
     }
     //--------------------------------------------------------------------------
-    void push_allocated_entry (uint8* entry)
+    void push_entry (const queue_prepared& entry)
     {
-        node* n             = node::from_storage (entry);
-        bool was_empty_hint = m_log_queue.push (*n);
-        if (was_empty_hint && !m_wait.never_blocks())
-        {
-            m_wait.unblock();
-        }
+        m_fifo.bounded_push_commit (entry);
     }
     //--------------------------------------------------------------------------
     void set_file_severity (sev::severity s)
@@ -181,11 +140,17 @@ public:
             assert (false && "log: already initialized");
             return false;
         }
-
-        if (!alloc_init (c.alloc))
+        uword entries = (c.alloc.fixed_block_size && c.alloc.fixed_entry_size) ?
+                (c.alloc.fixed_block_size / c.alloc.fixed_entry_size) :
+                0;
+        if (!m_fifo.init(
+                c.alloc.fixed_block_size,
+                entries,
+                c.alloc.use_heap_if_required
+                ))
         {
-            std::cerr << "[logger] allocator initialization failed\n";
-            assert (false && "allocator initialization failed");
+            std::cerr << "[logger] queue initialization failed\n";
+            assert (false && "queue initialization failed");
             return false;
         }
 
@@ -197,7 +162,7 @@ public:
                 c.file.rotation.past_files
                 ))
         {
-            m_alloc.free();
+            m_fifo.clear();
             return false;
         }
 
@@ -296,19 +261,6 @@ private:
         return true;
     }
     //--------------------------------------------------------------------------
-    bool alloc_init (const backend_log_entry_alloc_config& c)
-    {
-        assert (node::effective_size (c.fixed_entry_size) ||
-                c.use_heap_if_required
-                );
-
-        return m_alloc.init(
-                    c.fixed_block_size,
-                    c.fixed_entry_size,
-                    c.use_heap_if_required
-                    );
-    }
-    //--------------------------------------------------------------------------
     void thread()
     {
         while (m_status.load (mo_acquire) != initialized)                       // I guess that all Kernels do this for me when launching a thread, just being on the safe side in case is not true
@@ -323,8 +275,8 @@ private:
 
         while (true)
         {
-            mpsc_result res = m_log_queue.pop();
-            if (res.error == mpsc_result::no_error)
+            auto res = m_fifo.sc_pop_prepare();
+            if (res.get_mem())
             {
                 while (!non_idle_newfile_if())
                 {
@@ -332,10 +284,10 @@ private:
                     //how to and when to notify this???
                 }
                 m_wait.reset();
-                write_message (*res.node);
-                m_alloc.deallocate ((void*) res.node);
+                m_writer.decode_and_write (m_out, res.get_mem());
+                m_fifo.pop_commit (res);
             }
-            else if (res.error == mpsc_result::empty)
+            else
             {
                 if (m_status.load (mo_relaxed) != running)
                 {
@@ -352,11 +304,6 @@ private:
                     }
                 }
                 m_wait.block();
-            }
-            else
-            {
-                for (uword i = 0; i < 1000; ++i);                               //standard pause instruction to burn cycles without using battery? x86 has it...
-                continue;
             }
             uword allocf_now = m_alloc_fault.load (mo_relaxed);
             if (alloc_fault != allocf_now)
@@ -377,11 +324,6 @@ private:
                         system_clock::now().time_since_epoch()
                         ).count();
         return m_files.new_filename_in_buffer (cpu, calendar_us);
-    }
-    //--------------------------------------------------------------------------
-    void write_message (mpsc_node_hook& hook)
-    {
-        m_writer.decode_and_write (m_out, ((node&) hook).storage());
     }
     //--------------------------------------------------------------------------
     void write_alloc_fault (uword count)
@@ -479,9 +421,8 @@ private:
     log_files         m_files;
     th::thread        m_log_thread;
     at::atomic<uword> m_status;
-    ufo_allocator     m_alloc;
+    queue             m_fifo;
     mpsc_hybrid_wait  m_wait;
-    mpsc_i_fifo       m_log_queue;
     atomic_uword      m_alloc_fault;
  };
 //------------------------------------------------------------------------------

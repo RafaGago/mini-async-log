@@ -1,26 +1,95 @@
 /*
- * memory_mpmc_bounded.hpp
- *
- *  Created on: Dec 6, 2014
- *      Author: rafa
- */
+--------------------------------------------------------------------------------
+The code as presented here:
+http://www.1024cores.net/home/lock-free-algorithms/queues/intrusive-mpsc-node-based-queue
+is licensed by Dmitry Vyukov under the terms below:
+
+BSD 2-clause license
+
+Copyright (c) 2010-2011 Dmitry Vyukov. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+ are permitted provided that the following conditions are met:
+
+   1. Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY DMITRY VYUKOV "AS IS" AND ANY EXPRESS OR IMPLIED
+WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+SHALL DMITRY VYUKOV OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of Dmitry Vyukov.
+
+--------------------------------------------------------------------------------
+The code in its current form adds the license below:
+
+The BSD 3-clause license
+
+Copyright (c) 2013-2014 Rafael Gago Castano. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+ are permitted provided that the following conditions are met:
+
+   1. Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+   3. Neither the name of the copyright holder nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY RAFAEL GAGO CASTANO "AS IS" AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+SHALL RAFAEL GAGO CASTANO OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of Rafael Gago Castano.
+--------------------------------------------------------------------------------
+*/
+
+#if THIS_IS_UNUSED
 
 #ifndef UFO_LOG_MEMORY_MPMC_BOUNDED_HPP_
 #define UFO_LOG_MEMORY_MPMC_BOUNDED_HPP_
 
 #include <cassert>
 #include <new>
+#include <stddef.h>
+#include <ufo_log/util/system.hpp>
 #include <ufo_log/util/atomic.hpp>
 
 namespace ufo {
 
 // This is the Djukov MPMC queue that adds the trivial conversion to single
-// producer or single consumer funcions so it can be used as a mpmc, spmc or
+// producer or single consumer functions so it can be used as a mpmc, spmc or
 // mpsc. Of course you can't mix two different producer modes on the same queue.
 //
-// It is just tought to suit my needs by breaking the push and pop function in
-// two parts or with order wording, made half intrusive.
-//
+// todo: if this is to be used some day move both buffer to be a contiguous
+// chunk for better memory locality.
 //--------------------------------------------------------------------------
 class mem_mpmc_b_prepared
 {
@@ -37,17 +106,17 @@ public:
     //----------------------------------------------------------------------
 private:
     //----------------------------------------------------------------------
-    friend class mem_mpmc_b_fifo;
+    friend class mem_mpmc_b;
     void*  cell;
     size_t pos;
     //----------------------------------------------------------------------
 };
 //------------------------------------------------------------------------------
-class mem_mpmc_b_fifo
+class mem_mpmc_b
 {
 public:
     //--------------------------------------------------------------------------
-    mem_mpmc_b_fifo()
+    mem_mpmc_b()
     {
         m_buffer      = nullptr;
         m_mem         = nullptr;
@@ -57,7 +126,7 @@ public:
         m_dequeue_pos = 0;
     }
     //--------------------------------------------------------------------------
-    ~mem_mpmc_b_fifo()
+    ~mem_mpmc_b()
     {
         clear();
     }
@@ -144,7 +213,7 @@ public:
         }
         pp.cell = cell;
         pp.pos  = pos + 1;
-        pp.mem  = cell->mem;
+        pp.mem  = (u8*) cell->mem;
         pp.size = entry_size();
         return pp;
     }
@@ -161,7 +230,7 @@ public:
             ++m_enqueue_pos;
             pp.cell = cell;
             pp.pos  = m_enqueue_pos;
-            pp.mem  = cell->mem;
+            pp.mem  = (u8*) cell->mem;
             pp.size = entry_size();
             return pp;
         }
@@ -208,7 +277,7 @@ public:
         }
         pp.cell = cell;
         pp.pos  = pos + m_buffer_mask + 1;
-        pp.mem  = cell->mem;
+        pp.mem  = (u8*) cell->mem;
         pp.size = entry_size();
         return pp;
     }
@@ -225,7 +294,7 @@ public:
             ++m_dequeue_pos;
             pp.cell = cell;
             pp.pos  = m_dequeue_pos + m_buffer_mask;
-            pp.mem  = cell->mem;
+            pp.mem  = (u8*) cell->mem;
             pp.size = entry_size();
             return pp;
         }
@@ -254,8 +323,8 @@ private:
     cacheline_pad_t           m_pad0;
 
     cell_t*                   m_buffer;
-    size_t const              m_buffer_mask;
-    size_t const              m_entry_size;
+    size_t                    m_buffer_mask;
+    size_t                    m_entry_size;
     u8*                       m_mem;
 
     cacheline_pad_t           m_pad1;
@@ -268,10 +337,12 @@ private:
 
     cacheline_pad_t           m_pad3;
 
-    mpmc_b_fifo (mpmc_b_fifo const&);
-    void operator= (mpmc_b_fifo const&);
+    mem_mpmc_b (mem_mpmc_b const&);
+    void operator= (mem_mpmc_b const&);
 };
 //------------------------------------------------------------------------------
 } //namespaces
 
 #endif /* UFO_LOG_MEMORY_MPMC_BOUNDED_HPP_ */
+
+#endif

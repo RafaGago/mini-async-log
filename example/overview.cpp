@@ -15,24 +15,28 @@ inline ufo::frontend& get_ufo_logger_instance()
 void general_features()
 {
     using namespace ufo;
-    ufo::frontend& fe               = get_ufo_logger_instance();
+    ufo::frontend& fe                 = get_ufo_logger_instance();
     if (!fe.is_constructed())
     {
         return; //new failed in static initializator
     }
-    auto be_cfg                     = fe.get_backend_cfg();
-    be_cfg.file.name_prefix         = "test-data.";
-    be_cfg.file.name_suffix         = ".log.txt";
+    auto be_cfg                       = fe.get_backend_cfg();
+    be_cfg.file.name_prefix           = "test-data.";
+    be_cfg.file.name_suffix           = ".log.txt";
 #ifndef UFO_WINDOWS
-    be_cfg.file.out_folder          = "./log_out/";                             //this folder has to exist before running
+    be_cfg.file.out_folder            = "./log_out/";                             //this folder has to exist before running
 #else
-    be_cfg.file.out_folder          = ".\\log_out\\";                           //this folder has to exist before running
+    be_cfg.file.out_folder            = ".\\log_out\\";                           //this folder has to exist before running
 #endif
-    be_cfg.file.aprox_size          = 512 * 1024;
-    be_cfg.file.rotation.file_count = 0;
+    be_cfg.file.aprox_size            = 512 * 1024;
+    be_cfg.file.rotation.file_count   = 0;
 
-    be_cfg.display.show_severity    = true;
-    be_cfg.display.show_timestamp   = true;
+    be_cfg.display.show_severity      = true;
+    be_cfg.display.show_timestamp     = true;
+
+    be_cfg.alloc.fixed_entry_size     = 32;
+    be_cfg.alloc.fixed_block_size     = be_cfg.alloc.fixed_entry_size * 16;
+    be_cfg.alloc.use_heap_if_required = true;
 
     if (fe.init_backend (be_cfg) != frontend::init_ok) { return; }
 

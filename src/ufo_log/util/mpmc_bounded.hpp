@@ -71,6 +71,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
+#if THIS_IS_UNUSED
+
 #ifndef UFO_LOG_MPSC_BOUNDED_HPP_
 #define UFO_LOG_MPSC_BOUNDED_HPP_
 
@@ -252,3 +254,5 @@ private:
 } //namespaces
 
 #endif /* UFO_LOG_MPSC_BOUNDED_HPP_ */
+
+#endif
