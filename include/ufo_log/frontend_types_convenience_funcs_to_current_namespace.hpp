@@ -16,8 +16,8 @@ inline ufo::deep_copy_bytes bytes (void* mem, ufo::uword size)
 }
 //------------------------------------------------------------------------------
 inline ufo::deep_copy_string deep_copy(
-		const char* mem, ufo::uword size_no_null_term
-		)
+         const char* mem, ufo::uword size_no_null_term
+         )
 {
     assert (mem && size_no_null_term);
     assert (mem[size_no_null_term - 1] != 0);
@@ -40,10 +40,10 @@ inline ufo::deep_copy_string deep_copy (const std::string& str)
 }
 //------------------------------------------------------------------------------
 inline ufo::deep_copy_string deep(
-		const char* mem, ufo::uword size_no_null_term
-		)
+        const char* mem, ufo::uword size_no_null_term
+        )
 {
-	return deep_copy (mem, size_no_null_term);
+    return deep_copy (mem, size_no_null_term);
 }
 //------------------------------------------------------------------------------
 inline ufo::deep_copy_string deep (const char* str)                             //you should be avoiding strlen by taking the overload that takes the size if possible, this function is just written for cases where there really is something better.
@@ -66,7 +66,7 @@ inline ufo::literal_wrapper lit (const char* literal)                           
 //------------------------------------------------------------------------------
 inline ufo::ptr_wrapper ptr (const void* pointer)                                //The pointers have to be marked explicitly, I could add a modifier in the fmt string (less verbose), but the code has to work in compilers that can't run the compile time validation
 {
-	ufo::ptr_wrapper l;
+    ufo::ptr_wrapper l;
     l.ptr = pointer;
     return l;
 }
