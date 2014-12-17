@@ -34,8 +34,8 @@ either expressed or implied, of Diadrom AB.
 --------------------------------------------------------------------------------
 */
 
-#ifndef INTEGER_BITS_AND_FUNCS_H_
-#define INTEGER_BITS_AND_FUNCS_H_
+#ifndef UFO_INTEGER_BITS_AND_FUNCS_H_
+#define UFO_INTEGER_BITS_AND_FUNCS_H_
 
 //This file is a C header, don't use C++ features
 

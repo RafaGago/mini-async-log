@@ -34,8 +34,8 @@ either expressed or implied, of Diadrom AB.
 --------------------------------------------------------------------------------
 */
 
-#ifndef INTEGER_BITS_HPP_
-#define INTEGER_BITS_HPP_
+#ifndef UFO_INTEGER_BITS_HPP_
+#define UFO_INTEGER_BITS_HPP_
 
 //overloads for integer_bits.h
 
