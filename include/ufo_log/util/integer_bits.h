@@ -84,6 +84,10 @@ either expressed or implied, of Diadrom AB.
 
 #endif
 
+#if defined (__cplusplus)
+namespace ufo {
+#endif
+
 // todo: if gcc, have a look at
 // __builtin_popcount (unsigned),
 // __builtin_popcountl (unsigned long),
@@ -1073,6 +1077,10 @@ uint64_t byte_array_read_be_64 (const uint8_t* in) //be = big endian
            ((uint64_t) in[3] << 32) | ((uint64_t) in[2] << 40) |
            ((uint64_t) in[1] << 48) | ((uint64_t) in[0] << 56);
 }
+
+#if defined (__cplusplus)
+} //namespace ufo {
+#endif
 
 #ifndef __cplusplus
 
