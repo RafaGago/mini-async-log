@@ -50,11 +50,6 @@ either expressed or implied, of Rafael Gago Castano.
 namespace ufo {
 
 //------------------------------------------------------------------------------
-void log_error_call (const char* str)
-{
-    //todo throwing here is possible
-}
-//------------------------------------------------------------------------------
 template <class T, class field>
 inline bool prebuild_data (T& v, field& f, uword& total_length)
 {
@@ -202,7 +197,6 @@ bool new_entry(                                                                 
             return fe.sync_push_encoded (enc, sync);
         }
     }
-    log_error_call ("couldn't allocate encoder\n");
     return false;
 }
 //------------------------------------------------------------------------------
