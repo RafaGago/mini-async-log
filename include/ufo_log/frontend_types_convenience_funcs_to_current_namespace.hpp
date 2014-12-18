@@ -6,7 +6,7 @@
  */
 
 //------------------------------------------------------------------------------
-inline ufo::deep_copy_bytes bytes (void* mem, ufo::uword size)
+inline ufo::deep_copy_bytes bytes (const void* mem, ufo::uword size)
 {
     assert (mem && size);
     ufo::deep_copy_bytes b;
