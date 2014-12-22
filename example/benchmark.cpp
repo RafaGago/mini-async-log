@@ -388,56 +388,56 @@ void mal_tests (mal::uword msgs)
 {
     mal_tester mal_test;
 
-//    std::printf ("pure heap----------------------------------------\n");
-//
-//    mal_test.set_params (0, 0, true);
-//    mal_test.run (msgs, 1);
-//
-//    mal_test.set_params (0, 0, true);
-//    mal_test.run (msgs, 2);
-//
-//    mal_test.set_params (0, 0, true);
-//    mal_test.run (msgs, 4);
-//
-//    mal_test.set_params (0, 0, true);
-//    mal_test.run (msgs, 8);
-//
-//    mal_test.set_params (0, 0, true);
-//    mal_test.run (msgs, 16);
-//
-//    std::printf ("hybrid-------------------------------------------\n");
-//
-//    mal_test.set_params (1024 * 128, 32, true);
-//    mal_test.run (msgs, 1);
-//
-//    mal_test.set_params (1024 * 128, 32, true);
-//    mal_test.run (msgs, 2);
-//
-//    mal_test.set_params (1024 * 128, 32, true);
-//    mal_test.run (msgs, 4);
-//
-//    mal_test.set_params (1024 * 128, 32, true);
-//    mal_test.run (msgs, 8);
+    std::printf ("pure heap----------------------------------------\n");
+
+    mal_test.set_params (0, 0, true);
+    mal_test.run (msgs, 1);
+
+    mal_test.set_params (0, 0, true);
+    mal_test.run (msgs, 2);
+
+    mal_test.set_params (0, 0, true);
+    mal_test.run (msgs, 4);
+
+    mal_test.set_params (0, 0, true);
+    mal_test.run (msgs, 8);
+
+    mal_test.set_params (0, 0, true);
+    mal_test.run (msgs, 16);
+
+    std::printf ("hybrid-------------------------------------------\n");
+
+    mal_test.set_params (1024 * 128, 32, true);
+    mal_test.run (msgs, 1);
+
+    mal_test.set_params (1024 * 128, 32, true);
+    mal_test.run (msgs, 2);
+
+    mal_test.set_params (1024 * 128, 32, true);
+    mal_test.run (msgs, 4);
+
+    mal_test.set_params (1024 * 128, 32, true);
+    mal_test.run (msgs, 8);
 
     mal_test.set_params (1024 * 128, 32, true);
     mal_test.run (msgs, 16);
 
-//    std::printf ("no heap------------------------------------------\n");
-//
-//    mal_test.set_params (64 * 1024 * 1024, 32, false);
-//    mal_test.run (msgs, 1);
-//
-//    mal_test.set_params (64 * 1024 * 1024, 32, false);
-//    mal_test.run (msgs, 2);
-//
-//    mal_test.set_params (64 * 1024 * 1024, 32, false);
-//    mal_test.run (msgs, 4);
-//
-//    mal_test.set_params (64 * 1024 * 1024, 32, false);
-//    mal_test.run (msgs, 8);
-//
-//    mal_test.set_params (64 * 1024 * 1024, 32, false);
-//    mal_test.run (msgs, 16);
+    std::printf ("no heap------------------------------------------\n");
+
+    mal_test.set_params (64 * 1024 * 1024, 32, false);
+    mal_test.run (msgs, 1);
+
+    mal_test.set_params (64 * 1024 * 1024, 32, false);
+    mal_test.run (msgs, 2);
+
+    mal_test.set_params (64 * 1024 * 1024, 32, false);
+    mal_test.run (msgs, 4);
+
+    mal_test.set_params (64 * 1024 * 1024, 32, false);
+    mal_test.run (msgs, 8);
+
+    mal_test.set_params (64 * 1024 * 1024, 32, false);
+    mal_test.run (msgs, 16);
 }
 
 //------------------------------------------------------------------------------
