@@ -7,45 +7,48 @@ We just wanted an asynchronous logger that can be used from many dynamically loa
 
 After having maintained a slightly modified version of google log and given the fact that this is a very small project we decided that existing wheels weren't round enough.
 
-
 ## Design rationale ##
 
- - Simple. 
- - Not over abstracted and feature bloated, easy to figure out what the code is doing, easy to modify.
+ - Simple. Not over abstracted and feature bloated, explicit, easy to figure out what the code is doing, easy to modify.
  - Low latency, fast for the caller.
- - Asynchronous (synchronous calls can be made for special messages, but they have grotesque overhead).
- - Minimum string formatting in the calling thread for the most common use cases. 
- - One conditional call overhead for inactive severities.
- - Lazy parameter evaluation.
- - No ostreams (a very ugly part of C++ for my liking), just format strings checked at compile time (if the compiler supports it) with type safe values.
- - No singleton by design, usable from dynamically loaded libraries. You provide the instance either explicitly or by a global function (Koenig lookup).
- - Suitable for soft-realtime work. Once it's initialized the fast-path can be clear from heap allocations if properly configured.
- - File rotation-slicing.
+ - Asynchronous (synchronous calls can be made for special messages, but they are way slower than using a synchronous logger in the first place).
+ - Minimum string formatting in the calling thread for the most common use cases.
+ - Keeps ordering and is linerializable as a whole.
+ - Doesn't use thread-local-storage, the user threads are assumed as external and no extra info is attached to them.
+
+## Various features ##
+
  - Targeting g++4.7 and VS 2010
  - Boost dependencies just for parts that will eventually go to the C++ standard.
-
+ - No singleton by design, usable from dynamically loaded libraries. You provide the instance either explicitly or by a global function (Koenig lookup).
+ - Suitable for soft-realtime work. Once it's initialized the fast-path can be clear from heap allocations if properly configured.
+ - File rotation-slicing (needs some external help at initialization time until std::filesystem isn't implemented in some compilers, see below).
+ - One conditional call overhead for inactive severities.
+ - Lazy parameter evaluation (as usual in most logging libraries).
+ - No ostreams (a very ugly part of C++ for my liking), just format strings checked at compile time (if the compiler supports it) with type safe values. An on-stack ostream adapter is available as last resort, but its use is more verbose and has more overhead.
+ - Able to externally change the log severity at runtime by reading some file descriptors (if configured to).
+ 
 ## How does it work ##
 
 It just borrows ideas from many of the loggers out there.
 
-When the user is to write a log message, the size is precomputed, then the memory is reclaimed either from the fixed size free-list or the heap (configurable) and then message is serialized and passed to the worker thread queue as an intrusive linked list node.
+When the user is to write a log message, the size is precomputed, then the memory is reclaimed either from the fixed size pool or the heap (configurable) and then message is serialized and passed to the log queue.
 
-The user thread doesn't format strings, just copies built-in type values and whole program duration C string pointers (Deep copies can be done if required too) to the message and appends data for the worker thread to be able to decode it. This is restrictive but gives other benefits too.
+Most of the time the user thread doesn't format strings, just encodes built-in type values (integers are variable-length encoded) and whole program duration C strings. Deep copies can be done if required too.
 
 The messages are formatted by using printf-style strings, where the formatting string is required to be a literal (not a const char*), e.g:
 
-log_error ("the value of i is {} and the value of j is  {}", i, j);
+log_error ("the value of i is {} and the value of j is {}", i, j);
 
-The function is type-safe, when "constexpr" and variadic template parameters are available it is matched with the parameters at compile time, otherwise the errors are caught at run time in the log file.
+The function is type-safe, when "constexpr" and variadic template parameters are available the format string is matched with the parameters at compile time, otherwise the errors are caught at run time in the logging output.
 
 > see this [example](https://github.com/RafaGago/mini-async-log/blob/master/example/overview.cpp)
 
-I might work in applying a little "compression" to the integer types like protobuf does (but simpler) to try to pack the messages more in case no use of the heap is allowed.
-
 ## Benchmarks ##
+
 I used to have some benchmarks here showing that "my new thing (TM)" is the best invention since sliced-bread, but as the benchmarks were mostly an apples-to-oranges comparison (e.g. comparing with glog which is half-synchronous) I just removed them.
 
-With the actual performance and for simple messages it takes the same time to retrieve the time stamp at the producer side with the chrono library than to build and enqueue the message. So I won't bother optimizing.
+With the actual performance and if the logger is configured to timestamp at the client/producer side it takes the same or more time to retrieve the timestamp with the std::chrono/boost::chrono library than to build and enqueue a simple message composed of e.g. a format string and three integers.
 
 ## File rotation ##
 
