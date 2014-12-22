@@ -13,16 +13,16 @@
 #include <ufo_log/util/thread.hpp>
 
 //------------------------------------------------------------------------------
-inline ufo::frontend& get_ufo_logger_instance()
+inline mal::frontend& get_ufo_logger_instance()
 {
-    static ufo::frontend fe;
+    static mal::frontend fe;
     return fe;
 }
 //------------------------------------------------------------------------------
 void run()
 {
     using namespace mal;
-    ufo::frontend& fe                 = get_ufo_logger_instance();
+    mal::frontend& fe                 = get_ufo_logger_instance();
     if (!fe.is_constructed())
     {
         return; //new failed in static initializator

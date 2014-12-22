@@ -16,7 +16,7 @@
 void rotation_test()
 {
     using namespace mal;
-    ufo::frontend fe;
+    mal::frontend fe;
 
     //WARNING WARNING WARNING, files in this path will be deleted! (rotated)
     const char* path = "./log_out/";

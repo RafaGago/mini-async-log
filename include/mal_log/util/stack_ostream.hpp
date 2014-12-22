@@ -93,7 +93,7 @@ you_can_just_use_stack_ostream_with_ostr_deep_copy(
 
 #define ostr_deep_copy(var, expr)\
     ((std::remove_reference<decltype(var)>::type&)(\
-        ::ufo::macro::you_can_just_use_stack_ostream_with_ostr_deep_copy (var)\
+        ::mal::macro::you_can_just_use_stack_ostream_with_ostr_deep_copy (var)\
         << expr\
         )).get_deep_copy_string()
 

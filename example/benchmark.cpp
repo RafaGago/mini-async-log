@@ -35,7 +35,7 @@ class perftest
 {
 public:
     //--------------------------------------------------------------------------
-    bool run (ufo::uword msgs, ufo::uword thread_count)
+    bool run (mal::uword msgs, mal::uword thread_count)
     {
         using namespace mal;
         m_cummulative_enqueue_ns = 0;
@@ -93,12 +93,12 @@ protected:
     //--------------------------------------------------------------------------
     void add_alloc_fault()
     {
-        m_alloc_faults.fetch_add (1, ufo::mo_relaxed);
+        m_alloc_faults.fetch_add (1, mal::mo_relaxed);
     }
     //--------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------
-    void thread (ufo::uword msg_count)
+    void thread (mal::uword msg_count)
     {
         using namespace mal;
         auto init = ch::steady_clock::now();
@@ -109,8 +109,8 @@ private:
                 ch::steady_clock::now() - init
                 ).count();
 
-        m_cummulative_enqueue_ns.fetch_add (elapsed, ufo::mo_relaxed);
-        m_data_visible.fetch_add (1, ufo::mo_release);
+        m_cummulative_enqueue_ns.fetch_add (elapsed, mal::mo_relaxed);
+        m_data_visible.fetch_add (1, mal::mo_release);
     }
     //--------------------------------------------------------------------------
     template <class derived_>
@@ -126,7 +126,7 @@ private:
     {
         std::printf(
             "%u fixed size queue alloc faults\n",
-            m_alloc_faults.load (ufo::mo_relaxed)
+            m_alloc_faults.load (mal::mo_relaxed)
             );
     }
     //--------------------------------------------------------------------------
@@ -134,7 +134,7 @@ private:
     typename std::enable_if<
                 std::is_same<derived_, spd_log_tester>::value
                 >::type
-    print_disk_times (ufo::uword msgs, ufo::u64 total_ns)
+    print_disk_times (mal::uword msgs, mal::u64 total_ns)
     {
 
     }
@@ -143,7 +143,7 @@ private:
     typename std::enable_if<
                 !std::is_same<derived_, spd_log_tester>::value
                 >::type
-    print_disk_times (ufo::uword msgs, ufo::u64 total_ns)
+    print_disk_times (mal::uword msgs, mal::u64 total_ns)
     {
         double sec_ns  = 1000000000.;
         std::printf(
@@ -154,21 +154,21 @@ private:
     }
     //--------------------------------------------------------------------------
     void print_results(
-            ufo::uword msgs,
-            ufo::uword thread_count,
-            ufo::u64   total_ns,
-            ufo::u64   join_ns
+            mal::uword msgs,
+            mal::uword thread_count,
+            mal::u64   total_ns,
+            mal::u64   join_ns
             )
     {
         using namespace mal;
-        while (m_data_visible.load (ufo::mo_acquire) != thread_count)
+        while (m_data_visible.load (mal::mo_acquire) != thread_count)
         {
             th::this_thread::yield();
         }
 
         double sec_ns  = 1000000000.;
         double cumm_ns = (double)
-                (m_cummulative_enqueue_ns.load (ufo::mo_relaxed));
+                (m_cummulative_enqueue_ns.load (mal::mo_relaxed));
 
         std::printf(
             "%s using %u threads for a total of %u msgs\n",
@@ -195,23 +195,23 @@ private:
 
     }
     //--------------------------------------------------------------------------
-    ufo::u64                    m_total_ns;
+    mal::u64                    m_total_ns;
 
     char pad1[256];
 
-    ufo::at::atomic<ufo::u64>   m_cummulative_enqueue_ns;
-    ufo::at::atomic<ufo::uword> m_data_visible;
+    mal::at::atomic<mal::u64>   m_cummulative_enqueue_ns;
+    mal::at::atomic<mal::uword> m_data_visible;
 
     char pad2[256];
 
-    ufo::at::atomic<ufo::uword> m_alloc_faults;
+    mal::at::atomic<mal::uword> m_alloc_faults;
 };
 //------------------------------------------------------------------------------
 class ufo_tester : public perftest<ufo_tester>
 {
 public:
     //--------------------------------------------------------------------------
-    void set_params (ufo::uword total_bsz, ufo::uword entry_size, bool heap)
+    void set_params (mal::uword total_bsz, mal::uword entry_size, bool heap)
     {
         m_total_bsz  = total_bsz;
         m_entry_size = entry_size;
@@ -243,9 +243,9 @@ private:
         return m_fe->init_backend (be_cfg) == frontend::init_ok;
     }
     //--------------------------------------------------------------------------
-    void thread (ufo::uword msg_count)
+    void thread (mal::uword msg_count)
     {
-        for (ufo::u64 i = 0; i < msg_count; ++i)
+        for (mal::u64 i = 0; i < msg_count; ++i)
         {
             bool res =
                 log_error_i (m_fe.get(), log_fileline TEST_LITERAL "{}", i);
@@ -260,8 +260,8 @@ private:
     //--------------------------------------------------------------------------
     const char* get_name() { return "ufo log"; }
     //--------------------------------------------------------------------------
-    ufo::on_stack_dynamic<ufo::frontend> m_fe;
-    ufo::uword m_total_bsz, m_entry_size, m_heap;
+    mal::on_stack_dynamic<mal::frontend> m_fe;
+    mal::uword m_total_bsz, m_entry_size, m_heap;
 };
 //------------------------------------------------------------------------------
 class google_tester: public perftest<google_tester>
@@ -295,9 +295,9 @@ private:
         return true;
     }
     //--------------------------------------------------------------------------
-    void thread (ufo::uword msg_count)
+    void thread (mal::uword msg_count)
     {
-        for (ufo::u64 i = 0; i < msg_count; ++i)
+        for (mal::u64 i = 0; i < msg_count; ++i)
         {
             LOG (ERROR) << TEST_LITERAL << i;
         }
@@ -333,9 +333,9 @@ private:
     //--------------------------------------------------------------------------
     bool configure() { return true; }
     //--------------------------------------------------------------------------
-    void thread (ufo::uword msg_count)
+    void thread (mal::uword msg_count)
     {
-        for (ufo::u64 i = 0; i < msg_count; ++i)
+        for (mal::u64 i = 0; i < msg_count; ++i)
         {
             m_logger->info (log_fileline TEST_LITERAL, i);
         }
@@ -369,7 +369,7 @@ private:
     //--------------------------------------------------------------------------
     bool configure() { return true; }
     //--------------------------------------------------------------------------
-    void thread (ufo::uword msg_count)
+    void thread (mal::uword msg_count)
     {
         for (unsigned i = 0; i < msg_count; ++i)
         {
@@ -384,7 +384,7 @@ private:
     std::shared_ptr<spdlog::logger> m_logger;
 };
 //------------------------------------------------------------------------------
-void ufo_tests (ufo::uword msgs)
+void ufo_tests (mal::uword msgs)
 {
     ufo_tester ufo_test;
 
@@ -447,7 +447,7 @@ void do_a_pause()                                                               
     th::this_thread::sleep_for (ch::seconds (2));
 }
 //------------------------------------------------------------------------------
-void google_tests (ufo::uword msgs)
+void google_tests (mal::uword msgs)
 {
     google_tester google_test;
 
@@ -464,7 +464,7 @@ void google_tests (ufo::uword msgs)
     do_a_pause();
 }
 //------------------------------------------------------------------------------
-void spdlog_tests (ufo::uword msgs)
+void spdlog_tests (mal::uword msgs)
 {
     std::printf ("spdlog async ------------------------------------------\n");
     spd_log_async_tester spd_async_tester;                                                  //this one has no way to flush, so I place it the last to avoid affecting the next library measurements
@@ -501,7 +501,7 @@ void spdlog_tests (ufo::uword msgs)
 //------------------------------------------------------------------------------
 int main (int argc, const char* argv[])
 {
-    const ufo::uword msgs = 1600000;
+    const mal::uword msgs = 1600000;
 
     if (argc < 2)
     {

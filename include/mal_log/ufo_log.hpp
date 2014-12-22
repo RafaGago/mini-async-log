@@ -89,14 +89,14 @@ either expressed or implied, of Rafael Gago Castano.
 
 #else
 
-    #define log_debug_i(...)         ::ufo::macro::silence_warnings()
-    #define log_debug_sync_i(...)    ::ufo::macro::silence_warnings()
-    #define log_debug(...)           ::ufo::macro::silence_warnings()
-    #define log_debug_sync(...)      ::ufo::macro::silence_warnings()
-	#define log_debug_i_if(...)      ::ufo::macro::silence_warnings()
-    #define log_debug_sync_i_if(...) ::ufo::macro::silence_warnings()
-    #define log_debug_if(...)        ::ufo::macro::silence_warnings()
-	#define log_debug_sync_if(...)   ::ufo::macro::silence_warnings()
+    #define log_debug_i(...)         ::mal::macro::silence_warnings()
+    #define log_debug_sync_i(...)    ::mal::macro::silence_warnings()
+    #define log_debug(...)           ::mal::macro::silence_warnings()
+    #define log_debug_sync(...)      ::mal::macro::silence_warnings()
+	#define log_debug_i_if(...)      ::mal::macro::silence_warnings()
+    #define log_debug_sync_i_if(...) ::mal::macro::silence_warnings()
+    #define log_debug_if(...)        ::mal::macro::silence_warnings()
+	#define log_debug_sync_if(...)   ::mal::macro::silence_warnings()
 
 #endif //MAL_STRIP_LOG_SEVERITY
 //------------------------------------------------------------------------------
@@ -128,14 +128,14 @@ either expressed or implied, of Rafael Gago Castano.
 
 #else
 
-    #define log_trace_i(...)         ::ufo::macro::silence_warnings()
-    #define log_trace_sync_i(...)    ::ufo::macro::silence_warnings()
-    #define log_trace(...)           ::ufo::macro::silence_warnings()
-    #define log_trace_sync(...)      ::ufo::macro::silence_warnings()
-	#define log_trace_i_if(...)      ::ufo::macro::silence_warnings()
-    #define log_trace_sync_i_if(...) ::ufo::macro::silence_warnings()
-    #define log_trace_if(...)        ::ufo::macro::silence_warnings()
-	#define log_trace_sync_if(...)   ::ufo::macro::silence_warnings()
+    #define log_trace_i(...)         ::mal::macro::silence_warnings()
+    #define log_trace_sync_i(...)    ::mal::macro::silence_warnings()
+    #define log_trace(...)           ::mal::macro::silence_warnings()
+    #define log_trace_sync(...)      ::mal::macro::silence_warnings()
+	#define log_trace_i_if(...)      ::mal::macro::silence_warnings()
+    #define log_trace_sync_i_if(...) ::mal::macro::silence_warnings()
+    #define log_trace_if(...)        ::mal::macro::silence_warnings()
+	#define log_trace_sync_if(...)   ::mal::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
@@ -167,14 +167,14 @@ either expressed or implied, of Rafael Gago Castano.
 
 #else
 
-    #define log_notice_i(...)         ::ufo::macro::silence_warnings()
-    #define log_notice_sync_i(...)    ::ufo::macro::silence_warnings()
-    #define log_notice(...)           ::ufo::macro::silence_warnings()
-    #define log_notice_sync(...)      ::ufo::macro::silence_warnings()
-	#define log_notice_i_if(...)      ::ufo::macro::silence_warnings()
-    #define log_notice_sync_i_if(...) ::ufo::macro::silence_warnings()
-    #define log_notice_if(...)        ::ufo::macro::silence_warnings()
-	#define log_notice_sync_if(...)   ::ufo::macro::silence_warnings()
+    #define log_notice_i(...)         ::mal::macro::silence_warnings()
+    #define log_notice_sync_i(...)    ::mal::macro::silence_warnings()
+    #define log_notice(...)           ::mal::macro::silence_warnings()
+    #define log_notice_sync(...)      ::mal::macro::silence_warnings()
+	#define log_notice_i_if(...)      ::mal::macro::silence_warnings()
+    #define log_notice_sync_i_if(...) ::mal::macro::silence_warnings()
+    #define log_notice_if(...)        ::mal::macro::silence_warnings()
+	#define log_notice_sync_if(...)   ::mal::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
@@ -206,14 +206,14 @@ either expressed or implied, of Rafael Gago Castano.
 
 #else
 
-    #define log_warning_i(...)         ::ufo::macro::silence_warnings()
-    #define log_warning_sync_i(...)    ::ufo::macro::silence_warnings()
-    #define log_warning(...)           ::ufo::macro::silence_warnings()
-    #define log_warning_sync(...)      ::ufo::macro::silence_warnings()
-	#define log_warning_i_if(...)      ::ufo::macro::silence_warnings()
-    #define log_warning_sync_i_if(...) ::ufo::macro::silence_warnings()
-    #define log_warning_if(...)        ::ufo::macro::silence_warnings()
-	#define log_warning_sync_if(...)   ::ufo::macro::silence_warnings()
+    #define log_warning_i(...)         ::mal::macro::silence_warnings()
+    #define log_warning_sync_i(...)    ::mal::macro::silence_warnings()
+    #define log_warning(...)           ::mal::macro::silence_warnings()
+    #define log_warning_sync(...)      ::mal::macro::silence_warnings()
+	#define log_warning_i_if(...)      ::mal::macro::silence_warnings()
+    #define log_warning_sync_i_if(...) ::mal::macro::silence_warnings()
+    #define log_warning_if(...)        ::mal::macro::silence_warnings()
+	#define log_warning_sync_if(...)   ::mal::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
@@ -245,14 +245,14 @@ either expressed or implied, of Rafael Gago Castano.
 
 #else
 
-    #define log_error_i(...)         ::ufo::macro::silence_warnings()
-    #define log_error_sync_i(...)    ::ufo::macro::silence_warnings()
-    #define log_error(...)           ::ufo::macro::silence_warnings()
-    #define log_error_sync(...)      ::ufo::macro::silence_warnings()
-	#define log_error_i_if(...)      ::ufo::macro::silence_warnings()
-    #define log_error_sync_i_if(...) ::ufo::macro::silence_warnings()
-    #define log_error_if(...)        ::ufo::macro::silence_warnings()
-	#define log_error_sync_if(...)   ::ufo::macro::silence_warnings()
+    #define log_error_i(...)         ::mal::macro::silence_warnings()
+    #define log_error_sync_i(...)    ::mal::macro::silence_warnings()
+    #define log_error(...)           ::mal::macro::silence_warnings()
+    #define log_error_sync(...)      ::mal::macro::silence_warnings()
+	#define log_error_i_if(...)      ::mal::macro::silence_warnings()
+    #define log_error_sync_i_if(...) ::mal::macro::silence_warnings()
+    #define log_error_if(...)        ::mal::macro::silence_warnings()
+	#define log_error_sync_if(...)   ::mal::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
@@ -284,14 +284,14 @@ either expressed or implied, of Rafael Gago Castano.
 
 #else
 
-    #define log_critical_i(...)         ::ufo::macro::silence_warnings()
-    #define log_critical_sync_i(...)    ::ufo::macro::silence_warnings()
-    #define log_critical(...)           ::ufo::macro::silence_warnings()
-    #define log_critical_sync(...)      ::ufo::macro::silence_warnings()
-	#define log_critical_i_if(...)      ::ufo::macro::silence_warnings()
-    #define log_critical_sync_i_if(...) ::ufo::macro::silence_warnings()
-    #define log_critical_if(...)        ::ufo::macro::silence_warnings()
-	#define log_critical_sync_if(...)   ::ufo::macro::silence_warnings()
+    #define log_critical_i(...)         ::mal::macro::silence_warnings()
+    #define log_critical_sync_i(...)    ::mal::macro::silence_warnings()
+    #define log_critical(...)           ::mal::macro::silence_warnings()
+    #define log_critical_sync(...)      ::mal::macro::silence_warnings()
+	#define log_critical_i_if(...)      ::mal::macro::silence_warnings()
+    #define log_critical_sync_i_if(...) ::mal::macro::silence_warnings()
+    #define log_critical_if(...)        ::mal::macro::silence_warnings()
+	#define log_critical_sync_if(...)   ::mal::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------

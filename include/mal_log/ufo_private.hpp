@@ -59,8 +59,8 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/compile_format_validator.hpp>
 
 #define MAL_FMT_STRING_CHECK(...)\
-        ufo::trigger_format_error<\
-            ufo::fmt_validator::execute<\
+        mal::trigger_format_error<\
+            mal::fmt_validator::execute<\
                 MAL_DECLTYPE_WRAP (__VA_ARGS__)\
                     > (MAL_GET_FMT_STR_PRIVATE (__VA_ARGS__))>()
 
@@ -90,7 +90,7 @@ inline bool is_literal (T val)
 }} //ufo macro
 
 #define MAL_FMT_STRING_CHECK(...)\
-    ::ufo::macro::is_literal (MAL_GET_FMT_STR_PRIVATE (__VA_ARGS__))
+    ::mal::macro::is_literal (MAL_GET_FMT_STR_PRIVATE (__VA_ARGS__))
 
 #endif
 
@@ -110,7 +110,7 @@ inline bool silence_warnings() { return true; }
 
 
 #define MAL_LOG_IF_PRIVATE(condition, statement)\
-    ((condition) ? (statement) : ::ufo::macro::silence_warnings())
+    ((condition) ? (statement) : ::mal::macro::silence_warnings())
 
 #if !defined (MAL_WINDOWS) || (defined (_MSC_VER) && _MSC_VER > 1600)
 
@@ -118,7 +118,7 @@ inline bool silence_warnings() { return true; }
     ([&]() -> bool \
     { \
         static unsigned counter##line = \
-            ::ufo::macro::log_every_needs_values_greater_than<count>::value; \
+            ::mal::macro::log_every_needs_values_greater_than<count>::value; \
         ++counter##line = (counter##line != count) ? counter##line : 0; \
         return MAL_LOG_IF_PRIVATE (counter##line == 0, statement); \
     }.operator ()())
@@ -127,7 +127,7 @@ inline bool silence_warnings() { return true; }
 
 #define MAL_LOG_EVERY_PRIVATE(line, count, statement)\
     static unsigned counter##line = \
-    ::ufo::macro::log_every_needs_values_greater_than<count>::value; \
+    ::mal::macro::log_every_needs_values_greater_than<count>::value; \
     ([&]() -> bool \
     { \
         ++counter##line = (counter##line != count) ? counter##line : 0; \
@@ -139,9 +139,9 @@ inline bool silence_warnings() { return true; }
 #define MAL_LOG_PRIVATE(instance, async, severity_, ...)\
     MAL_LOG_IF_PRIVATE(\
         (MAL_FMT_STRING_CHECK (__VA_ARGS__)) &&\
-        (instance.can_log (::ufo::sev::severity_)),\
-        ::ufo::new_entry<async>(\
-            instance, ::ufo::sev::severity_, __VA_ARGS__\
+        (instance.can_log (::mal::sev::severity_)),\
+        ::mal::new_entry<async>(\
+            instance, ::mal::sev::severity_, __VA_ARGS__\
             ))
 
 #define MAL_LOG_TO_STR_PRIVATE(a) #a
