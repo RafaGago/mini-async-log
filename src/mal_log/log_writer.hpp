@@ -41,7 +41,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <mal_log/serialization/printf_modifiers.hpp>
 #include <mal_log/serialization/byte_stream_convert.hpp>
 #include <mal_log/serialization/importer.hpp>
-#include <mal_log/ufo_private.hpp>
+#include <mal_log/mal_private.hpp>
 #include <mal_log/timestamp.hpp>
 #include <mal_log/output.hpp>
 #include <mal_log/format_tokens.hpp>

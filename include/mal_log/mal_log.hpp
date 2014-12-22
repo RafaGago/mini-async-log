@@ -38,8 +38,8 @@ either expressed or implied, of Rafael Gago Castano.
 #define MAL_LOG_LOG_INCLUDE_HPP_
 
 #include <mal_log/frontend_types.hpp>
-#include <mal_log/ufo_private.hpp>
-#include <mal_log/ufo_interface.hpp>
+#include <mal_log/mal_private.hpp>
+#include <mal_log/mal_interface.hpp>
 
 //------------------------------------------------------------------------------
 #ifndef MAL_GET_LOGGER_INSTANCE_FUNCNAME
