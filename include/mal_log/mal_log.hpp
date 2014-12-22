@@ -37,9 +37,10 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_LOG_INCLUDE_HPP_
 #define MAL_LOG_LOG_INCLUDE_HPP_
 
-#include <mal_log/frontend_types.hpp>
+#include <mal_log/mal_strip.hpp>
 #include <mal_log/mal_private.hpp>
 #include <mal_log/mal_interface.hpp>
+#include <mal_log/frontend_types.hpp>
 
 //------------------------------------------------------------------------------
 #ifndef MAL_GET_LOGGER_INSTANCE_FUNCNAME
@@ -61,7 +62,7 @@ either expressed or implied, of Rafael Gago Castano.
 //------------------------------------------------------------------------------
 #define log_fln log_fileline
 //------------------------------------------------------------------------------
-#if !defined (MAL_STRIP_LOG_SEVERITY)
+#ifndef MAL_STRIP_LOG_DEBUG
 
 #define log_debug_i(instance, ...)\
     MAL_LOG_PRIVATE (instance, true, debug, __VA_ARGS__)
@@ -98,9 +99,9 @@ either expressed or implied, of Rafael Gago Castano.
     #define log_debug_if(...)        ::mal::macro::silence_warnings()
 	#define log_debug_sync_if(...)   ::mal::macro::silence_warnings()
 
-#endif //MAL_STRIP_LOG_SEVERITY
+#endif
 //------------------------------------------------------------------------------
-#if !defined (MAL_STRIP_LOG_SEVERITY) || MAL_STRIP_LOG_SEVERITY < 1
+#ifndef MAL_STRIP_LOG_TRACE
 
 #define log_trace_i(instance, ...)\
     MAL_LOG_PRIVATE (instance, true, trace, __VA_ARGS__)
@@ -139,7 +140,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 #endif
 //------------------------------------------------------------------------------
-#if !defined (MAL_STRIP_LOG_SEVERITY) || MAL_STRIP_LOG_SEVERITY < 2
+#ifndef MAL_STRIP_LOG_NOTICE
 
 #define log_notice_i(instance, ...)\
     MAL_LOG_PRIVATE (instance, true, notice, __VA_ARGS__)
@@ -178,7 +179,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 #endif
 //------------------------------------------------------------------------------
-#if !defined (MAL_STRIP_LOG_SEVERITY) || MAL_STRIP_LOG_SEVERITY < 3
+#ifndef MAL_STRIP_LOG_WARNING
 
 #define log_warning_i(instance, ...)\
     MAL_LOG_PRIVATE (instance, true, warning, __VA_ARGS__)
@@ -217,7 +218,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 #endif
 //------------------------------------------------------------------------------
-#if !defined (MAL_STRIP_LOG_SEVERITY) || MAL_STRIP_LOG_SEVERITY < 4
+#ifndef MAL_STRIP_LOG_ERROR
 
 #define log_error_i(instance, ...)\
     MAL_LOG_PRIVATE (instance, true, error, __VA_ARGS__)
@@ -256,7 +257,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 #endif
 //------------------------------------------------------------------------------
-#if !defined (MAL_STRIP_LOG_SEVERITY) || MAL_STRIP_LOG_SEVERITY < 5
+#ifndef MAL_STRIP_LOG_CRITICAL
 
 #define log_critical_i(instance, ...)\
     MAL_LOG_PRIVATE (instance, true, critical, __VA_ARGS__)

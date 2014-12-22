@@ -1,4 +1,4 @@
-#define MAL_STRIP_LOG_SEVERITY 0
+#define MAL_STRIP_LOG_DEBUG //debug severity levels and below are stripped. Debug is the lowest severity, so just the entries with the debug severity are stripped in this case.
 
 #include <cassert>
 #include <mal_log/mal_log.hpp>
@@ -159,7 +159,7 @@ void general_features()
 
     log_trace(
         "you shouldn't see this, this entry is below logged severity, as usual "
-        "with most data loggers parameters are lazy evaluated, so be aware "
+        "with most data loggers parameters are lazy evaluated, so be careful "
         "that no passed expression has side effects. {}",
         side_effect_expr()
         );
