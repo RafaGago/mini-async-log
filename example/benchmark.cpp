@@ -510,7 +510,7 @@ int main (int argc, const char* argv[])
     }
     std::string choice = argv[1];
 
-    if (choice.compare ("ufo") == 0)
+    if (choice.compare ("mal") == 0)
     {
         mal_tests (msgs);
     }
