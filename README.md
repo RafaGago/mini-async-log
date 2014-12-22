@@ -27,6 +27,7 @@ After having maintained a slightly modified version of google log and given the 
  - Lazy parameter evaluation (as usual with most logging libraries).
  - No ostreams (a very ugly part of C++ for my liking), just format strings checked at compile time (if the compiler supports it) with type safe values. An on-stack ostream adapter is available as last resort, but its use is more verbose and has more overhead.
  - Able to externally change the log severity at runtime by reading some file descriptors (if configured to).
+ - Can eventually log synchronously some entries if using the macros with the "_sync" suffix.
  
 ## How does it work ##
 
@@ -99,7 +100,7 @@ It's possible to artificially increment the refcount of a shared_ptr by copying 
 Those that are self-explanatory won't be explained.
 
  - *MAL_GET_LOGGER_INSTANCE_FUNC*: See the "Initialization" chapter above.
- - *MAL_STRIP_LOG_SEVERITY*: Removes the entries of this severity and below at compile time. 0 is the "debug" severity, 5 is the "critical" severity. Stripping at level 5 leaves no log entries at all.
+ - *MAL_STRIP_LOG_SEVERITY*: Removes the entries of this severity and below at compile time. 0 is the "debug" severity, 5 is the "critical" severity. Stripping at level 5 leaves no log entries at all. Yo can use define e.g. MAL_STRIP_LOG_DEBUG, MAL_STRIP_LOG_TRACE, etc. instead.
  - *MAL_DYNLIB_COMPILE*: Define it when compiling as a library (Windows).
  - *MAL_CACHE_LINE_SIZE*: The cache line size of the machine you are compiling for. This is just used for data structure padding. 64 is defaulted when undefined.
  - *MAL_USE_BOOST_CSTDINT*: If your compiler doesn't have <cstdint> use boost.
