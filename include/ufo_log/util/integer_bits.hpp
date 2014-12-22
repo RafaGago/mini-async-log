@@ -47,7 +47,7 @@ either expressed or implied, of Diadrom AB.
 #include <ufo_log/util/integer_bits.h>
 #include <ufo_log/util/integer_bits_detail.hpp>
 
-namespace ufo {
+namespace mal {
 //------------------------------------------------------------------------------
 template <class T>
 inline

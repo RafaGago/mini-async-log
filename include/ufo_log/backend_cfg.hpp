@@ -42,7 +42,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/mpsc_hybrid_wait_cfg.hpp>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 typedef std::deque<std::string> past_executions_file_list;

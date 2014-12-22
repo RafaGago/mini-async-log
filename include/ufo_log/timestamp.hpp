@@ -40,7 +40,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/chrono.hpp>
 
-namespace ufo {
+namespace mal {
 //--------------------------------------------------------------------------
 inline u64 get_timestamp()
 {

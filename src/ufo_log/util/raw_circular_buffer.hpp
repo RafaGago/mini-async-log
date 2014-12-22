@@ -41,7 +41,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <new>
 #include <ufo_log/util/integer.hpp>
 
-namespace ufo {
+namespace mal {
 //------------------------------------------------------------------------------
 // Simple circular queue containing a single chunk of raw non-guarateed to be
 // aligned memory

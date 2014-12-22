@@ -41,7 +41,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/chrono.hpp>
 #include <ufo_log/sync_point.hpp>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 class async_to_sync

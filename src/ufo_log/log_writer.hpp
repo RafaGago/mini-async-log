@@ -47,7 +47,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/format_tokens.hpp>
 #include <ufo_log/async_to_sync.hpp>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 class log_writer : private ser::importer

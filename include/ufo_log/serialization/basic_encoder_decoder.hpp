@@ -41,7 +41,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <cstring>
 #include <ufo_log/util/integer.hpp>
 
-namespace ufo { namespace ser {
+namespace mal { namespace ser {
 //------------------------------------------------------------------------------
 struct basic_encoder_decoder
 {

@@ -55,7 +55,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/thread.hpp>
 #include <ufo_log/util/mem_printf.hpp>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 class log_files

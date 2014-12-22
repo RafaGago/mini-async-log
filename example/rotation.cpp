@@ -15,7 +15,7 @@
 //------------------------------------------------------------------------------
 void rotation_test()
 {
-    using namespace ufo;
+    using namespace mal;
     ufo::frontend fe;
 
     //WARNING WARNING WARNING, files in this path will be deleted! (rotated)

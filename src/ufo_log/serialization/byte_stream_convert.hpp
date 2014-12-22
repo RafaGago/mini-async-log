@@ -44,7 +44,7 @@ either expressed or implied, of Rafael Gago Castano.
 //             it but everything remains the same: it still is a miserable
 //             overkill.
 
-namespace ufo { namespace ser {
+namespace mal { namespace ser {
 //------------------------------------------------------------------------------
 
 namespace detail {

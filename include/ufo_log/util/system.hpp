@@ -50,7 +50,7 @@ either expressed or implied, of Rafael Gago Castano.
         #define MAL_32
     #endif
 
-namespace ufo {
+namespace mal {
     const char fs_separator = '/';
 }
 
@@ -81,7 +81,7 @@ MSVC++ 7.1  _MSC_VER == 1310 (Visual Studio 2003)
     #define MAL_HAS_VARIADIC_TEMPLATES 1
 #endif
 
-namespace ufo {
+namespace mal {
     const char fs_separator = '\\';
 }
 
@@ -106,13 +106,13 @@ namespace ufo {
 
 #endif //MAL_DYN_LIB_CALL
 
-namespace ufo {
+namespace mal {
 #ifndef MAL_CACHE_LINE_SIZE
     const unsigned cache_line_size = 64;
 #else
     const unsigned cache_line_size = MAL_CACHE_LINE_SIZE;
 #endif
-} //namespace ufo {
+} //namespace mal {
 
 #if defined (MAL_HAS_CONSTEXPR)
     #define MAL_CONSTEXPR constexpr

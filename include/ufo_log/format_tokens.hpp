@@ -38,7 +38,7 @@ either expressed or implied, of Rafael Gago Castano.
 #define MAL_LOG_FORMAT_TOKENS_HPP_
 
 
-namespace ufo { namespace fmt {
+namespace mal { namespace fmt {
 //------------------------------------------------------------------------------
 
 static const char placeholder_open  = '{';

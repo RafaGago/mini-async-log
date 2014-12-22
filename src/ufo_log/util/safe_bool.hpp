@@ -37,7 +37,7 @@ either expressed or implied, of Diadrom AB.
 #ifndef MAL_SAFE_BOOL_HPP_
 #define MAL_SAFE_BOOL_HPP_
 
-namespace ufo {
+namespace mal {
 //------------------------------------------------------------------------------
 template <typename T>
 struct safe_bool_impl
@@ -70,7 +70,7 @@ public:
     //--------------------------------------------------------------------------
 }; //class safe_bool
 //------------------------------------------------------------------------------
-} //namespace ufo
+} //namespace mal
 
 #endif /* MAL_SAFE_BOOL_HPP_ */
 

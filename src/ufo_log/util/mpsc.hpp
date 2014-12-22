@@ -79,7 +79,7 @@ either expressed or implied, of Diadrom AB.
 #include <ufo_log/util/aligned_type.hpp>
 #include <ufo_log/util/atomic.hpp>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 struct mpsc_node_hook

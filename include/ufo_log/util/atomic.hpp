@@ -49,7 +49,7 @@ either expressed or implied, of Diadrom AB.
 
 #endif
 
-namespace ufo {
+namespace mal {
 
 namespace at = MAL_ATOMIC_NAMESPACE;
 

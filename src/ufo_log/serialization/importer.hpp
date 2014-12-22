@@ -41,7 +41,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/serialization/importer_exporter.hpp>
 #include <ufo_log/util/placement_new.hpp>
 
-namespace ufo { namespace ser {
+namespace mal { namespace ser {
 
 //------------------------------------------------------------------------------
 class importer : protected importer_exporter<const u8>,

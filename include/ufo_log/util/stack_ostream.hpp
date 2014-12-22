@@ -42,7 +42,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ostream>
 #include <type_traits>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 template <uword capacity>

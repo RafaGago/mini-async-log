@@ -85,7 +85,7 @@ either expressed or implied, of Diadrom AB.
 #endif
 
 #if defined (__cplusplus)
-namespace ufo {
+namespace mal {
 #endif
 
 // todo: if gcc, have a look at
@@ -1079,7 +1079,7 @@ uint64_t byte_array_read_be_64 (const uint8_t* in) //be = big endian
 }
 
 #if defined (__cplusplus)
-} //namespace ufo {
+} //namespace mal {
 #endif
 
 #ifndef __cplusplus

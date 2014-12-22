@@ -43,7 +43,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/literal.hpp>
 #include <ufo_log/format_tokens.hpp>
 
-namespace ufo {
+namespace mal {
 
 namespace fmt_error {
 //------------------------------------------------------------------------------

@@ -53,7 +53,7 @@ either expressed or implied, of Diadrom AB.
 
 #endif
 
-namespace ufo {
+namespace mal {
 
 namespace ch = MAL_CHRONO_NAMESPACE;
 

@@ -40,7 +40,7 @@ either expressed or implied, of Diadrom AB.
 #include <ufo_log/util/placement_new.hpp>
 
 //------------------------------------------------------------------------------
-namespace ufo {
+namespace mal {
 //------------------------------------------------------------------------------
 template <class T, std::size_t alignment = std::alignment_of<T>::value>
 class aligned_type

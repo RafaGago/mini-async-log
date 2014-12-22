@@ -46,7 +46,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/async_to_sync.hpp>
 #include <ufo_log/timestamp.hpp>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 class frontend::frontend_impl

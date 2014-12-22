@@ -45,7 +45,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/atomic.hpp>
 #include <ufo_log/frontend_types.hpp>
 
-namespace ufo {
+namespace mal {
 //------------------------------------------------------------------------------
 class output
 {

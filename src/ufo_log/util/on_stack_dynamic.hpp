@@ -43,7 +43,7 @@ either expressed or implied, of Diadrom AB.
 #include <ufo_log/util/safe_bool.hpp>
 
 //------------------------------------------------------------------------------
-namespace ufo {
+namespace mal {
 //------------------------------------------------------------------------------
 template <class T, std::size_t align>
 class on_stack_dynamic_scoped_destructor;

@@ -66,7 +66,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 #else //Microsoft (mostly) mode
 
-namespace ufo { namespace macro {
+namespace mal { namespace macro {
 
 template <unsigned N>
 inline bool is_literal (const char (&arr)[N])
@@ -94,7 +94,7 @@ inline bool is_literal (T val)
 
 #endif
 
-namespace ufo { namespace macro {
+namespace mal { namespace macro {
 
 template <unsigned count>
 struct log_every_needs_values_greater_than

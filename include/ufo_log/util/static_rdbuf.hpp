@@ -41,7 +41,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/frontend_types.hpp>
 #include <streambuf>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 template <uword capacity>

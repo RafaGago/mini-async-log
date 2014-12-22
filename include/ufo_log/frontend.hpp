@@ -41,7 +41,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/serialization/exporter.hpp>
 #include <ufo_log/backend_cfg.hpp>
 
-namespace ufo {
+namespace mal {
 
 class sync_point;
 //------------------------------------------------------------------------------

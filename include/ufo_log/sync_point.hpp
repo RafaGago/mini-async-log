@@ -39,7 +39,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <ufo_log/util/integer.hpp>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 class sync_point

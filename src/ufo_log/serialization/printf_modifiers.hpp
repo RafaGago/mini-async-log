@@ -37,7 +37,7 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_PRINTF_MODIFIERS_HPP_
 #define MAL_LOG_PRINTF_MODIFIERS_HPP_
 
-namespace ufo { namespace ser {
+namespace mal { namespace ser {
 //------------------------------------------------------------------------------
 struct u8_modif
 {

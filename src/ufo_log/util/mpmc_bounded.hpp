@@ -79,7 +79,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <cassert>
 #include <ufo_log/util/atomic.hpp>
 
-namespace ufo {
+namespace mal {
 
 // This is the Djukov MPMC queue that adds the trivial conversion to single
 // producer or single consumer funcions so it can be used as a mpmc, spmc or

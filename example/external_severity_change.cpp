@@ -21,7 +21,7 @@ inline ufo::frontend& get_ufo_logger_instance()
 //------------------------------------------------------------------------------
 void run()
 {
-    using namespace ufo;
+    using namespace mal;
     ufo::frontend& fe                 = get_ufo_logger_instance();
     if (!fe.is_constructed())
     {

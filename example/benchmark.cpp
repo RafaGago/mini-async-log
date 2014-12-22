@@ -37,7 +37,7 @@ public:
     //--------------------------------------------------------------------------
     bool run (ufo::uword msgs, ufo::uword thread_count)
     {
-        using namespace ufo;
+        using namespace mal;
         m_cummulative_enqueue_ns = 0;
         m_total_ns               = 0;
         m_alloc_faults           = 0;
@@ -100,7 +100,7 @@ private:
     //--------------------------------------------------------------------------
     void thread (ufo::uword msg_count)
     {
-        using namespace ufo;
+        using namespace mal;
         auto init = ch::steady_clock::now();
 
         static_cast<derived&> (*this).thread (msg_count);
@@ -160,7 +160,7 @@ private:
             ufo::u64   join_ns
             )
     {
-        using namespace ufo;
+        using namespace mal;
         while (m_data_visible.load (ufo::mo_acquire) != thread_count)
         {
             th::this_thread::yield();
@@ -227,7 +227,7 @@ private:
     //--------------------------------------------------------------------------
     bool configure()
     {
-        using namespace ufo;
+        using namespace mal;
         auto be_cfg                             = m_fe->get_backend_cfg();
         be_cfg.file.out_folder                  = OUT_FOLDER "/";               //this folder has to exist before running
         be_cfg.file.aprox_size                  = file_size_bytes;
@@ -443,7 +443,7 @@ void ufo_tests (ufo::uword msgs)
 //------------------------------------------------------------------------------
 void do_a_pause()                                                               //time for the OS to finish some file io, otherwise some results were weird.
 {
-    using namespace ufo;
+    using namespace mal;
     th::this_thread::sleep_for (ch::seconds (2));
 }
 //------------------------------------------------------------------------------

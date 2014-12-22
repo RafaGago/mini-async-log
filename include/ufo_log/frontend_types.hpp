@@ -42,7 +42,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <cassert>
 #include <cstring>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 struct sev

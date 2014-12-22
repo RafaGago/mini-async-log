@@ -37,7 +37,7 @@ either expressed or implied, of Diadrom AB.
 #ifndef MAL_INTEGER_BYTES_DETAIL_HPP_
 #define MAL_INTEGER_BYTES_DETAIL_HPP_
 
-namespace ufo { namespace detail {
+namespace mal { namespace detail {
 
 template<class T, unsigned bytes = sizeof (T)>
 struct byte_array_write

@@ -11,7 +11,7 @@
 #include <type_traits>
 #include <cstring>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 template<uword payload_bytes>

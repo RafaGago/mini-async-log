@@ -39,7 +39,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <type_traits>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 template <class T, class ret>

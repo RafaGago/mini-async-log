@@ -40,7 +40,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <cassert>
 #include <ufo_log/util/integer.hpp>
 
-namespace ufo { namespace ser {
+namespace mal { namespace ser {
 
 //------------------------------------------------------------------------------
 template <class ptr_type>

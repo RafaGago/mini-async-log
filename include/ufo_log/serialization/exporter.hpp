@@ -51,7 +51,7 @@ either expressed or implied, of Rafael Gago Castano.
     #include <ufo_log/util/integer_bits.hpp>
 #endif
 
-namespace ufo { namespace ser {
+namespace mal { namespace ser {
 //------------------------------------------------------------------------------
 class exporter : public importer_exporter<u8>, public basic_encoder_decoder
 {

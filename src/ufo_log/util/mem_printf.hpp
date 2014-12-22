@@ -42,7 +42,7 @@ either expressed or implied, of Diadrom AB.
 #include <cstdio>
 #include <ufo_log/util/system.hpp>
 
-namespace ufo {
+namespace mal {
 
 // This function just returns the bytes written excluding the null character,
 // the value is positive when not truncated and negative when truncated.

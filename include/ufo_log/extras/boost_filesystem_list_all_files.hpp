@@ -46,7 +46,7 @@ either expressed or implied, of Rafael Gago Castano.
 //Be aware that it doesn't check for log file sizes or data placed by the user
 //in the folder.
 
-namespace ufo { namespace extras {
+namespace mal { namespace extras {
 //------------------------------------------------------------------------------
 past_executions_file_list list_all_files (const char* path)
 {

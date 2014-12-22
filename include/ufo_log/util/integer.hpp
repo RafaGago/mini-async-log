@@ -42,7 +42,7 @@ either expressed or implied, of Diadrom AB.
 
 #include <cstdint>
 
-namespace ufo {
+namespace mal {
 
 typedef int8_t   int8;
 typedef int16_t  int16;
@@ -59,7 +59,7 @@ typedef uint64_t uint64;
 
 #include <boost/cstdint.hpp>
 
-namespace ufo {
+namespace mal {
 
 typedef boost::int8_t   int8;
 typedef boost::int16_t  int16;
@@ -74,7 +74,7 @@ typedef boost::uint64_t uint64;
 
 #endif
 
-namespace ufo {
+namespace mal {
 
 typedef int8   i8;
 typedef int16  i16;
@@ -128,6 +128,6 @@ typedef integer_for_bytes<sizeof (void*)>::signed_type   word;
 typedef integer_for_bytes<sizeof (void*)>::unsigned_type uword;
 //------------------------------------------------------------------------------
 
-} //namespace ufo
+} //namespace mal
 
 #endif /* MAL_INTEGER_HPP_ */

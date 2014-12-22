@@ -47,7 +47,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/sync_point.hpp>
 #include <ufo_log/util/side_effect_assert.hpp>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 template <class T, class field>

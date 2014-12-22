@@ -43,7 +43,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/thread.hpp>
 #include <ufo_log/util/mpsc_hybrid_wait_cfg.hpp>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 // This class implements an hybrid lock to work with a lock-free queue. It is
@@ -158,6 +158,6 @@ private:
     at::atomic<uword>          m_state;
 };
  //-----------------------------------------------------------------------------
-} //namespace ufo
+} //namespace mal
 
 #endif /* MAL_MPSC_HYBRID_WAIT_HPP_ */

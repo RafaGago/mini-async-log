@@ -40,7 +40,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/system.hpp>
 
-namespace ufo { namespace ser {
+namespace mal { namespace ser {
 //------------------------------------------------------------------------------
 static const uword numeric_bytes_bits = 3;
 //------------------------------------------------------------------------------

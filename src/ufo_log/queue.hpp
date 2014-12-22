@@ -81,7 +81,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/integer_bits.hpp>
 #include <ufo_log/util/atomic.hpp>
 
-namespace ufo {
+namespace mal {
 
 //------------------------------------------------------------------------------
 class queue_prepared
