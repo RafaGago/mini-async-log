@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by ufo-log-dll.rc
+// Used by mal-log-dll.rc
 
 // Next default values for new objects
 // 

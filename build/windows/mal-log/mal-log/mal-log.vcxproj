@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E9EEFC39-EFED-4396-8CCC-3A4DCE08989B}</ProjectGuid>
     <RootNamespace>ufolog</RootNamespace>
-    <ProjectName>ufo-log-dll</ProjectName>
+    <ProjectName>mal-log-dll</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -130,7 +130,7 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ufo-log-dll.rc" />
+    <ResourceCompile Include="mal-log-dll.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

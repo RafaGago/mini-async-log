@@ -43,6 +43,7 @@ either expressed or implied, of Rafael Gago Castano.
     #define MAL_HAS_CONSTEXPR 1
     #define MAL_HAS_VARIADIC_TEMPLATES 1
     #define MAL_UNIX_LIKE //this is wrong but correct enough for now to just support win an linux
+    #define MAL_ALIGNED_STORAGE_DEFAULTS_MAX_ALIGN
 
     #if __x86_64__ || __ppc64__
         #define MAL_64
@@ -79,6 +80,10 @@ MSVC++ 7.1  _MSC_VER == 1310 (Visual Studio 2003)
 
 #if _MSC_VER >= 1800 //1600 >= vs2010
     #define MAL_HAS_VARIADIC_TEMPLATES 1
+#endif
+
+#if _MSC_VER >= 1700
+    #define MAL_ALIGNED_STORAGE_DEFAULTS_MAX_ALIGN
 #endif
 
 namespace mal {

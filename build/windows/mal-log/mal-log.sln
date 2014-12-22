@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ufo-log-dll", "ufo-log\ufo-log.vcxproj", "{E9EEFC39-EFED-4396-8CCC-3A4DCE08989B}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mal-log-dll", "mal-log\mal-log.vcxproj", "{E9EEFC39-EFED-4396-8CCC-3A4DCE08989B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "overview", "overview\overview.vcxproj", "{8D816EB0-3A6F-4AFA-81C1-994FB7D9DE56}"
 	ProjectSection(ProjectDependencies) = postProject

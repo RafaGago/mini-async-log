@@ -8,8 +8,13 @@
 #ifndef MAL_LOG_OPAQUE_POD_HPP_
 #define MAL_LOG_OPAQUE_POD_HPP_
 
+#include <mal_log/util/system.hpp>
 #include <type_traits>
 #include <cstring>
+
+#ifndef MAL_ALIGNED_STORAGE_DEFAULTS_MAX_ALIGN
+    #include <mal_log/util/max_align.hpp>
+#endif
 
 namespace mal {
 
@@ -38,7 +43,15 @@ public:
     }
     //--------------------------------------------------------------------------
 private:
-   typename std::aligned_storage<bytes>::type m_stor;
+
+#ifdef MAL_ALIGNED_STORAGE_DEFAULTS_MAX_ALIGN
+    typename std::aligned_storage<bytes>::type m_stor;
+#else //It might be better to just wrap our own aligned_storage type.
+    typename std::aligned_storage<
+                    bytes,
+                    std::alignment_of<max_align_type_reinvent>::value
+                    >::type m_stor;
+#endif
 };
 //------------------------------------------------------------------------------
 } //namespaces

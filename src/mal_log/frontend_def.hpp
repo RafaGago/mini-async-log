@@ -67,15 +67,16 @@ public:
     ser::exporter get_encoder (uword required_bytes)
     {
         assert (m_state.load (mo_relaxed) == init);
-        ser::exporter e;
+        ser::exporter e;        
         auto commit_data = m_back.allocate_entry (required_bytes);
         if (commit_data.get_mem())
         {
             e.init (commit_data.get_mem(), required_bytes);
             e.opaque_data.write (commit_data);
         }
+        typedef decltype (e.opaque_data) od;                                    //visual studio 2010 doesn't like this inside the static assertion
         static_assert(
-            decltype (e.opaque_data)::bytes >= sizeof commit_data,
+            od::bytes >= sizeof commit_data,
             "not enough opaque storage"
             );
         return e;
