@@ -43,7 +43,7 @@ log_error ("the value of i is {} and the value of j is {}", i, j);
 
 The function is type-safe, when "constexpr" and variadic template parameters are available the format string is matched with the parameters at compile time, otherwise the errors are caught at run time in the logging output.
 
-> see this [example](https://github.com/RafaGago/mini-async-log/blob/master/example/overview.cpp)
+> see this [example](https://github.com/RafaGago/mini-async-log/blob/master/example/overview.cpp) that more or less shows all available features.
 
 ## Benchmarks ##
 
@@ -73,7 +73,7 @@ Be aware that it's dangerous to have a dynamic library or executable loaded mult
 
 The worker blocks in its destructor until its work queue is empty when normally exiting a program.
 
-When a signal is sent you can call the frontend function  [on termination](https://github.com/RafaGago/mini-async-log/blob/master/src/mal_log/frontend.hpp) after shutting down your data/log producers. This will early interrupt any synchronous calls you made.
+When a signal is sent you can call the frontend function  [on termination](https://github.com/RafaGago/mini-async-log/blob/master/include/mal_log/frontend.hpp) after shutting down your data/log producers. This will early interrupt any synchronous calls you made.
 
 
 ## Errors ##
