@@ -34,29 +34,29 @@ either expressed or implied, of Diadrom AB.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_CHRONO_HPP_
-#define UFO_CHRONO_HPP_
+#ifndef MAL_CHRONO_HPP_
+#define MAL_CHRONO_HPP_
 
-#ifdef UFO_USE_BOOST_CHRONO
+#ifdef MAL_USE_BOOST_CHRONO
 
 #include <boost/chrono.hpp>
 
-#define UFO_CHRONO_NAMESPACE      ::boost::chrono
-#define UFO_CHRONO_BASE_NAMESPACE ::boost  //for. e.g boost::micro
+#define MAL_CHRONO_NAMESPACE      ::boost::chrono
+#define MAL_CHRONO_BASE_NAMESPACE ::boost  //for. e.g boost::micro
 
 #else
 
 #include <chrono>
 
-#define UFO_CHRONO_NAMESPACE      ::std::chrono
-#define UFO_CHRONO_BASE_NAMESPACE ::std  //for. e.g std::micro
+#define MAL_CHRONO_NAMESPACE      ::std::chrono
+#define MAL_CHRONO_BASE_NAMESPACE ::std  //for. e.g std::micro
 
 #endif
 
 namespace ufo {
 
-namespace ch = UFO_CHRONO_NAMESPACE;
+namespace ch = MAL_CHRONO_NAMESPACE;
 
 }
 
-#endif /* UFO_CHRONO_HPP_ */
+#endif /* MAL_CHRONO_HPP_ */

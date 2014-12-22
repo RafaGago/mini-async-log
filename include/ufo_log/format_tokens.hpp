@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_FORMAT_TOKENS_HPP_
-#define UFO_LOG_FORMAT_TOKENS_HPP_
+#ifndef MAL_LOG_FORMAT_TOKENS_HPP_
+#define MAL_LOG_FORMAT_TOKENS_HPP_
 
 
 namespace ufo { namespace fmt {
@@ -50,4 +50,4 @@ static const char scientific        = 's';
 //------------------------------------------------------------------------------
 }} //namespaces
 
-#endif /* UFO_LOG_FORMAT_TOKENS_HPP_ */
+#endif /* MAL_LOG_FORMAT_TOKENS_HPP_ */

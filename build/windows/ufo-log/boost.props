@@ -12,7 +12,7 @@
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(boost_include);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>UFO_USE_BOOST_ATOMIC;UFO_USE_BOOST_CHRONO;UFO_USE_BOOST_THREAD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MAL_USE_BOOST_ATOMIC;MAL_USE_BOOST_CHRONO;MAL_USE_BOOST_THREAD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

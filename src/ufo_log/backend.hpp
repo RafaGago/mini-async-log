@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_BACKEND_HPP_
-#define UFO_LOG_BACKEND_HPP_
+#ifndef MAL_LOG_BACKEND_HPP_
+#define MAL_LOG_BACKEND_HPP_
 
 #include <cstring>
 #include <cassert>
@@ -502,4 +502,4 @@ private:
 //------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* UFO_LOG_BACKEND_DEF_HPP_ */
+#endif /* MAL_LOG_BACKEND_DEF_HPP_ */

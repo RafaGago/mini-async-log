@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_MPSC_HYBRID_WAIT_HPP_
-#define UFO_MPSC_HYBRID_WAIT_HPP_
+#ifndef MAL_MPSC_HYBRID_WAIT_HPP_
+#define MAL_MPSC_HYBRID_WAIT_HPP_
 
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/atomic.hpp>
@@ -160,4 +160,4 @@ private:
  //-----------------------------------------------------------------------------
 } //namespace ufo
 
-#endif /* UFO_MPSC_HYBRID_WAIT_HPP_ */
+#endif /* MAL_MPSC_HYBRID_WAIT_HPP_ */

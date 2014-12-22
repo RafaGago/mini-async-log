@@ -31,7 +31,7 @@ void run()
     be_cfg.file.name_prefix           = "test-data.";
     be_cfg.file.name_suffix           = ".log.txt";
 
-#ifndef UFO_WINDOWS
+#ifndef MAL_WINDOWS
     be_cfg.file.out_folder            = "./log_out/";                           //this folder has to exist before running
     be_cfg.sev.stderr_sev_fd          = "./stderr_sev";                         //the severity input file
 #else

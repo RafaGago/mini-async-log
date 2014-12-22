@@ -5,8 +5,8 @@
  *      Author: rafa
  */
 
-#ifndef UFO_LOG_OPAQUE_POD_HPP_
-#define UFO_LOG_OPAQUE_POD_HPP_
+#ifndef MAL_LOG_OPAQUE_POD_HPP_
+#define MAL_LOG_OPAQUE_POD_HPP_
 
 #include <type_traits>
 #include <cstring>
@@ -43,4 +43,4 @@ private:
 //------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* UFO_LOG_OPAQUE_POD_HPP_ */
+#endif /* MAL_LOG_OPAQUE_POD_HPP_ */

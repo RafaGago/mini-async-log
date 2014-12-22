@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_STATIC_RDBUF_HPP_
-#define UFO_LOG_STATIC_RDBUF_HPP_
+#ifndef MAL_LOG_STATIC_RDBUF_HPP_
+#define MAL_LOG_STATIC_RDBUF_HPP_
 
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/frontend_types.hpp>
@@ -90,4 +90,4 @@ private:
 //------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* UFO_LOG_STATIC_RDBUF_HPP_ */
+#endif /* MAL_LOG_STATIC_RDBUF_HPP_ */

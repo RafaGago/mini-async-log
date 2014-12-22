@@ -34,15 +34,15 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_CALENDAR_TO_STR_HPP_
-#define UFO_LOG_CALENDAR_TO_STR_HPP_
+#ifndef MAL_LOG_CALENDAR_TO_STR_HPP_
+#define MAL_LOG_CALENDAR_TO_STR_HPP_
 
 #include <cstdio>
 #include <cassert>
 
-#if defined (UFO_WINDOWS)
+#if defined (MAL_WINDOWS)
     #include <time.h>
-#elif defined (UFO_UNIX_LIKE)
+#elif defined (MAL_UNIX_LIKE)
     #include <sys/time.h>
 #else
     #error "unknown platform"
@@ -68,9 +68,9 @@ public:
 
         if (dst_capacity < c_str_size) { return -1; }
 
-#if defined (UFO_32)
+#if defined (MAL_32)
         const char* fmt = "%04d-%02d-%02d_%02d-%02d-%02d.%06d";
-#elif defined (UFO_64)
+#elif defined (MAL_64)
         const char* fmt = "%04d-%02d-%02d_%02d-%02d-%02d.%06d";
 #else
     #error "fix util/system.hpp for your platform (if possible)"
@@ -78,9 +78,9 @@ public:
 
         time_t t = (time_t) (epoch_us / 1000000);
         tm cal;
-#if defined (UFO_WINDOWS)
+#if defined (MAL_WINDOWS)
         localtime_s (&cal, &t);                                                  //localtime is thread safe in win
-#elif defined (UFO_UNIX_LIKE)
+#elif defined (MAL_UNIX_LIKE)
         localtime_r (&t, &cal);
 #else
     #error "implement this"
@@ -107,4 +107,4 @@ public:
 
 } //namespaces
 
-#endif /* UFO_LOG_CALENDAR_TO_STR_HPP_ */
+#endif /* MAL_LOG_CALENDAR_TO_STR_HPP_ */

@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_INTEGRAL_ENABLE_IF_HPP_
-#define UFO_LOG_INTEGRAL_ENABLE_IF_HPP_
+#ifndef MAL_LOG_INTEGRAL_ENABLE_IF_HPP_
+#define MAL_LOG_INTEGRAL_ENABLE_IF_HPP_
 
 #include <type_traits>
 
@@ -71,4 +71,4 @@ struct enable_if_integral :                                                     
 
 } //namespaces
 
-#endif /* UFO_LOG_INTEGRAL_ENABLE_IF_HPP_ */
+#endif /* MAL_LOG_INTEGRAL_ENABLE_IF_HPP_ */

@@ -34,8 +34,8 @@ either expressed or implied, of Diadrom AB.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_ALIGNED_TYPE_HPP_
-#define UFO_ALIGNED_TYPE_HPP_
+#ifndef MAL_ALIGNED_TYPE_HPP_
+#define MAL_ALIGNED_TYPE_HPP_
 
 #include <ufo_log/util/placement_new.hpp>
 
@@ -56,7 +56,7 @@ public:
     T* operator->()             { return m_mem.operator->(); };
     const T* operator->() const { return m_mem.operator->(); };
     //--------------------------------------------------------------------------
-#ifdef UFO_HAS_VARIADIC_TEMPLATES
+#ifdef MAL_HAS_VARIADIC_TEMPLATES
     //--------------------------------------------------------------------------
     template <class... args>
     aligned_type (args&&... a)

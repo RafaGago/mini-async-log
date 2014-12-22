@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_STACK_OSTREAM_HPP_
-#define UFO_LOG_STACK_OSTREAM_HPP_
+#ifndef MAL_LOG_STACK_OSTREAM_HPP_
+#define MAL_LOG_STACK_OSTREAM_HPP_
 
 #include <ufo_log/util/static_rdbuf.hpp>
 #include <ufo_log/frontend_types.hpp>
@@ -97,4 +97,4 @@ you_can_just_use_stack_ostream_with_ostr_deep_copy(
         << expr\
         )).get_deep_copy_string()
 
-#endif /* UFO_LOG_STACK_OSTREAM_HPP_ */
+#endif /* MAL_LOG_STACK_OSTREAM_HPP_ */

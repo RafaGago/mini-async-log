@@ -34,8 +34,8 @@ either expressed or implied, of Diadrom AB.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_SAFE_BOOL_HPP_
-#define UFO_SAFE_BOOL_HPP_
+#ifndef MAL_SAFE_BOOL_HPP_
+#define MAL_SAFE_BOOL_HPP_
 
 namespace ufo {
 //------------------------------------------------------------------------------
@@ -72,5 +72,5 @@ public:
 //------------------------------------------------------------------------------
 } //namespace ufo
 
-#endif /* UFO_SAFE_BOOL_HPP_ */
+#endif /* MAL_SAFE_BOOL_HPP_ */
 

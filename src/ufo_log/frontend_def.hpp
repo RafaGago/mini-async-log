@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_LOG_FRONTEND_DEF_HPP_
-#define UFO_LOG_LOG_FRONTEND_DEF_HPP_
+#ifndef MAL_LOG_LOG_FRONTEND_DEF_HPP_
+#define MAL_LOG_LOG_FRONTEND_DEF_HPP_
 
 #include <utility>
 #include <cassert>
@@ -247,13 +247,13 @@ private:
     async_to_sync            m_sync;
 };
 //------------------------------------------------------------------------------
-UFO_LIB_EXPORTED_CLASS frontend::frontend()
+MAL_LIB_EXPORTED_CLASS frontend::frontend()
 {
     m = nullptr;
     m = new frontend::frontend_impl();
 }
 //------------------------------------------------------------------------------
-UFO_LIB_EXPORTED_CLASS frontend::~frontend()
+MAL_LIB_EXPORTED_CLASS frontend::~frontend()
 {
     if (is_constructed())
     {
@@ -261,19 +261,19 @@ UFO_LIB_EXPORTED_CLASS frontend::~frontend()
     }
 }
 //------------------------------------------------------------------------------
-bool UFO_LIB_EXPORTED_CLASS frontend::is_constructed() const
+bool MAL_LIB_EXPORTED_CLASS frontend::is_constructed() const
 {
     return m != nullptr;
 }
 //------------------------------------------------------------------------------
-ser::exporter UFO_LIB_EXPORTED_CLASS 
+ser::exporter MAL_LIB_EXPORTED_CLASS 
     frontend::get_encoder (uword required_bytes)
 {
     assert (is_constructed());
     return m->get_encoder (required_bytes);
 }
 //------------------------------------------------------------------------------
-void UFO_LIB_EXPORTED_CLASS frontend::async_push_encoded(
+void MAL_LIB_EXPORTED_CLASS frontend::async_push_encoded(
         ser::exporter& encoder
         )
 {
@@ -281,7 +281,7 @@ void UFO_LIB_EXPORTED_CLASS frontend::async_push_encoded(
     m->async_push_encoded (encoder);
 }
 //--------------------------------------------------------------------------
-bool UFO_LIB_EXPORTED_CLASS frontend::sync_push_encoded(
+bool MAL_LIB_EXPORTED_CLASS frontend::sync_push_encoded(
         ser::exporter& encoder,
         sync_point&    sync
         )
@@ -290,38 +290,38 @@ bool UFO_LIB_EXPORTED_CLASS frontend::sync_push_encoded(
     return m->sync_push_encoded (encoder, sync);
 }
 //------------------------------------------------------------------------------
-backend_cfg UFO_LIB_EXPORTED_CLASS frontend::get_backend_cfg()
+backend_cfg MAL_LIB_EXPORTED_CLASS frontend::get_backend_cfg()
 {
     assert (is_constructed());
     return m->get_backend_cfg();
 }
 //------------------------------------------------------------------------------
-frontend::init_status UFO_LIB_EXPORTED_CLASS 
+frontend::init_status MAL_LIB_EXPORTED_CLASS 
     frontend::init_backend (const backend_cfg& cfg)
 {
     assert (is_constructed());
     return m->init_backend (cfg);
 }
 //------------------------------------------------------------------------------
-sev::severity UFO_LIB_EXPORTED_CLASS frontend::min_severity() const
+sev::severity MAL_LIB_EXPORTED_CLASS frontend::min_severity() const
 {
     assert (is_constructed());
     return m->min_severity();
 }
 //--------------------------------------------------------------------------
-bool UFO_LIB_EXPORTED_CLASS frontend::can_log (sev::severity s) const
+bool MAL_LIB_EXPORTED_CLASS frontend::can_log (sev::severity s) const
 {
     assert (is_constructed());
     return m->can_log (s);
 }
 //------------------------------------------------------------------------------
-void UFO_LIB_EXPORTED_CLASS frontend::set_file_severity (sev::severity s)
+void MAL_LIB_EXPORTED_CLASS frontend::set_file_severity (sev::severity s)
 {
     assert (is_constructed());
     return m->set_file_severity (s);
 }
 //------------------------------------------------------------------------------
-bool UFO_LIB_EXPORTED_CLASS frontend::set_console_severity(
+bool MAL_LIB_EXPORTED_CLASS frontend::set_console_severity(
            sev::severity std_err, sev::severity std_out
            )
 {
@@ -329,7 +329,7 @@ bool UFO_LIB_EXPORTED_CLASS frontend::set_console_severity(
     return m->set_console_severity (std_err, std_out);
 }
 //--------------------------------------------------------------------------
-timestamp_data UFO_LIB_EXPORTED_CLASS frontend::get_timestamp_data() const
+timestamp_data MAL_LIB_EXPORTED_CLASS frontend::get_timestamp_data() const
 {
     timestamp_data d;
     d.producer_timestamps = m->producer_timestamp();
@@ -337,13 +337,13 @@ timestamp_data UFO_LIB_EXPORTED_CLASS frontend::get_timestamp_data() const
     return d;
 }
 //------------------------------------------------------------------------------
-bool UFO_LIB_EXPORTED_CLASS frontend::producer_timestamp (bool on)
+bool MAL_LIB_EXPORTED_CLASS frontend::producer_timestamp (bool on)
 {
     assert (is_constructed());
     return m->producer_timestamp (on);
 }
 //------------------------------------------------------------------------------
-void UFO_LIB_EXPORTED_CLASS frontend::on_termination()
+void MAL_LIB_EXPORTED_CLASS frontend::on_termination()
 {
     assert (is_constructed());
     return m->on_termination();
@@ -351,4 +351,4 @@ void UFO_LIB_EXPORTED_CLASS frontend::on_termination()
 //------------------------------------------------------------------------------
 } //namespace
 
-#endif /* UFO_LOG_LOG_FRONTEND_DEF_HPP_ */
+#endif /* MAL_LOG_LOG_FRONTEND_DEF_HPP_ */

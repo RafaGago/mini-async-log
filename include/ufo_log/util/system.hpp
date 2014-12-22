@@ -33,21 +33,21 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
-#ifndef UFO_SYSTEM_HPP_
-#define UFO_SYSTEM_HPP_
+#ifndef MAL_SYSTEM_HPP_
+#define MAL_SYSTEM_HPP_
 
 #if defined (__GXX_EXPERIMENTAL_CXX0X__) &&\
     defined (__GNUC__) &&\
     (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
 
-    #define UFO_HAS_CONSTEXPR 1
-    #define UFO_HAS_VARIADIC_TEMPLATES 1
-    #define UFO_UNIX_LIKE //this is wrong but correct enough for now to just support win an linux
+    #define MAL_HAS_CONSTEXPR 1
+    #define MAL_HAS_VARIADIC_TEMPLATES 1
+    #define MAL_UNIX_LIKE //this is wrong but correct enough for now to just support win an linux
 
     #if __x86_64__ || __ppc64__
-        #define UFO_64
+        #define MAL_64
     #else
-        #define UFO_32
+        #define MAL_32
     #endif
 
 namespace ufo {
@@ -70,15 +70,15 @@ MSVC++ 7.1  _MSC_VER == 1310 (Visual Studio 2003)
 #if defined (_MSC_VER)
 
 #ifdef _WIN64
-    #define UFO_64
+    #define MAL_64
 #else
-    #define UFO_32
+    #define MAL_32
 #endif
 
-    #define UFO_WINDOWS
+    #define MAL_WINDOWS
 
 #if _MSC_VER >= 1800 //1600 >= vs2010
-    #define UFO_HAS_VARIADIC_TEMPLATES 1
+    #define MAL_HAS_VARIADIC_TEMPLATES 1
 #endif
 
 namespace ufo {
@@ -87,37 +87,37 @@ namespace ufo {
 
 #endif
 
-#ifndef UFO_DYN_LIB_CALL
+#ifndef MAL_DYN_LIB_CALL
 
 #if defined (_MSC_VER)
-    #define UFO_LIB_EXPORTED_FUNC WINAPI  //using def files
-    #if defined (UFO_DYNLIB_COMPILE)
-        #define UFO_LIB_EXPORTED_CLASS __declspec(dllexport)
+    #define MAL_LIB_EXPORTED_FUNC WINAPI  //using def files
+    #if defined (MAL_DYNLIB_COMPILE)
+        #define MAL_LIB_EXPORTED_CLASS __declspec(dllexport)
     #else
-        #define UFO_LIB_EXPORTED_CLASS __declspec(dllimport)
+        #define MAL_LIB_EXPORTED_CLASS __declspec(dllimport)
     #endif
 #elif __GNUC__ >= 4
-    #define UFO_LIB_EXPORTED_FUNC __attribute__ ((visibility ("default")))
-    #define UFO_LIB_EXPORTED_CLASS __attribute__ ((visibility ("default")))
+    #define MAL_LIB_EXPORTED_FUNC __attribute__ ((visibility ("default")))
+    #define MAL_LIB_EXPORTED_CLASS __attribute__ ((visibility ("default")))
 #else
-    #define UFO_LIB_EXPORTED_FUNC
-    #define UFO_LIB_EXPORTED_CLASS
+    #define MAL_LIB_EXPORTED_FUNC
+    #define MAL_LIB_EXPORTED_CLASS
 #endif
 
-#endif //UFO_DYN_LIB_CALL
+#endif //MAL_DYN_LIB_CALL
 
 namespace ufo {
-#ifndef UFO_CACHE_LINE_SIZE
+#ifndef MAL_CACHE_LINE_SIZE
     const unsigned cache_line_size = 64;
 #else
-    const unsigned cache_line_size = UFO_CACHE_LINE_SIZE;
+    const unsigned cache_line_size = MAL_CACHE_LINE_SIZE;
 #endif
 } //namespace ufo {
 
-#if defined (UFO_HAS_CONSTEXPR)
-    #define UFO_CONSTEXPR constexpr
+#if defined (MAL_HAS_CONSTEXPR)
+    #define MAL_CONSTEXPR constexpr
 #else
-    #define UFO_CONSTEXPR constexpr
+    #define MAL_CONSTEXPR constexpr
 #endif
 
-#endif /* UFO_SYSTEM_HPP_ */
+#endif /* MAL_SYSTEM_HPP_ */

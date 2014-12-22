@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_FRONTEND_TYPES_HPP_
-#define UFO_LOG_FRONTEND_TYPES_HPP_
+#ifndef MAL_LOG_FRONTEND_TYPES_HPP_
+#define MAL_LOG_FRONTEND_TYPES_HPP_
 
 #include <ufo_log/util/integer.hpp>
 #include <string>
@@ -84,4 +84,4 @@ struct ptr_wrapper
 //------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* UFO_LOG_FRONTEND_TYPES_HPP_ */
+#endif /* MAL_LOG_FRONTEND_TYPES_HPP_ */

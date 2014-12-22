@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_LOG_FRONTEND_HPP_
-#define UFO_LOG_LOG_FRONTEND_HPP_
+#ifndef MAL_LOG_LOG_FRONTEND_HPP_
+#define MAL_LOG_LOG_FRONTEND_HPP_
 
 #include <ufo_log/util/system.hpp>
 #include <ufo_log/serialization/exporter.hpp>
@@ -51,7 +51,7 @@ struct timestamp_data
     bool producer_timestamps;
 };
 //------------------------------------------------------------------------------
-class UFO_LIB_EXPORTED_CLASS frontend
+class MAL_LIB_EXPORTED_CLASS frontend
 {
 public:
     //--------------------------------------------------------------------------
@@ -109,4 +109,4 @@ private:
 //------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* UFO_LOG_LOG_FRONTEND_HPP_ */
+#endif /* MAL_LOG_LOG_FRONTEND_HPP_ */

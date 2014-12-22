@@ -71,8 +71,8 @@ either expressed or implied, of Diadrom AB.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_MPSC_HPP_
-#define UFO_MPSC_HPP_
+#ifndef MAL_MPSC_HPP_
+#define MAL_MPSC_HPP_
 
 #include <type_traits>
 #include <ufo_log/util/system.hpp>
@@ -301,4 +301,4 @@ private:
 
 } //namespace
 
-#endif /* UFO_MPSC_HPP_ */
+#endif /* MAL_MPSC_HPP_ */

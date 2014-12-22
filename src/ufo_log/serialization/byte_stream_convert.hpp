@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_LOG_BYTE_STREAM_CONVERT_HPP_
-#define UFO_LOG_LOG_BYTE_STREAM_CONVERT_HPP_
+#ifndef MAL_LOG_LOG_BYTE_STREAM_CONVERT_HPP_
+#define MAL_LOG_LOG_BYTE_STREAM_CONVERT_HPP_
 
 #include <ufo_log/output.hpp>
 
@@ -143,4 +143,4 @@ class byte_stream_convert
 //------------------------------------------------------------------------------
 }} //namespaces
 
-#endif /* UFO_LOG_LOG_BYTE_STREAM_CONVERT_HPP_ */
+#endif /* MAL_LOG_LOG_BYTE_STREAM_CONVERT_HPP_ */

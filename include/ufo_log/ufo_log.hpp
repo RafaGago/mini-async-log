@@ -34,46 +34,46 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_LOG_INCLUDE_HPP_
-#define UFO_LOG_LOG_INCLUDE_HPP_
+#ifndef MAL_LOG_LOG_INCLUDE_HPP_
+#define MAL_LOG_LOG_INCLUDE_HPP_
 
 #include <ufo_log/frontend_types.hpp>
 #include <ufo_log/ufo_private.hpp>
 #include <ufo_log/ufo_interface.hpp>
 
 //------------------------------------------------------------------------------
-#ifndef UFO_GET_LOGGER_INSTANCE_FUNCNAME
-    #define UFO_GET_LOGGER_INSTANCE_FUNC get_ufo_logger_instance()
+#ifndef MAL_GET_LOGGER_INSTANCE_FUNCNAME
+    #define MAL_GET_LOGGER_INSTANCE_FUNC get_ufo_logger_instance()
 #else
-    #define UFO_GET_LOGGER_INSTANCE_FUNC UFO_GET_LOGGER_INSTANCE_FUNCNAME()
+    #define MAL_GET_LOGGER_INSTANCE_FUNC MAL_GET_LOGGER_INSTANCE_FUNCNAME()
 #endif
 //------------------------------------------------------------------------------
-#define log_if(condition, statement) UFO_LOG_IF_PRIVATE (condition, statement)
+#define log_if(condition, statement) MAL_LOG_IF_PRIVATE (condition, statement)
 //------------------------------------------------------------------------------
 #define log_every(count, statement) \
-    UFO_LOG_EVERY_PRIVATE (__LINE__, count, statement)
+    MAL_LOG_EVERY_PRIVATE (__LINE__, count, statement)
 //------------------------------------------------------------------------------
-#ifndef UFO_STRIP_LOG_FILELINE
-    #define log_fileline UFO_LOG_FILELINE_CONCAT_PRIVATE (__FILE__, __LINE__)
+#ifndef MAL_STRIP_LOG_FILELINE
+    #define log_fileline MAL_LOG_FILELINE_CONCAT_PRIVATE (__FILE__, __LINE__)
 #else
     #define log_fileline
 #endif
 //------------------------------------------------------------------------------
 #define log_fln log_fileline
 //------------------------------------------------------------------------------
-#if !defined (UFO_STRIP_LOG_SEVERITY)
+#if !defined (MAL_STRIP_LOG_SEVERITY)
 
 #define log_debug_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, true, debug, __VA_ARGS__)
+    MAL_LOG_PRIVATE (instance, true, debug, __VA_ARGS__)
 
 #define log_debug_sync_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, false, debug, __VA_ARGS__)
+    MAL_LOG_PRIVATE (instance, false, debug, __VA_ARGS__)
 
 #define log_debug(...)\
-    log_debug_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+    log_debug_i (MAL_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
 #define log_debug_sync(...)\
-    log_debug_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+    log_debug_sync_i (MAL_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
 #define log_debug_i_if(condition, instance, ...)\
     log_if (condition, log_debug_i (instance, __VA_ARGS__))
@@ -98,21 +98,21 @@ either expressed or implied, of Rafael Gago Castano.
     #define log_debug_if(...)        ::ufo::macro::silence_warnings()
 	#define log_debug_sync_if(...)   ::ufo::macro::silence_warnings()
 
-#endif //UFO_STRIP_LOG_SEVERITY
+#endif //MAL_STRIP_LOG_SEVERITY
 //------------------------------------------------------------------------------
-#if !defined (UFO_STRIP_LOG_SEVERITY) || UFO_STRIP_LOG_SEVERITY < 1
+#if !defined (MAL_STRIP_LOG_SEVERITY) || MAL_STRIP_LOG_SEVERITY < 1
 
 #define log_trace_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, true, trace, __VA_ARGS__)
+    MAL_LOG_PRIVATE (instance, true, trace, __VA_ARGS__)
 
 #define log_trace_sync_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, false, trace, __VA_ARGS__)
+    MAL_LOG_PRIVATE (instance, false, trace, __VA_ARGS__)
 
 #define log_trace(...)\
-    log_trace_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+    log_trace_i (MAL_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
 #define log_trace_sync(...)\
-    log_trace_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+    log_trace_sync_i (MAL_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
 #define log_trace_i_if(condition, instance, ...)\
     log_if (condition, log_trace_i (instance, __VA_ARGS__))
@@ -139,19 +139,19 @@ either expressed or implied, of Rafael Gago Castano.
 
 #endif
 //------------------------------------------------------------------------------
-#if !defined (UFO_STRIP_LOG_SEVERITY) || UFO_STRIP_LOG_SEVERITY < 2
+#if !defined (MAL_STRIP_LOG_SEVERITY) || MAL_STRIP_LOG_SEVERITY < 2
 
 #define log_notice_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, true, notice, __VA_ARGS__)
+    MAL_LOG_PRIVATE (instance, true, notice, __VA_ARGS__)
 
 #define log_notice_sync_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, false, notice, __VA_ARGS__)
+    MAL_LOG_PRIVATE (instance, false, notice, __VA_ARGS__)
 
 #define log_notice(...)\
-    log_notice_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+    log_notice_i (MAL_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
 #define log_notice_sync(...)\
-    log_notice_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+    log_notice_sync_i (MAL_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
 #define log_notice_i_if(condition, instance, ...)\
     log_if (condition, log_notice_i (instance, __VA_ARGS__))
@@ -178,19 +178,19 @@ either expressed or implied, of Rafael Gago Castano.
 
 #endif
 //------------------------------------------------------------------------------
-#if !defined (UFO_STRIP_LOG_SEVERITY) || UFO_STRIP_LOG_SEVERITY < 3
+#if !defined (MAL_STRIP_LOG_SEVERITY) || MAL_STRIP_LOG_SEVERITY < 3
 
 #define log_warning_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, true, warning, __VA_ARGS__)
+    MAL_LOG_PRIVATE (instance, true, warning, __VA_ARGS__)
 
 #define log_warning_sync_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, false, warning, __VA_ARGS__)
+    MAL_LOG_PRIVATE (instance, false, warning, __VA_ARGS__)
 
 #define log_warning(...)\
-    log_warning_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+    log_warning_i (MAL_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
 #define log_warning_sync(...)\
-    log_warning_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+    log_warning_sync_i (MAL_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
 #define log_warning_i_if(condition, instance, ...)\
     log_if (condition, log_warning_i (instance, __VA_ARGS__))
@@ -217,19 +217,19 @@ either expressed or implied, of Rafael Gago Castano.
 
 #endif
 //------------------------------------------------------------------------------
-#if !defined (UFO_STRIP_LOG_SEVERITY) || UFO_STRIP_LOG_SEVERITY < 4
+#if !defined (MAL_STRIP_LOG_SEVERITY) || MAL_STRIP_LOG_SEVERITY < 4
 
 #define log_error_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, true, error, __VA_ARGS__)
+    MAL_LOG_PRIVATE (instance, true, error, __VA_ARGS__)
 
 #define log_error_sync_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, false, error, __VA_ARGS__)
+    MAL_LOG_PRIVATE (instance, false, error, __VA_ARGS__)
 
 #define log_error(...)\
-    log_error_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+    log_error_i (MAL_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
 #define log_error_sync(...)\
-    log_error_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+    log_error_sync_i (MAL_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
 #define log_error_i_if(condition, instance, ...)\
     log_if (condition, log_error_i (instance, __VA_ARGS__))
@@ -256,19 +256,19 @@ either expressed or implied, of Rafael Gago Castano.
 
 #endif
 //------------------------------------------------------------------------------
-#if !defined (UFO_STRIP_LOG_SEVERITY) || UFO_STRIP_LOG_SEVERITY < 5
+#if !defined (MAL_STRIP_LOG_SEVERITY) || MAL_STRIP_LOG_SEVERITY < 5
 
 #define log_critical_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, true, critical, __VA_ARGS__)
+    MAL_LOG_PRIVATE (instance, true, critical, __VA_ARGS__)
 
 #define log_critical_sync_i(instance, ...)\
-    UFO_LOG_PRIVATE (instance, false, critical, __VA_ARGS__)
+    MAL_LOG_PRIVATE (instance, false, critical, __VA_ARGS__)
 
 #define log_critical(...)\
-    log_critical_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+    log_critical_i (MAL_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
 #define log_critical_sync(...)\
-    log_critical_sync_i (UFO_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
+    log_critical_sync_i (MAL_GET_LOGGER_INSTANCE_FUNC, __VA_ARGS__)
 
 #define log_critical_i_if(condition, instance, ...)\
     log_if (condition, log_critical_i (instance, __VA_ARGS__))
@@ -295,4 +295,4 @@ either expressed or implied, of Rafael Gago Castano.
 
 #endif
 //------------------------------------------------------------------------------
-#endif /* UFO_LOG_LOG_INCLUDE_HPP_ */
+#endif /* MAL_LOG_LOG_INCLUDE_HPP_ */

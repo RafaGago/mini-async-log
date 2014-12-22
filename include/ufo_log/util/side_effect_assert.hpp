@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_SIDE_EFFECT_ASSERT_HPP_
-#define UFO_LOG_SIDE_EFFECT_ASSERT_HPP_
+#ifndef MAL_LOG_SIDE_EFFECT_ASSERT_HPP_
+#define MAL_LOG_SIDE_EFFECT_ASSERT_HPP_
 
 #include <cassert>
 
@@ -45,4 +45,4 @@ either expressed or implied, of Rafael Gago Castano.
     #define side_effect_assert(expr) assert (expr)
 #endif
 
-#endif /* UFO_LOG_SIDE_EFFECT_ASSERT_HPP_ */
+#endif /* MAL_LOG_SIDE_EFFECT_ASSERT_HPP_ */

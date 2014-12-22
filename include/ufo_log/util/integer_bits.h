@@ -34,8 +34,8 @@ either expressed or implied, of Diadrom AB.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_INTEGER_BITS_AND_FUNCS_H_
-#define UFO_INTEGER_BITS_AND_FUNCS_H_
+#ifndef MAL_INTEGER_BITS_AND_FUNCS_H_
+#define MAL_INTEGER_BITS_AND_FUNCS_H_
 
 //This file is a C header, don't use C++ features
 
@@ -364,7 +364,7 @@ unsigned highest_used_byte_16 (uint16_t v)
 static inline
 unsigned highest_used_byte_32 (uint32_t v)
 {
-#ifdef UFO_INTEGER_BITS_NO_BRANCHING
+#ifdef MAL_INTEGER_BITS_NO_BRANCHING
     unsigned res = 0, cmp = 0;
 
     cmp = ((unsigned) ((v & 0x0000ff00ULL) == 0)) - 1;
@@ -389,7 +389,7 @@ unsigned highest_used_byte_32 (uint32_t v)
 static inline
 unsigned highest_used_byte_64 (uint64_t v)
 {
-#ifdef UFO_INTEGER_BITS_NO_BRANCHING
+#ifdef MAL_INTEGER_BITS_NO_BRANCHING
     unsigned res = 0, cmp = 0;
 
     cmp = ((unsigned) ((v & 0x000000000000ff00ULL) == 0)) - 1;

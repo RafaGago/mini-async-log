@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_LOG_BACKEND_CFG_HPP_
-#define UFO_LOG_LOG_BACKEND_CFG_HPP_
+#ifndef MAL_LOG_LOG_BACKEND_CFG_HPP_
+#define MAL_LOG_LOG_BACKEND_CFG_HPP_
 
 #include <deque>
 #include <string>
@@ -107,4 +107,4 @@ struct backend_cfg
 //------------------------------------------------------------------------------
 } //namespaces
 //------------------------------------------------------------------------------
-#endif /* UFO_LOG_LOG_BACKEND_CFG_HPP_ */
+#endif /* MAL_LOG_LOG_BACKEND_CFG_HPP_ */

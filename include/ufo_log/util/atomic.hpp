@@ -34,24 +34,24 @@ either expressed or implied, of Diadrom AB.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_ATOMIC_HPP_
-#define UFO_ATOMIC_HPP_
+#ifndef MAL_ATOMIC_HPP_
+#define MAL_ATOMIC_HPP_
 
 #include <ufo_log/util/integer.hpp>
 
-#ifdef UFO_USE_BOOST_ATOMIC
+#ifdef MAL_USE_BOOST_ATOMIC
     #include <boost/atomic.hpp>
-    #define UFO_ATOMIC_NAMESPACE ::boost
+    #define MAL_ATOMIC_NAMESPACE ::boost
 
 #else
     #include <atomic>
-    #define UFO_ATOMIC_NAMESPACE ::std
+    #define MAL_ATOMIC_NAMESPACE ::std
 
 #endif
 
 namespace ufo {
 
-namespace at = UFO_ATOMIC_NAMESPACE;
+namespace at = MAL_ATOMIC_NAMESPACE;
 
 typedef at::atomic<u8>     atomic_uint8;
 typedef at::atomic<u16>    atomic_uint16;
@@ -269,4 +269,4 @@ public:
 //------------------------------------------------------------------------------
 } //namespace
 
-#endif /* UFO_ATOMIC_HPP_ */
+#endif /* MAL_ATOMIC_HPP_ */

@@ -1,4 +1,4 @@
-#define UFO_STRIP_LOG_SEVERITY 0
+#define MAL_STRIP_LOG_SEVERITY 0
 
 #include <cassert>
 #include <ufo_log/ufo_log.hpp>
@@ -23,7 +23,7 @@ void general_features()
     auto be_cfg                       = fe.get_backend_cfg();
     be_cfg.file.name_prefix           = "test-data.";
     be_cfg.file.name_suffix           = ".log.txt";
-#ifndef UFO_WINDOWS
+#ifndef MAL_WINDOWS
     be_cfg.file.out_folder            = "./log_out/";                             //this folder has to exist before running
 #else
     be_cfg.file.out_folder            = ".\\log_out\\";                           //this folder has to exist before running
@@ -119,7 +119,7 @@ void general_features()
         (u64) -1
         );
     ++i;
-#if !defined (UFO_COMPILE_TIME_FMT_CHECK) && defined (NDEBUG)
+#if !defined (MAL_COMPILE_TIME_FMT_CHECK) && defined (NDEBUG)
     log_error(
         "message {}, this could be corrected at compile time if all "
         "targeted compilers supported constexpr, now a runtime error "
@@ -144,7 +144,7 @@ void general_features()
         32
         );
     ++i;
-#endif //UFO_COMPILE_TIME_FMT_CHECK
+#endif //MAL_COMPILE_TIME_FMT_CHECK
     log_error ("message {}, this isn't interpreted as a placeholder {ww}", i);
     log_notice_if (true, "you should see this conditional entry...");
     log_notice_if (false, "...but not this one");

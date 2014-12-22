@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_HEADER_DATA_HPP_
-#define UFO_LOG_HEADER_DATA_HPP_
+#ifndef MAL_LOG_HEADER_DATA_HPP_
+#define MAL_LOG_HEADER_DATA_HPP_
 
 #include <ufo_log/util/system.hpp>
 #include <ufo_log/util/integer.hpp>
@@ -80,4 +80,4 @@ inline header_data make_header_data(
 
 }} //namespaces
 
-#endif /* UFO_LOG_HEADER_DATA_HPP_ */
+#endif /* MAL_LOG_HEADER_DATA_HPP_ */

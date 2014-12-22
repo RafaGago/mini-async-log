@@ -34,8 +34,8 @@ either expressed or implied, of Diadrom AB.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_PLACEMENT_NEW_HPP_
-#define UFO_PLACEMENT_NEW_HPP_
+#ifndef MAL_PLACEMENT_NEW_HPP_
+#define MAL_PLACEMENT_NEW_HPP_
 
 #include <type_traits>
 #include <utility>
@@ -59,7 +59,7 @@ public:
     const T* operator->() const { return ((T*) &m_stor); }
     void destruct()             { get().~T(); }
     //--------------------------------------------------------------------------
-#ifdef UFO_HAS_VARIADIC_TEMPLATES
+#ifdef MAL_HAS_VARIADIC_TEMPLATES
     template <class... args>
     void construct (args&&... a)
     {
@@ -228,4 +228,4 @@ private:
 
 } //namespaces
 
-#endif /* UFO_SERVER_PLACEMENT_NEW_HPP_ */
+#endif /* MAL_SERVER_PLACEMENT_NEW_HPP_ */

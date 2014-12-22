@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_LOG_OUTPUT_HPP_
-#define UFO_LOG_LOG_OUTPUT_HPP_
+#ifndef MAL_LOG_LOG_OUTPUT_HPP_
+#define MAL_LOG_LOG_OUTPUT_HPP_
 
 #include <cstdio>
 #include <cassert>
@@ -218,4 +218,4 @@ private:
 //------------------------------------------------------------------------------
 }
 
-#endif /* UFO_LOG_LOG_FILE_SINK_HPP_ */
+#endif /* MAL_LOG_LOG_FILE_SINK_HPP_ */

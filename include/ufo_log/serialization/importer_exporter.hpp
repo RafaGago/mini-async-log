@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_IMPORTER_EXPORTER_BASE_HPP_
-#define UFO_LOG_IMPORTER_EXPORTER_BASE_HPP_
+#ifndef MAL_LOG_IMPORTER_EXPORTER_BASE_HPP_
+#define MAL_LOG_IMPORTER_EXPORTER_BASE_HPP_
 
 #include <cassert>
 #include <ufo_log/util/integer.hpp>
@@ -98,4 +98,4 @@ protected:
 
 }} //namespaces
 
-#endif /* UFO_LOG_IMPORTER_EXPORTER_BASE_HPP_ */
+#endif /* MAL_LOG_IMPORTER_EXPORTER_BASE_HPP_ */

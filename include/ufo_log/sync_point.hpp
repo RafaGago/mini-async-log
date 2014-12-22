@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_SYNC_POINT_HPP_
-#define UFO_LOG_SYNC_POINT_HPP_
+#ifndef MAL_LOG_SYNC_POINT_HPP_
+#define MAL_LOG_SYNC_POINT_HPP_
 
 #include <ufo_log/util/integer.hpp>
 
@@ -60,4 +60,4 @@ private:
 //------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* UFO_LOG_SYNC_POINT_HPP_ */
+#endif /* MAL_LOG_SYNC_POINT_HPP_ */

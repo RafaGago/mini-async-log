@@ -33,8 +33,8 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
-#ifndef UFO_LOG_IMPORTER_HPP_
-#define UFO_LOG_IMPORTER_HPP_
+#ifndef MAL_LOG_IMPORTER_HPP_
+#define MAL_LOG_IMPORTER_HPP_
 
 #include <ufo_log/serialization/basic_encoder_decoder.hpp>
 #include <ufo_log/frontend_types.hpp>
@@ -158,4 +158,4 @@ public:
 
 }} //namespaces
 
-#endif /* UFO_LOG_IMPORTER_HPP_ */
+#endif /* MAL_LOG_IMPORTER_HPP_ */

@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_WRITER_HPP_
-#define UFO_LOG_WRITER_HPP_
+#ifndef MAL_LOG_WRITER_HPP_
+#define MAL_LOG_WRITER_HPP_
 
 #include <ufo_log/util/mem_printf.hpp>
 #include <ufo_log/serialization/printf_modifiers.hpp>
@@ -106,7 +106,7 @@ public:
             fmt_param = find_param_in_fmt_str (o, params > 0);
         }
 
-#ifdef UFO_COMPILE_TIME_FMT_CHECK
+#ifdef MAL_COMPILE_TIME_FMT_CHECK
         assert (params == 0 && !fmt_param);
 #else
         if (params)
@@ -510,4 +510,4 @@ private:
 } //namespaces
 //------------------------------------------------------------------------------
 
-#endif /* UFO_LOG_WRITER_HPP_ */
+#endif /* MAL_LOG_WRITER_HPP_ */

@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_PRINTF_MODIFIERS_HPP_
-#define UFO_LOG_PRINTF_MODIFIERS_HPP_
+#ifndef MAL_LOG_PRINTF_MODIFIERS_HPP_
+#define MAL_LOG_PRINTF_MODIFIERS_HPP_
 
 namespace ufo { namespace ser {
 //------------------------------------------------------------------------------
@@ -152,4 +152,4 @@ const char* double_modif::hex  = "0x%016llx";
 //------------------------------------------------------------------------------
 }} //namespaces
 
-#endif /* UFO_LOG_PRINTF_MODIFIERS_HPP_ */
+#endif /* MAL_LOG_PRINTF_MODIFIERS_HPP_ */

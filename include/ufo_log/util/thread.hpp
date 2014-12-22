@@ -34,14 +34,14 @@ either expressed or implied, of Diadrom AB.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_THREAD_HPP_
-#define UFO_THREAD_HPP_
+#ifndef MAL_THREAD_HPP_
+#define MAL_THREAD_HPP_
 
-#ifdef UFO_USE_BOOST_THREAD
+#ifdef MAL_USE_BOOST_THREAD
 
 #include <boost/thread.hpp>
 
-#define UFO_THREAD_NAMESPACE ::boost
+#define MAL_THREAD_NAMESPACE ::boost
 
 #else
 
@@ -49,13 +49,13 @@ either expressed or implied, of Diadrom AB.
 #include <condition_variable>
 #include <mutex>
 
-#define UFO_THREAD_NAMESPACE ::std
+#define MAL_THREAD_NAMESPACE ::std
 
 #endif
 
 namespace ufo {
 
-namespace th = UFO_THREAD_NAMESPACE;
+namespace th = MAL_THREAD_NAMESPACE;
 
 }
-#endif /* UFO_THREAD_HPP_ */
+#endif /* MAL_THREAD_HPP_ */

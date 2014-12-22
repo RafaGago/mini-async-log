@@ -34,8 +34,8 @@ either expressed or implied, of Diadrom AB.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_ON_STACK_DYNAMIC_HPP_
-#define UFO_ON_STACK_DYNAMIC_HPP_
+#ifndef MAL_ON_STACK_DYNAMIC_HPP_
+#define MAL_ON_STACK_DYNAMIC_HPP_
 
 #include <utility>
 #include <cassert>
@@ -121,7 +121,7 @@ public:
         return is_constructed();
     }
     //--------------------------------------------------------------------------
-#ifdef UFO_HAS_VARIADIC_TEMPLATES
+#ifdef MAL_HAS_VARIADIC_TEMPLATES
     //--------------------------------------------------------------------------
     template <class... args>
     void construct (args&&... a)
@@ -367,4 +367,4 @@ on_stack_dynamic_scoped_destructor<T, align>
 //------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* UFO_ON_STACK_DYNAMIC_HPP_ */
+#endif /* MAL_ON_STACK_DYNAMIC_HPP_ */

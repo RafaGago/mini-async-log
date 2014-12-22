@@ -34,8 +34,8 @@ either expressed or implied, of Diadrom AB.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_INTEGER_BYTES_DETAIL_HPP_
-#define UFO_INTEGER_BYTES_DETAIL_HPP_
+#ifndef MAL_INTEGER_BYTES_DETAIL_HPP_
+#define MAL_INTEGER_BYTES_DETAIL_HPP_
 
 namespace ufo { namespace detail {
 

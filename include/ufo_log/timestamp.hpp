@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_TIMESTAMP_HPP_
-#define UFO_LOG_TIMESTAMP_HPP_
+#ifndef MAL_LOG_TIMESTAMP_HPP_
+#define MAL_LOG_TIMESTAMP_HPP_
 
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/chrono.hpp>
@@ -52,4 +52,4 @@ inline u64 get_timestamp()
 
 } //namespaces
 
-#endif /* UFO_LOG_TIMESTAMP_HPP_ */
+#endif /* MAL_LOG_TIMESTAMP_HPP_ */

@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_FIELDS_HPP_
-#define UFO_LOG_FIELDS_HPP_
+#ifndef MAL_LOG_FIELDS_HPP_
+#define MAL_LOG_FIELDS_HPP_
 
 #include <ufo_log/util/integer.hpp>
 #include <ufo_log/util/system.hpp>
@@ -181,4 +181,4 @@ static_assert(
 //------------------------------------------------------------------------------
 }} //namespaces
 
-#endif /* UFO_LOG_FIELDS_HPP_ */
+#endif /* MAL_LOG_FIELDS_HPP_ */

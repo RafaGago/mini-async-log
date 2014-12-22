@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_BOOST_FILESYSTEM_LIST_ALL_FILES_HPP_
-#define UFO_LOG_BOOST_FILESYSTEM_LIST_ALL_FILES_HPP_
+#ifndef MAL_LOG_BOOST_FILESYSTEM_LIST_ALL_FILES_HPP_
+#define MAL_LOG_BOOST_FILESYSTEM_LIST_ALL_FILES_HPP_
 
 #include <boost/filesystem.hpp>
 #include <ufo_log/backend_cfg.hpp>
@@ -65,4 +65,4 @@ past_executions_file_list list_all_files (const char* path)
 //------------------------------------------------------------------------------
 }} //namespaces
 
-#endif /* UFO_LOG_BOOST_FILESYSTEM_LIST_ALL_FILES_HPP_ */
+#endif /* MAL_LOG_BOOST_FILESYSTEM_LIST_ALL_FILES_HPP_ */

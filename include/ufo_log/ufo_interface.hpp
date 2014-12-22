@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_INTERFACE_HPP_
-#define UFO_LOG_INTERFACE_HPP_
+#ifndef MAL_LOG_INTERFACE_HPP_
+#define MAL_LOG_INTERFACE_HPP_
 
 #include <memory>
 #include <cassert>
@@ -524,4 +524,4 @@ bool new_entry (frontend& fe, sev::severity sv, const char* fmt)
 //------------------------------------------------------------------------------
 } //namespace
 
-#endif /* UFO_LOG_INTERFACE_HPP_ */
+#endif /* MAL_LOG_INTERFACE_HPP_ */

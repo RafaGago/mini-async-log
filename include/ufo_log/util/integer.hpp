@@ -35,10 +35,10 @@ either expressed or implied, of Diadrom AB.
 */
 
 
-#ifndef UFO_INTEGER_HPP_
-#define UFO_INTEGER_HPP_
+#ifndef MAL_INTEGER_HPP_
+#define MAL_INTEGER_HPP_
 
-#ifndef UFO_USE_BOOST_CSTDINT
+#ifndef MAL_USE_BOOST_CSTDINT
 
 #include <cstdint>
 
@@ -130,4 +130,4 @@ typedef integer_for_bytes<sizeof (void*)>::unsigned_type uword;
 
 } //namespace ufo
 
-#endif /* UFO_INTEGER_HPP_ */
+#endif /* MAL_INTEGER_HPP_ */

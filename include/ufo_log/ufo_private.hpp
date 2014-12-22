@@ -34,35 +34,35 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_LOG_INCLUDE_PRIVATE_HPP_
-#define UFO_LOG_LOG_INCLUDE_PRIVATE_HPP_
+#ifndef MAL_LOG_LOG_INCLUDE_PRIVATE_HPP_
+#define MAL_LOG_LOG_INCLUDE_PRIVATE_HPP_
 
 #include <ufo_log/util/system.hpp>
 
-#if defined (UFO_HAS_CONSTEXPR) && defined (UFO_HAS_VARIADIC_TEMPLATES)
-    #define UFO_COMPILE_TIME_FMT_CHECK
+#if defined (MAL_HAS_CONSTEXPR) && defined (MAL_HAS_VARIADIC_TEMPLATES)
+    #define MAL_COMPILE_TIME_FMT_CHECK
 #endif
 
-#ifndef UFO_WINDOWS
-    #define UFO_GET_ARG1_PRIVATE(arg, ...) arg
-    #define UFO_GET_FMT_STR_PRIVATE(...)\
-        UFO_GET_ARG1_PRIVATE(__VA_ARGS__, dummy)
+#ifndef MAL_WINDOWS
+    #define MAL_GET_ARG1_PRIVATE(arg, ...) arg
+    #define MAL_GET_FMT_STR_PRIVATE(...)\
+        MAL_GET_ARG1_PRIVATE(__VA_ARGS__, dummy)
 #else
-    #define UFO_GET_ARG1_PRIVATE_MS(arg, ...) arg
-    #define UFO_GET_ARG1_PRIVATE(args) UFO_GET_ARG1_PRIVATE_MS args
-    #define UFO_GET_FMT_STR_PRIVATE(...) UFO_GET_ARG1_PRIVATE((__VA_ARGS__, dummy))
+    #define MAL_GET_ARG1_PRIVATE_MS(arg, ...) arg
+    #define MAL_GET_ARG1_PRIVATE(args) MAL_GET_ARG1_PRIVATE_MS args
+    #define MAL_GET_FMT_STR_PRIVATE(...) MAL_GET_ARG1_PRIVATE((__VA_ARGS__, dummy))
 #endif
 
-#ifdef UFO_COMPILE_TIME_FMT_CHECK
+#ifdef MAL_COMPILE_TIME_FMT_CHECK
 
 #include <ufo_log/decltype_wrap.hpp>
 #include <ufo_log/compile_format_validator.hpp>
 
-#define UFO_FMT_STRING_CHECK(...)\
+#define MAL_FMT_STRING_CHECK(...)\
         ufo::trigger_format_error<\
             ufo::fmt_validator::execute<\
-                UFO_DECLTYPE_WRAP (__VA_ARGS__)\
-                    > (UFO_GET_FMT_STR_PRIVATE (__VA_ARGS__))>()
+                MAL_DECLTYPE_WRAP (__VA_ARGS__)\
+                    > (MAL_GET_FMT_STR_PRIVATE (__VA_ARGS__))>()
 
 #else //Microsoft (mostly) mode
 
@@ -89,8 +89,8 @@ inline bool is_literal (T val)
 
 }} //ufo macro
 
-#define UFO_FMT_STRING_CHECK(...)\
-    ::ufo::macro::is_literal (UFO_GET_FMT_STR_PRIVATE (__VA_ARGS__))
+#define MAL_FMT_STRING_CHECK(...)\
+    ::ufo::macro::is_literal (MAL_GET_FMT_STR_PRIVATE (__VA_ARGS__))
 
 #endif
 
@@ -109,43 +109,43 @@ inline bool silence_warnings() { return true; }
 }} //namespaces
 
 
-#define UFO_LOG_IF_PRIVATE(condition, statement)\
+#define MAL_LOG_IF_PRIVATE(condition, statement)\
     ((condition) ? (statement) : ::ufo::macro::silence_warnings())
 
-#if !defined (UFO_WINDOWS) || (defined (_MSC_VER) && _MSC_VER > 1600)
+#if !defined (MAL_WINDOWS) || (defined (_MSC_VER) && _MSC_VER > 1600)
 
-#define UFO_LOG_EVERY_PRIVATE(line, count, statement)\
+#define MAL_LOG_EVERY_PRIVATE(line, count, statement)\
     ([&]() -> bool \
     { \
         static unsigned counter##line = \
             ::ufo::macro::log_every_needs_values_greater_than<count>::value; \
         ++counter##line = (counter##line != count) ? counter##line : 0; \
-        return UFO_LOG_IF_PRIVATE (counter##line == 0, statement); \
+        return MAL_LOG_IF_PRIVATE (counter##line == 0, statement); \
     }.operator ()())
 
 #else
 
-#define UFO_LOG_EVERY_PRIVATE(line, count, statement)\
+#define MAL_LOG_EVERY_PRIVATE(line, count, statement)\
     static unsigned counter##line = \
     ::ufo::macro::log_every_needs_values_greater_than<count>::value; \
     ([&]() -> bool \
     { \
         ++counter##line = (counter##line != count) ? counter##line : 0; \
-        return UFO_LOG_IF_PRIVATE (counter##line == 0, statement); \
+        return MAL_LOG_IF_PRIVATE (counter##line == 0, statement); \
     }.operator ()())
 
 #endif
 
-#define UFO_LOG_PRIVATE(instance, async, severity_, ...)\
-    UFO_LOG_IF_PRIVATE(\
-        (UFO_FMT_STRING_CHECK (__VA_ARGS__)) &&\
+#define MAL_LOG_PRIVATE(instance, async, severity_, ...)\
+    MAL_LOG_IF_PRIVATE(\
+        (MAL_FMT_STRING_CHECK (__VA_ARGS__)) &&\
         (instance.can_log (::ufo::sev::severity_)),\
         ::ufo::new_entry<async>(\
             instance, ::ufo::sev::severity_, __VA_ARGS__\
             ))
 
-#define UFO_LOG_TO_STR_PRIVATE(a) #a
-#define UFO_LOG_FILELINE_CONCAT_PRIVATE(file, lin)\
-    "(" file " :" UFO_LOG_TO_STR_PRIVATE (lin) ") "
+#define MAL_LOG_TO_STR_PRIVATE(a) #a
+#define MAL_LOG_FILELINE_CONCAT_PRIVATE(file, lin)\
+    "(" file " :" MAL_LOG_TO_STR_PRIVATE (lin) ") "
 
-#endif /* UFO_PRIVATE_HPP_ */
+#endif /* MAL_PRIVATE_HPP_ */

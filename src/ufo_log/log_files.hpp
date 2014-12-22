@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_LOG_FILES_HPP_
-#define UFO_LOG_LOG_FILES_HPP_
+#ifndef MAL_LOG_LOG_FILES_HPP_
+#define MAL_LOG_LOG_FILES_HPP_
 
 #include <cstring>
 
@@ -247,9 +247,9 @@ private:
         str      += sz;
 
         sz        = cpu_clock_chars_in_name + 1;
-#if defined (UFO_32)
+#if defined (MAL_32)
         const char* fmt = "[%016llx][%016llx][";
-#elif defined (UFO_64)
+#elif defined (MAL_64)
         const char* fmt = "[c%016lx_b][%016lx][";
 #else
     #error "fix util/system.hpp for your platform (if possible)"
@@ -290,4 +290,4 @@ private:
 //------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* UFO_LOG_LOG_FILES_HPP_ */
+#endif /* MAL_LOG_LOG_FILES_HPP_ */

@@ -34,8 +34,8 @@ either expressed or implied, of Diadrom AB.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_UFO_MEM_PRINTF_HPP_
-#define UFO_UFO_MEM_PRINTF_HPP_
+#ifndef MAL_MAL_MEM_PRINTF_HPP_
+#define MAL_MAL_MEM_PRINTF_HPP_
 
 #include <cassert>
 #include <stdarg.h>
@@ -60,11 +60,11 @@ inline int mem_printf (char* mem, int mem_size, const char* fmt, ...)
     {
         va_list args;
         va_start (args, fmt);
-#ifdef UFO_WINDOWS
+#ifdef MAL_WINDOWS
     #pragma warning(disable: 4996)
 #endif
         int res = vsnprintf (mem, mem_size, fmt, args);
-#ifdef UFO_WINDOWS
+#ifdef MAL_WINDOWS
     #pragma warning(default: 4996)
 #endif
         va_end (args);
@@ -89,5 +89,5 @@ inline uword mem_printf_written (int ret)
 
 }
 
-#endif /* UFO_UFO_MEM_PRINTF_HPP_ */
+#endif /* MAL_MAL_MEM_PRINTF_HPP_ */
 

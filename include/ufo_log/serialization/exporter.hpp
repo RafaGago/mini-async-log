@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef UFO_LOG_EXPORTER_HPP_
-#define UFO_LOG_EXPORTER_HPP_
+#ifndef MAL_LOG_EXPORTER_HPP_
+#define MAL_LOG_EXPORTER_HPP_
 
 #include <ufo_log/util/system.hpp>
 #include <ufo_log/util/integer.hpp>
@@ -47,7 +47,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <ufo_log/util/integral_enable_if.hpp>
 #include <ufo_log/util/opaque_pod.hpp>
 
-#ifndef UFO_NO_VARIABLE_INTEGER_WIDTH
+#ifndef MAL_NO_VARIABLE_INTEGER_WIDTH
     #include <ufo_log/util/integer_bits.hpp>
 #endif
 
@@ -311,7 +311,7 @@ private:
     static typename enable_if_unsigned<T, uword>::type
     unsigned_bytes_required (T val)
     {
-#ifndef UFO_NO_VARIABLE_INTEGER_WIDTH
+#ifndef MAL_NO_VARIABLE_INTEGER_WIDTH
         return highest_used_byte (val) + 1;
 #else
         return sizeof (T);
@@ -393,4 +393,4 @@ private:
 }} //namespaces
 //------------------------------------------------------------------------------
 
-#endif /* UFO_LOG_EXPORTER_HPP_ */
+#endif /* MAL_LOG_EXPORTER_HPP_ */
