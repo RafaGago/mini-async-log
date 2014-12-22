@@ -1,5 +1,5 @@
 
-Useful Features Only (UFO) Logger
+Minimal asynchronous Logger (MAL)
 -----------
 A non feature-bloated asynchronous data logger. Sponsored by my employer **Diadrom AB.**
 
@@ -38,7 +38,7 @@ log_error ("the value of i is {} and the value of j is  {}", i, j);
 
 The function is type-safe, when "constexpr" and variadic template parameters are available it is matched with the parameters at compile time, otherwise the errors are caught at run time in the log file.
 
-> see this [example](https://github.com/RafaGago/ufo-log/blob/master/example/overview.cpp)
+> see this [example](https://github.com/RafaGago/mini-async-log/blob/master/example/overview.cpp)
 
 I might work in applying a little "compression" to the integer types like protobuf does (but simpler) to try to pack the messages more in case no use of the heap is allowed.
 
@@ -59,9 +59,9 @@ The library isn't a singleton, so the user should provide the front-end instance
 
 There are two methods, one is to provide it explicitly and the other one is by accessing a global function.
 
-If no instance is provided, the global function "get_ufo_logger_instance()" will be called without being namespace qualified, so you can use Koenig lookup/ADL.
+If no instance is provided, the global function "get_mal_logger_instance()" will be called without being namespace qualified, so you can use Koenig lookup/ADL.
 
-The name of the function can be changed at compile time, by defining UFO_GET_LOGGER_INSTANCE_FUNCNAME.
+The name of the function can be changed at compile time, by defining MAL_GET_LOGGER_INSTANCE_FUNCNAME.
 
 Be aware that it's dangerous to have a dynamic library or executable loaded multiple times logging to the same folder and rotating files each other. Workarounds exists, you can prepend the folder name with the process name and ID, disable rotation and manage rotation externally (e.g. by using logrotate), etc.
 
@@ -69,7 +69,7 @@ Be aware that it's dangerous to have a dynamic library or executable loaded mult
 
 The worker blocks in its destructor until its work queue is empty when normally exiting a program.
 
-When a signal is sent you can call the frontend function  [on termination](https://github.com/RafaGago/ufo-log/blob/master/src/ufo_log/frontend.hpp) after shutting down your data/log producers. This will early interrupt any synchronous calls you made.
+When a signal is sent you can call the frontend function  [on termination](https://github.com/RafaGago/mini-async-log/blob/master/src/mal_log/frontend.hpp) after shutting down your data/log producers. This will early interrupt any synchronous calls you made.
 
 
 ## Errors ##
@@ -95,15 +95,15 @@ It's possible to artificially increment the refcount of a shared_ptr by copying 
 
 Those that are self-explanatory won't be explained.
 
- - *UFO_GET_LOGGER_INSTANCE_FUNC*: See the "Initialization" chapter above.
- - *UFO_STRIP_LOG_SEVERITY*: Removes the entries of this severity and below at compile time. 0 is the "debug" severity, 5 is the "critical" severity. Stripping at level 5 leaves no log entries at all.
- - *UFO_DYNLIB_COMPILE*: Define it when compiling as a library (Windows).
- - *UFO_CACHE_LINE_SIZE*: The cache line size of the machine you are compiling for. This is just used for data structure padding. 64 is defaulted when undefined.
- - *UFO_USE_BOOST_CSTDINT*: If your compiler doesn't have <cstdint> use boost.
- - *UFO_USE_BOOST_ATOMIC*
- - *UFO_USE_BOOST_CHRONO*
- - *UFO_USE_BOOST_THREAD*
- - *UFO_NO_VARIABLE_INTEGER_WIDTH*: Integers are not encoded ignoring the number trailing bytes set to zeros but based on its data type size. When this isn't defined e.g. encoding a u64 with a value up to 255 takes one byte (plus 1 byte header), otherwise it takes the full 8 bytes (plus header).
+ - *MAL_GET_LOGGER_INSTANCE_FUNC*: See the "Initialization" chapter above.
+ - *MAL_STRIP_LOG_SEVERITY*: Removes the entries of this severity and below at compile time. 0 is the "debug" severity, 5 is the "critical" severity. Stripping at level 5 leaves no log entries at all.
+ - *MAL_DYNLIB_COMPILE*: Define it when compiling as a library (Windows).
+ - *MAL_CACHE_LINE_SIZE*: The cache line size of the machine you are compiling for. This is just used for data structure padding. 64 is defaulted when undefined.
+ - *MAL_USE_BOOST_CSTDINT*: If your compiler doesn't have <cstdint> use boost.
+ - *MAL_USE_BOOST_ATOMIC*
+ - *MAL_USE_BOOST_CHRONO*
+ - *MAL_USE_BOOST_THREAD*
+ - *MAL_NO_VARIABLE_INTEGER_WIDTH*: Integers are not encoded ignoring the number trailing bytes set to zeros but based on its data type size. When this isn't defined e.g. encoding a u64 with a value up to 255 takes one byte (plus 1 byte header), otherwise it takes the full 8 bytes (plus header).
  
 ## Using the library ##
 
@@ -113,7 +113,7 @@ If you want to compile the library inside your project you need to merge the "sr
 
 Otherwise you can use the makefile in the /build/linux folder, one example of command invocation could be:
 
-    make CXXFLAGS="-DNDEBUG -DUFO_USE_BOOST_THREAD -DUFO_USE_BOOST_CHRONO -DBOOST_ALL_DYN_LINK -DBOOST_CHRONO_HEADER_ONLY" LDLIBS="-lboost_thread" CXX="arm-linux-gnueabihf-g++"
+    make CXXFLAGS="-DNDEBUG -DMAL_USE_BOOST_THREAD -DMAL_USE_BOOST_CHRONO -DBOOST_ALL_DYN_LINK -DBOOST_CHRONO_HEADER_ONLY" LDLIBS="-lboost_thread" CXX="arm-linux-gnueabihf-g++"
 
 For Windows... TODO
 
@@ -121,10 +121,6 @@ For Windows... TODO
 
  - Test in Windows.
  - Build in Windows.
-
-## Disclaimer ##
-
-THIS PROJECT IS UNDER DEVELOPMENT AND SHOULDN'T BE CONSIDERED STABLE BY NOW. Even tough it seems to work.
 
 > Written with [StackEdit](https://stackedit.io/).
 
