@@ -1,5 +1,5 @@
 
-Minimal asynchronous Logger (MAL)
+Minimal Asynchronous Logger (MAL)
 -----------
 A non feature-bloated asynchronous data logger. Sponsored by my employer **Diadrom AB.**
 
