@@ -40,7 +40,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <boost/filesystem.hpp>
 #include <mal_log/backend_cfg.hpp>
 
-//This file is not part of ufo log, just a simple example of how to enable
+//This file is not part of mal log, just a simple example of how to enable
 //rotation between subsequent runs using boost filesystem.
 
 //Be aware that it doesn't check for log file sizes or data placed by the user

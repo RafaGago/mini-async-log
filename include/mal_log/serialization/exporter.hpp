@@ -159,9 +159,9 @@ public:
     static non_integral_field get_field (bool val, uword bytes_required)
     {
         non_integral_field f;
-        f.fclass   = ufo_numeric;
-        f.nclass   = ufo_non_integral;
-        f.niclass  = ufo_bool;
+        f.fclass   = mal_numeric;
+        f.nclass   = mal_non_integral;
+        f.niclass  = mal_bool;
         f.bool_val = val ? 1 : 0;
         return f;
     }
@@ -169,9 +169,9 @@ public:
     static non_integral_field get_field (float, uword bytes_required)
     {
         non_integral_field f;
-        f.fclass   = ufo_numeric;
-        f.nclass   = ufo_non_integral;
-        f.niclass  = ufo_float;
+        f.fclass   = mal_numeric;
+        f.nclass   = mal_non_integral;
+        f.niclass  = mal_float;
         f.bool_val = 0;
         return f;
     }
@@ -179,9 +179,9 @@ public:
     static non_integral_field get_field (double, uword bytes_required)
     {
         non_integral_field f;
-        f.fclass   = ufo_numeric;
-        f.nclass   = ufo_non_integral;
-        f.niclass  = ufo_double;
+        f.fclass   = mal_numeric;
+        f.nclass   = mal_non_integral;
+        f.niclass  = mal_double;
         f.bool_val = 0;
         return f;
     }
@@ -190,8 +190,8 @@ public:
     {
         assert (bytes_required > sizeof (non_numeric_field) + b.size);
         non_numeric_field f;
-        f.fclass                   = ufo_non_numeric;
-        f.nnclass                  = ufo_deep_copied_mem;
+        f.fclass                   = mal_non_numeric;
+        f.nnclass                  = mal_deep_copied_mem;
         f.deep_copied_length_bytes = bytes_required - b.size - sizeof (f) - 1;
         return f;
     }
@@ -202,8 +202,8 @@ public:
     {
         assert (bytes_required > sizeof (non_numeric_field) + s.size);
         non_numeric_field f;
-        f.fclass                   = ufo_non_numeric;
-        f.nnclass                  = ufo_deep_copied_str;
+        f.fclass                   = mal_non_numeric;
+        f.nnclass                  = mal_deep_copied_str;
         f.deep_copied_length_bytes = bytes_required - s.size - sizeof (f) - 1;
         return f;
     }
@@ -211,8 +211,8 @@ public:
     static non_numeric_field get_field (literal_wrapper, uword bytes_required)
     {
         non_numeric_field f;
-        f.fclass                    = ufo_non_numeric;
-        f.nnclass                   = ufo_c_str;
+        f.fclass                    = mal_non_numeric;
+        f.nnclass                   = mal_c_str;
         f.deep_copied_length_bytes  = 0;
         return f;
     }
@@ -220,8 +220,8 @@ public:
     static non_numeric_field get_field (ptr_wrapper, uword bytes_required)
     {
         non_numeric_field f;
-        f.fclass                    = ufo_non_numeric;
-        f.nnclass                   = ufo_ptr;
+        f.fclass                    = mal_non_numeric;
+        f.nnclass                   = mal_ptr;
         f.deep_copied_length_bytes  = 0;
         return f;
     }
@@ -352,8 +352,8 @@ private:
             );
         assert (bytes_required <= (sizeof (T) + sizeof (integral_field)));
         integral_field f;
-        f.fclass        = ufo_numeric;
-        f.nclass        = ufo_integral;
+        f.fclass        = mal_numeric;
+        f.nclass        = mal_integral;
         f.bytes         = (bytes_required - 1 - sizeof f);
         assert (f.bytes == (bytes_required - 1 - sizeof f));
         f.original_type = ((sizeof val / 2) == 4) ? 3 : (sizeof val / 2);

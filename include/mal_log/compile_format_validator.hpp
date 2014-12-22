@@ -354,7 +354,7 @@ constexpr bool trigger_format_error()
 #undef MAL_PCHERR_LIT
 #undef MAL_MODIFERR_LIT
 //------------------------------------------------------------------------------
-} //ufo
+} //mal
 
 #endif /* MAL_LOG_FORMAT_VALIDATOR_HPP_ */
 

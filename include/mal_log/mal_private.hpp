@@ -87,7 +87,7 @@ inline bool is_literal (T val)
     return false;
 }
 
-}} //ufo macro
+}} //mal macro
 
 #define MAL_FMT_STRING_CHECK(...)\
     ::mal::macro::is_literal (MAL_GET_FMT_STR_PRIVATE (__VA_ARGS__))

@@ -20,7 +20,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E9EEFC39-EFED-4396-8CCC-3A4DCE08989B}</ProjectGuid>
-    <RootNamespace>ufolog</RootNamespace>
+    <RootNamespace>mallog</RootNamespace>
     <ProjectName>mal-log-dll</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

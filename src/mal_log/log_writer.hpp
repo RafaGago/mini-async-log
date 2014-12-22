@@ -160,21 +160,21 @@ private:
         using namespace ser;
         ser::decoding_field d;
         import_type (d);
-        if (d.gen.fclass == ufo_numeric)
+        if (d.gen.fclass == mal_numeric)
         {
-            if (d.gen.nclass == ufo_integral)
+            if (d.gen.nclass == mal_integral)
             {
                 output_integral (o, d.num_int, has_placeholder);
             }
             else
             {
-                assert (d.gen.nclass == ufo_non_integral);
+                assert (d.gen.nclass == mal_non_integral);
                 output_non_integral (o, d.nom_no_int, has_placeholder);
             }
         }
         else
         {
-            assert (d.gen.fclass == ufo_non_numeric);
+            assert (d.gen.fclass == mal_non_numeric);
             output_non_numeric (o, d.no_num, has_placeholder);
         }
     }
@@ -208,15 +208,15 @@ private:
         using namespace ser;
         switch (f.niclass)
         {
-        case ufo_double:
+        case mal_double:
             return output_floating_type<double, u64, double_modif>(
                     o, f, has_placeholder
                     );
-        case ufo_float :
+        case mal_float :
             return output_floating_type<float, u32, float_modif>(
                                             o, f, has_placeholder
                                             );
-        case ufo_bool  :
+        case mal_bool  :
         {
             if (!has_placeholder) { return; }
 
@@ -239,7 +239,7 @@ private:
         using namespace ser;
         switch (f.nnclass)
         {
-        case ufo_c_str:
+        case mal_c_str:
         {
             literal_wrapper l;
             do_import (l, f);
@@ -256,7 +256,7 @@ private:
             }
             break;
         }
-        case ufo_ptr:
+        case mal_ptr:
         {
             static_assert (sizeof (uword) == 4 || sizeof (uword) == 8, "");
             const char* fmt = (sizeof (uword) == 4) ?
@@ -271,7 +271,7 @@ private:
             }
             break;
         }
-        case ufo_deep_copied_str :
+        case mal_deep_copied_str :
         {
             deep_copy_string str;
             do_import (str, f);
@@ -281,7 +281,7 @@ private:
             }
             break;
         }
-        case ufo_deep_copied_mem  :
+        case mal_deep_copied_mem  :
         {
             deep_copy_bytes bytes;
             do_import (bytes, f);

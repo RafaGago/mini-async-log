@@ -64,35 +64,35 @@ static_assert (sizeof (header_field) == sizeof (header_field::raw_type), "");
 //------------------------------------------------------------------------------
 enum field_class
 {
-    ufo_numeric,
-    ufo_non_numeric,
+    mal_numeric,
+    mal_non_numeric,
 };
 //------------------------------------------------------------------------------
 static const uword field_class_bits = 1;
 //------------------------------------------------------------------------------
 enum numeric_class
 {
-    ufo_integral,
-    ufo_non_integral,
+    mal_integral,
+    mal_non_integral,
 };
 //------------------------------------------------------------------------------
 static const uword numeric_class_bits = 1;
 //------------------------------------------------------------------------------
 enum non_integral_class
 {
-    ufo_double,
-    ufo_float,
-    ufo_bool,
+    mal_double,
+    mal_float,
+    mal_bool,
 };
 //------------------------------------------------------------------------------
 static const uword non_integral_class_bits = 2;
 //------------------------------------------------------------------------------
 enum non_numeric_class
 {
-    ufo_c_str,
-    ufo_ptr,
-    ufo_deep_copied_str,
-    ufo_deep_copied_mem,
+    mal_c_str,
+    mal_ptr,
+    mal_deep_copied_str,
+    mal_deep_copied_mem,
 //    shared_ptr_str,
 //    shared_ptr_mem,
 };

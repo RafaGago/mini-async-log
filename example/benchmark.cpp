@@ -147,7 +147,7 @@ private:
     {
         double sec_ns  = 1000000000.;
         std::printf(
-            "%f seconds spent writting to disk. msg/sec: %f \n",                //this is just reliable in ufo and
+            "%f seconds spent writting to disk. msg/sec: %f \n",                //this is just reliable in mal and
             ((double) total_ns) / sec_ns,
             ((double) msgs / (double) total_ns) * sec_ns
             );
@@ -258,7 +258,7 @@ private:
     //--------------------------------------------------------------------------
     void wait_until_work_completion() { m_fe->on_termination(); }
     //--------------------------------------------------------------------------
-    const char* get_name() { return "ufo log"; }
+    const char* get_name() { return "mal log"; }
     //--------------------------------------------------------------------------
     mal::on_stack_dynamic<mal::frontend> m_fe;
     mal::uword m_total_bsz, m_entry_size, m_heap;
@@ -505,7 +505,7 @@ int main (int argc, const char* argv[])
 
     if (argc < 2)
     {
-        std::printf ("no parameter specified (ufo, spdlog, glog)\n");
+        std::printf ("no parameter specified (mal, spdlog, glog)\n");
         return 1;
     }
     std::string choice = argv[1];

@@ -23,7 +23,7 @@ INCLUDE = ./include
 .PHONY: all clean
 
 all : post-build
-	ln -sf libufo-log.so.$(MAL_VERSION) $(LIB)/libufo-log.so
+	ln -sf libmal-log.so.$(MAL_VERSION) $(LIB)/libmal-log.so
 	
 pre-build : 
 	mkdir -p stage
@@ -35,10 +35,10 @@ post-build : so_file a_file
 	cp -Rf $(INCLUDE_PATH) .
 
 so_file: pre-build frontend_def.o
-	$(CXX) -o $(LIB)/libufo-log.so.$(MAL_VERSION) $(STAGE)/frontend_def.o $(LDLIBS) $(LDFLAGS)
+	$(CXX) -o $(LIB)/libmal-log.so.$(MAL_VERSION) $(STAGE)/frontend_def.o $(LDLIBS) $(LDFLAGS)
 
 a_file: pre-build frontend_def.o
-	$(AR) rcs $(LIB)/libufo-log.a.$(MAL_VERSION) $(STAGE)/frontend_def.o
+	$(AR) rcs $(LIB)/libmal-log.a.$(MAL_VERSION) $(STAGE)/frontend_def.o
 
 frontend_def.o: $(STAGE)/frontend_def.cpp
 	$(CXX) $(CXXFLAGS) -c $(STAGE)/frontend_def.cpp -o $(STAGE)/frontend_def.o
