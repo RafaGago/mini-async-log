@@ -37,7 +37,7 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_LITERAL_HPP_
 #define MAL_LOG_LITERAL_HPP_
 
-#include <ufo_log/util/integer.hpp>
+#include <mal_log/util/integer.hpp>
 
 namespace mal {
 

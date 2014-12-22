@@ -37,8 +37,8 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_STACK_OSTREAM_HPP_
 #define MAL_LOG_STACK_OSTREAM_HPP_
 
-#include <ufo_log/util/static_rdbuf.hpp>
-#include <ufo_log/frontend_types.hpp>
+#include <mal_log/util/static_rdbuf.hpp>
+#include <mal_log/frontend_types.hpp>
 #include <ostream>
 #include <type_traits>
 

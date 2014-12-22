@@ -6,14 +6,14 @@
  */
 
 #include <cassert>
-#include <ufo_log/ufo_log.hpp>
-#include <ufo_log/frontend_def.hpp> //UNCOMMENT IF YOU DON'T WANT TO COMPILE THE LIB SEPARATELY, COMMENT IF YOU DO
-#include <ufo_log/util/stack_ostream.hpp>
-#include <ufo_log/util/chrono.hpp>
-#include <ufo_log/util/thread.hpp>
+#include <mal_log/mal_log.hpp>
+#include <mal_log/frontend_def.hpp> //UNCOMMENT IF YOU DON'T WANT TO COMPILE THE LIB SEPARATELY, COMMENT IF YOU DO
+#include <mal_log/util/stack_ostream.hpp>
+#include <mal_log/util/chrono.hpp>
+#include <mal_log/util/thread.hpp>
 
 //------------------------------------------------------------------------------
-inline mal::frontend& get_ufo_logger_instance()
+inline mal::frontend& get_mal_logger_instance()
 {
     static mal::frontend fe;
     return fe;
@@ -22,7 +22,7 @@ inline mal::frontend& get_ufo_logger_instance()
 void run()
 {
     using namespace mal;
-    mal::frontend& fe                 = get_ufo_logger_instance();
+    mal::frontend& fe                 = get_mal_logger_instance();
     if (!fe.is_constructed())
     {
         return; //new failed in static initializator

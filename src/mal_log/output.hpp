@@ -41,9 +41,9 @@ either expressed or implied, of Rafael Gago Castano.
 #include <cassert>
 #include <fstream>
 #include <iostream>
-#include <ufo_log/util/integer.hpp>
-#include <ufo_log/util/atomic.hpp>
-#include <ufo_log/frontend_types.hpp>
+#include <mal_log/util/integer.hpp>
+#include <mal_log/util/atomic.hpp>
+#include <mal_log/frontend_types.hpp>
 
 namespace mal {
 //------------------------------------------------------------------------------

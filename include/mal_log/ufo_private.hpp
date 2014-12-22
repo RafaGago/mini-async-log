@@ -37,7 +37,7 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_LOG_INCLUDE_PRIVATE_HPP_
 #define MAL_LOG_LOG_INCLUDE_PRIVATE_HPP_
 
-#include <ufo_log/util/system.hpp>
+#include <mal_log/util/system.hpp>
 
 #if defined (MAL_HAS_CONSTEXPR) && defined (MAL_HAS_VARIADIC_TEMPLATES)
     #define MAL_COMPILE_TIME_FMT_CHECK
@@ -55,8 +55,8 @@ either expressed or implied, of Rafael Gago Castano.
 
 #ifdef MAL_COMPILE_TIME_FMT_CHECK
 
-#include <ufo_log/decltype_wrap.hpp>
-#include <ufo_log/compile_format_validator.hpp>
+#include <mal_log/decltype_wrap.hpp>
+#include <mal_log/compile_format_validator.hpp>
 
 #define MAL_FMT_STRING_CHECK(...)\
         mal::trigger_format_error<\

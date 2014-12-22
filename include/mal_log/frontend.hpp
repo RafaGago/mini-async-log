@@ -37,9 +37,9 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_LOG_FRONTEND_HPP_
 #define MAL_LOG_LOG_FRONTEND_HPP_
 
-#include <ufo_log/util/system.hpp>
-#include <ufo_log/serialization/exporter.hpp>
-#include <ufo_log/backend_cfg.hpp>
+#include <mal_log/util/system.hpp>
+#include <mal_log/serialization/exporter.hpp>
+#include <mal_log/backend_cfg.hpp>
 
 namespace mal {
 

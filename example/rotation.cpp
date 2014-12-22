@@ -5,10 +5,10 @@
  *      Author: rafa
  */
 
-#include <ufo_log/extras/boost_filesystem_list_all_files.hpp>
-#include <ufo_log/ufo_log.hpp>
-#include <ufo_log/frontend_def.hpp>                                                //compiled in place, but it could be in a separate library
-#include <ufo_log/util/chrono.hpp>
+#include <mal_log/extras/boost_filesystem_list_all_files.hpp>
+#include <mal_log/mal_log.hpp>
+#include <mal_log/frontend_def.hpp>                                                //compiled in place, but it could be in a separate library
+#include <mal_log/util/chrono.hpp>
 #include <cstdio>
 
 

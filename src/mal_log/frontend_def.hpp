@@ -39,12 +39,12 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <utility>
 #include <cassert>
-#include <ufo_log/util/atomic.hpp>
-#include <ufo_log/util/thread.hpp>
-#include <ufo_log/frontend.hpp>
-#include <ufo_log/backend.hpp>
-#include <ufo_log/async_to_sync.hpp>
-#include <ufo_log/timestamp.hpp>
+#include <mal_log/util/atomic.hpp>
+#include <mal_log/util/thread.hpp>
+#include <mal_log/frontend.hpp>
+#include <mal_log/backend.hpp>
+#include <mal_log/async_to_sync.hpp>
+#include <mal_log/timestamp.hpp>
 
 namespace mal {
 

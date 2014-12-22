@@ -7,13 +7,13 @@
 
 #include <type_traits>
 
-#include <ufo_log/frontend_def.hpp>                                                //compiled in place, but it could be in a separate library
-#include <ufo_log/ufo_log.hpp>
+#include <mal_log/frontend_def.hpp>                                                //compiled in place, but it could be in a separate library
+#include <mal_log/mal_log.hpp>
 
-#include <ufo_log/util/atomic.hpp>
-#include <ufo_log/util/thread.hpp>
-#include <ufo_log/util/chrono.hpp>
-#include <ufo_log/util/on_stack_dynamic.hpp>
+#include <mal_log/util/atomic.hpp>
+#include <mal_log/util/thread.hpp>
+#include <mal_log/util/chrono.hpp>
+#include <mal_log/util/on_stack_dynamic.hpp>
 
 #include <cstdio>
 #include <memory>
@@ -26,7 +26,7 @@
 #define OUT_FOLDER   "./log_out"
 static const unsigned file_size_bytes = 50 * 1024 * 1024;
 
-class ufo_tester;
+class mal_tester;
 class spd_log_tester;
 
 //------------------------------------------------------------------------------
@@ -114,14 +114,14 @@ private:
     }
     //--------------------------------------------------------------------------
     template <class derived_>
-    typename std::enable_if<!std::is_same<derived_, ufo_tester>::value>::type
+    typename std::enable_if<!std::is_same<derived_, mal_tester>::value>::type
     print_alloc_faults()
     {
 
     }
     //--------------------------------------------------------------------------
     template <class derived_>
-    typename std::enable_if<std::is_same<derived_, ufo_tester>::value>::type
+    typename std::enable_if<std::is_same<derived_, mal_tester>::value>::type
     print_alloc_faults()
     {
         std::printf(
@@ -207,7 +207,7 @@ private:
     mal::at::atomic<mal::uword> m_alloc_faults;
 };
 //------------------------------------------------------------------------------
-class ufo_tester : public perftest<ufo_tester>
+class mal_tester : public perftest<mal_tester>
 {
 public:
     //--------------------------------------------------------------------------
@@ -219,7 +219,7 @@ public:
     }
     //--------------------------------------------------------------------------
 private:
-    friend class perftest<ufo_tester>;
+    friend class perftest<mal_tester>;
     //--------------------------------------------------------------------------
     void create()  { m_fe.construct(); }
     //--------------------------------------------------------------------------
@@ -384,60 +384,60 @@ private:
     std::shared_ptr<spdlog::logger> m_logger;
 };
 //------------------------------------------------------------------------------
-void ufo_tests (mal::uword msgs)
+void mal_tests (mal::uword msgs)
 {
-    ufo_tester ufo_test;
+    mal_tester mal_test;
 
 //    std::printf ("pure heap----------------------------------------\n");
 //
-//    ufo_test.set_params (0, 0, true);
-//    ufo_test.run (msgs, 1);
+//    mal_test.set_params (0, 0, true);
+//    mal_test.run (msgs, 1);
 //
-//    ufo_test.set_params (0, 0, true);
-//    ufo_test.run (msgs, 2);
+//    mal_test.set_params (0, 0, true);
+//    mal_test.run (msgs, 2);
 //
-//    ufo_test.set_params (0, 0, true);
-//    ufo_test.run (msgs, 4);
+//    mal_test.set_params (0, 0, true);
+//    mal_test.run (msgs, 4);
 //
-//    ufo_test.set_params (0, 0, true);
-//    ufo_test.run (msgs, 8);
+//    mal_test.set_params (0, 0, true);
+//    mal_test.run (msgs, 8);
 //
-//    ufo_test.set_params (0, 0, true);
-//    ufo_test.run (msgs, 16);
+//    mal_test.set_params (0, 0, true);
+//    mal_test.run (msgs, 16);
 //
 //    std::printf ("hybrid-------------------------------------------\n");
 //
-//    ufo_test.set_params (1024 * 128, 32, true);
-//    ufo_test.run (msgs, 1);
+//    mal_test.set_params (1024 * 128, 32, true);
+//    mal_test.run (msgs, 1);
 //
-//    ufo_test.set_params (1024 * 128, 32, true);
-//    ufo_test.run (msgs, 2);
+//    mal_test.set_params (1024 * 128, 32, true);
+//    mal_test.run (msgs, 2);
 //
-//    ufo_test.set_params (1024 * 128, 32, true);
-//    ufo_test.run (msgs, 4);
+//    mal_test.set_params (1024 * 128, 32, true);
+//    mal_test.run (msgs, 4);
 //
-//    ufo_test.set_params (1024 * 128, 32, true);
-//    ufo_test.run (msgs, 8);
+//    mal_test.set_params (1024 * 128, 32, true);
+//    mal_test.run (msgs, 8);
 
-    ufo_test.set_params (1024 * 128, 32, true);
-    ufo_test.run (msgs, 16);
+    mal_test.set_params (1024 * 128, 32, true);
+    mal_test.run (msgs, 16);
 
 //    std::printf ("no heap------------------------------------------\n");
 //
-//    ufo_test.set_params (64 * 1024 * 1024, 32, false);
-//    ufo_test.run (msgs, 1);
+//    mal_test.set_params (64 * 1024 * 1024, 32, false);
+//    mal_test.run (msgs, 1);
 //
-//    ufo_test.set_params (64 * 1024 * 1024, 32, false);
-//    ufo_test.run (msgs, 2);
+//    mal_test.set_params (64 * 1024 * 1024, 32, false);
+//    mal_test.run (msgs, 2);
 //
-//    ufo_test.set_params (64 * 1024 * 1024, 32, false);
-//    ufo_test.run (msgs, 4);
+//    mal_test.set_params (64 * 1024 * 1024, 32, false);
+//    mal_test.run (msgs, 4);
 //
-//    ufo_test.set_params (64 * 1024 * 1024, 32, false);
-//    ufo_test.run (msgs, 8);
+//    mal_test.set_params (64 * 1024 * 1024, 32, false);
+//    mal_test.run (msgs, 8);
 //
-//    ufo_test.set_params (64 * 1024 * 1024, 32, false);
-//    ufo_test.run (msgs, 16);
+//    mal_test.set_params (64 * 1024 * 1024, 32, false);
+//    mal_test.run (msgs, 16);
 }
 
 //------------------------------------------------------------------------------
@@ -512,7 +512,7 @@ int main (int argc, const char* argv[])
 
     if (choice.compare ("ufo") == 0)
     {
-        ufo_tests (msgs);
+        mal_tests (msgs);
     }
     else if (choice.compare ("glog") == 0)
     {

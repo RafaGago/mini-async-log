@@ -37,18 +37,18 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_EXPORTER_HPP_
 #define MAL_LOG_EXPORTER_HPP_
 
-#include <ufo_log/util/system.hpp>
-#include <ufo_log/util/integer.hpp>
-#include <ufo_log/frontend_types.hpp>
-#include <ufo_log/serialization/fields.hpp>
-#include <ufo_log/serialization/header_data.hpp>
-#include <ufo_log/serialization/basic_encoder_decoder.hpp>
-#include <ufo_log/serialization/importer_exporter.hpp>
-#include <ufo_log/util/integral_enable_if.hpp>
-#include <ufo_log/util/opaque_pod.hpp>
+#include <mal_log/util/system.hpp>
+#include <mal_log/util/integer.hpp>
+#include <mal_log/frontend_types.hpp>
+#include <mal_log/serialization/fields.hpp>
+#include <mal_log/serialization/header_data.hpp>
+#include <mal_log/serialization/basic_encoder_decoder.hpp>
+#include <mal_log/serialization/importer_exporter.hpp>
+#include <mal_log/util/integral_enable_if.hpp>
+#include <mal_log/util/opaque_pod.hpp>
 
 #ifndef MAL_NO_VARIABLE_INTEGER_WIDTH
-    #include <ufo_log/util/integer_bits.hpp>
+    #include <mal_log/util/integer_bits.hpp>
 #endif
 
 namespace mal { namespace ser {

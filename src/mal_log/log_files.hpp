@@ -46,14 +46,14 @@ either expressed or implied, of Rafael Gago Castano.
 #include <fstream>
 #include <vector>
 
-#include <ufo_log/util/system.hpp>
-#include <ufo_log/util/side_effect_assert.hpp>
-#include <ufo_log/util/calendar_str.hpp>
-#include <ufo_log/util/integer.hpp>
-#include <ufo_log/util/atomic.hpp>
-#include <ufo_log/util/raw_circular_buffer.hpp>
-#include <ufo_log/util/thread.hpp>
-#include <ufo_log/util/mem_printf.hpp>
+#include <mal_log/util/system.hpp>
+#include <mal_log/util/side_effect_assert.hpp>
+#include <mal_log/util/calendar_str.hpp>
+#include <mal_log/util/integer.hpp>
+#include <mal_log/util/atomic.hpp>
+#include <mal_log/util/raw_circular_buffer.hpp>
+#include <mal_log/util/thread.hpp>
+#include <mal_log/util/mem_printf.hpp>
 
 namespace mal {
 

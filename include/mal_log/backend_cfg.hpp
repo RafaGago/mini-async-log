@@ -39,8 +39,8 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <deque>
 #include <string>
-#include <ufo_log/util/integer.hpp>
-#include <ufo_log/util/mpsc_hybrid_wait_cfg.hpp>
+#include <mal_log/util/integer.hpp>
+#include <mal_log/util/mpsc_hybrid_wait_cfg.hpp>
 
 namespace mal {
 

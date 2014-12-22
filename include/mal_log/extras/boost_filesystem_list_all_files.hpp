@@ -38,7 +38,7 @@ either expressed or implied, of Rafael Gago Castano.
 #define MAL_LOG_BOOST_FILESYSTEM_LIST_ALL_FILES_HPP_
 
 #include <boost/filesystem.hpp>
-#include <ufo_log/backend_cfg.hpp>
+#include <mal_log/backend_cfg.hpp>
 
 //This file is not part of ufo log, just a simple example of how to enable
 //rotation between subsequent runs using boost filesystem.

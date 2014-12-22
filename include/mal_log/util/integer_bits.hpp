@@ -43,9 +43,9 @@ either expressed or implied, of Diadrom AB.
 
 #include <type_traits>
 #include <cassert>
-#include <ufo_log/util/integer.hpp>
-#include <ufo_log/util/integer_bits.h>
-#include <ufo_log/util/integer_bits_detail.hpp>
+#include <mal_log/util/integer.hpp>
+#include <mal_log/util/integer_bits.h>
+#include <mal_log/util/integer_bits_detail.hpp>
 
 namespace mal {
 //------------------------------------------------------------------------------

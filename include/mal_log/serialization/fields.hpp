@@ -37,8 +37,8 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_FIELDS_HPP_
 #define MAL_LOG_FIELDS_HPP_
 
-#include <ufo_log/util/integer.hpp>
-#include <ufo_log/util/system.hpp>
+#include <mal_log/util/integer.hpp>
+#include <mal_log/util/system.hpp>
 
 namespace mal { namespace ser {
 //------------------------------------------------------------------------------

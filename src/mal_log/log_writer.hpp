@@ -37,15 +37,15 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_WRITER_HPP_
 #define MAL_LOG_WRITER_HPP_
 
-#include <ufo_log/util/mem_printf.hpp>
-#include <ufo_log/serialization/printf_modifiers.hpp>
-#include <ufo_log/serialization/byte_stream_convert.hpp>
-#include <ufo_log/serialization/importer.hpp>
-#include <ufo_log/ufo_private.hpp>
-#include <ufo_log/timestamp.hpp>
-#include <ufo_log/output.hpp>
-#include <ufo_log/format_tokens.hpp>
-#include <ufo_log/async_to_sync.hpp>
+#include <mal_log/util/mem_printf.hpp>
+#include <mal_log/serialization/printf_modifiers.hpp>
+#include <mal_log/serialization/byte_stream_convert.hpp>
+#include <mal_log/serialization/importer.hpp>
+#include <mal_log/ufo_private.hpp>
+#include <mal_log/timestamp.hpp>
+#include <mal_log/output.hpp>
+#include <mal_log/format_tokens.hpp>
+#include <mal_log/async_to_sync.hpp>
 
 namespace mal {
 

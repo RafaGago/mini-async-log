@@ -37,7 +37,7 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_FRONTEND_TYPES_HPP_
 #define MAL_LOG_FRONTEND_TYPES_HPP_
 
-#include <ufo_log/util/integer.hpp>
+#include <mal_log/util/integer.hpp>
 #include <string>
 #include <cassert>
 #include <cstring>
@@ -80,7 +80,7 @@ struct ptr_wrapper
     const void* ptr;
 };
 //------------------------------------------------------------------------------
-#include <ufo_log/frontend_types_convenience_funcs_to_current_namespace.hpp>
+#include <mal_log/frontend_types_convenience_funcs_to_current_namespace.hpp>
 //------------------------------------------------------------------------------
 } //namespaces
 

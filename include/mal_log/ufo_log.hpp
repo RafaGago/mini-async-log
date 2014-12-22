@@ -37,13 +37,13 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_LOG_INCLUDE_HPP_
 #define MAL_LOG_LOG_INCLUDE_HPP_
 
-#include <ufo_log/frontend_types.hpp>
-#include <ufo_log/ufo_private.hpp>
-#include <ufo_log/ufo_interface.hpp>
+#include <mal_log/frontend_types.hpp>
+#include <mal_log/ufo_private.hpp>
+#include <mal_log/ufo_interface.hpp>
 
 //------------------------------------------------------------------------------
 #ifndef MAL_GET_LOGGER_INSTANCE_FUNCNAME
-    #define MAL_GET_LOGGER_INSTANCE_FUNC get_ufo_logger_instance()
+    #define MAL_GET_LOGGER_INSTANCE_FUNC get_mal_logger_instance()
 #else
     #define MAL_GET_LOGGER_INSTANCE_FUNC MAL_GET_LOGGER_INSTANCE_FUNCNAME()
 #endif

@@ -36,10 +36,10 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_IMPORTER_HPP_
 #define MAL_LOG_IMPORTER_HPP_
 
-#include <ufo_log/serialization/basic_encoder_decoder.hpp>
-#include <ufo_log/frontend_types.hpp>
-#include <ufo_log/serialization/importer_exporter.hpp>
-#include <ufo_log/util/placement_new.hpp>
+#include <mal_log/serialization/basic_encoder_decoder.hpp>
+#include <mal_log/frontend_types.hpp>
+#include <mal_log/serialization/importer_exporter.hpp>
+#include <mal_log/util/placement_new.hpp>
 
 namespace mal { namespace ser {
 

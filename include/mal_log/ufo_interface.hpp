@@ -41,11 +41,11 @@ either expressed or implied, of Rafael Gago Castano.
 #include <cassert>
 #include <string>
 #include <type_traits>
-#include <ufo_log/frontend.hpp>
-#include <ufo_log/timestamp.hpp>
-#include <ufo_log/serialization/exporter.hpp>
-#include <ufo_log/sync_point.hpp>
-#include <ufo_log/util/side_effect_assert.hpp>
+#include <mal_log/frontend.hpp>
+#include <mal_log/timestamp.hpp>
+#include <mal_log/serialization/exporter.hpp>
+#include <mal_log/sync_point.hpp>
+#include <mal_log/util/side_effect_assert.hpp>
 
 namespace mal {
 

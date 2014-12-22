@@ -37,7 +37,7 @@ either expressed or implied, of Diadrom AB.
 #ifndef MAL_ATOMIC_HPP_
 #define MAL_ATOMIC_HPP_
 
-#include <ufo_log/util/integer.hpp>
+#include <mal_log/util/integer.hpp>
 
 #ifdef MAL_USE_BOOST_ATOMIC
     #include <boost/atomic.hpp>

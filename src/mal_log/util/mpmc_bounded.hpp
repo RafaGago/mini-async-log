@@ -77,7 +77,7 @@ either expressed or implied, of Rafael Gago Castano.
 #define MAL_LOG_MPSC_BOUNDED_HPP_
 
 #include <cassert>
-#include <ufo_log/util/atomic.hpp>
+#include <mal_log/util/atomic.hpp>
 
 namespace mal {
 

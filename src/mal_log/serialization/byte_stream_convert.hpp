@@ -37,7 +37,7 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_LOG_BYTE_STREAM_CONVERT_HPP_
 #define MAL_LOG_LOG_BYTE_STREAM_CONVERT_HPP_
 
-#include <ufo_log/output.hpp>
+#include <mal_log/output.hpp>
 
 // disclaimer: this is an overkill when dealing with files, it's a copy-paste
 //             of some code I had lying around. Then I felt bad, I simplified

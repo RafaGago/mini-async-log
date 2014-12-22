@@ -39,7 +39,7 @@ either expressed or implied, of Diadrom AB.
 
 #include <type_traits>
 #include <utility>
-#include <ufo_log/util/system.hpp>
+#include <mal_log/util/system.hpp>
 
 //------------------------------------------------------------------------------
 namespace mal {

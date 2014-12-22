@@ -75,9 +75,9 @@ either expressed or implied, of Diadrom AB.
 #define MAL_MPSC_HPP_
 
 #include <type_traits>
-#include <ufo_log/util/system.hpp>
-#include <ufo_log/util/aligned_type.hpp>
-#include <ufo_log/util/atomic.hpp>
+#include <mal_log/util/system.hpp>
+#include <mal_log/util/aligned_type.hpp>
+#include <mal_log/util/atomic.hpp>
 
 namespace mal {
 

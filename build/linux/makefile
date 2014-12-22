@@ -1,6 +1,6 @@
 MAL_LOG_PATH = ../..
 
-SRC_MAL_PATH = $(MAL_LOG_PATH)/src/ufo_log
+SRC_MAL_PATH = $(MAL_LOG_PATH)/src/mal_log
 
 INCLUDE_PATH = $(MAL_LOG_PATH)/include
 

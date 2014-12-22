@@ -37,9 +37,9 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_ASYNC_TO_SYNC_HPP_
 #define MAL_LOG_ASYNC_TO_SYNC_HPP_
 
-#include <ufo_log/util/thread.hpp>
-#include <ufo_log/util/chrono.hpp>
-#include <ufo_log/sync_point.hpp>
+#include <mal_log/util/thread.hpp>
+#include <mal_log/util/chrono.hpp>
+#include <mal_log/sync_point.hpp>
 
 namespace mal {
 

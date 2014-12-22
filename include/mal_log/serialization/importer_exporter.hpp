@@ -38,7 +38,7 @@ either expressed or implied, of Rafael Gago Castano.
 #define MAL_LOG_IMPORTER_EXPORTER_BASE_HPP_
 
 #include <cassert>
-#include <ufo_log/util/integer.hpp>
+#include <mal_log/util/integer.hpp>
 
 namespace mal { namespace ser {
 

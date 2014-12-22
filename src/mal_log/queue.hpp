@@ -77,9 +77,9 @@ either expressed or implied, of Rafael Gago Castano.
 #include <cassert>
 #include <new>
 #include <stddef.h>
-#include <ufo_log/util/mpsc.hpp>
-#include <ufo_log/util/integer_bits.hpp>
-#include <ufo_log/util/atomic.hpp>
+#include <mal_log/util/mpsc.hpp>
+#include <mal_log/util/integer_bits.hpp>
+#include <mal_log/util/atomic.hpp>
 
 namespace mal {
 

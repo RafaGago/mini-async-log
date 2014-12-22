@@ -39,7 +39,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <cassert>
 #include <cstring>
-#include <ufo_log/util/integer.hpp>
+#include <mal_log/util/integer.hpp>
 
 namespace mal { namespace ser {
 //------------------------------------------------------------------------------

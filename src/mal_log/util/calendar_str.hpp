@@ -48,9 +48,9 @@ either expressed or implied, of Rafael Gago Castano.
     #error "unknown platform"
 #endif
 
-#include <ufo_log/util/mem_printf.hpp>
-#include <ufo_log/util/system.hpp>
-#include <ufo_log/util/integer.hpp>
+#include <mal_log/util/mem_printf.hpp>
+#include <mal_log/util/system.hpp>
+#include <mal_log/util/integer.hpp>
 
 namespace mal {
 //------------------------------------------------------------------------------

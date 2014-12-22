@@ -37,11 +37,11 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_MPSC_HYBRID_WAIT_HPP_
 #define MAL_MPSC_HYBRID_WAIT_HPP_
 
-#include <ufo_log/util/integer.hpp>
-#include <ufo_log/util/atomic.hpp>
-#include <ufo_log/util/chrono.hpp>
-#include <ufo_log/util/thread.hpp>
-#include <ufo_log/util/mpsc_hybrid_wait_cfg.hpp>
+#include <mal_log/util/integer.hpp>
+#include <mal_log/util/atomic.hpp>
+#include <mal_log/util/chrono.hpp>
+#include <mal_log/util/thread.hpp>
+#include <mal_log/util/mpsc_hybrid_wait_cfg.hpp>
 
 namespace mal {
 

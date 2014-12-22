@@ -39,9 +39,9 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <tuple>
 #include <type_traits>
-#include <ufo_log/util/integer.hpp>
-#include <ufo_log/util/literal.hpp>
-#include <ufo_log/format_tokens.hpp>
+#include <mal_log/util/integer.hpp>
+#include <mal_log/util/literal.hpp>
+#include <mal_log/format_tokens.hpp>
 
 namespace mal {
 

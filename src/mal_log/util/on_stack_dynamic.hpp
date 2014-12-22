@@ -39,8 +39,8 @@ either expressed or implied, of Diadrom AB.
 
 #include <utility>
 #include <cassert>
-#include <ufo_log/util/placement_new.hpp>
-#include <ufo_log/util/safe_bool.hpp>
+#include <mal_log/util/placement_new.hpp>
+#include <mal_log/util/safe_bool.hpp>
 
 //------------------------------------------------------------------------------
 namespace mal {

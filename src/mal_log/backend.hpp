@@ -43,20 +43,20 @@ either expressed or implied, of Rafael Gago Castano.
 #include <new>
 #include <ostream>
 
-#include <ufo_log/util/integer.hpp>
-#include <ufo_log/util/thread.hpp>
-#include <ufo_log/util/atomic.hpp>
-#include <ufo_log/util/chrono.hpp>
-#include <ufo_log/util/mem_printf.hpp>
-#include <ufo_log/util/mpsc_hybrid_wait.hpp>
+#include <mal_log/util/integer.hpp>
+#include <mal_log/util/thread.hpp>
+#include <mal_log/util/atomic.hpp>
+#include <mal_log/util/chrono.hpp>
+#include <mal_log/util/mem_printf.hpp>
+#include <mal_log/util/mpsc_hybrid_wait.hpp>
 
-#include <ufo_log/output.hpp>
-#include <ufo_log/frontend.hpp>
-#include <ufo_log/log_writer.hpp>
-#include <ufo_log/queue.hpp>
-#include <ufo_log/backend_cfg.hpp>
-#include <ufo_log/log_files.hpp>
-#include <ufo_log/timestamp.hpp>
+#include <mal_log/output.hpp>
+#include <mal_log/frontend.hpp>
+#include <mal_log/log_writer.hpp>
+#include <mal_log/queue.hpp>
+#include <mal_log/backend_cfg.hpp>
+#include <mal_log/log_files.hpp>
+#include <mal_log/timestamp.hpp>
 
 namespace mal {
 

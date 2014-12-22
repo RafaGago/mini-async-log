@@ -37,7 +37,7 @@ either expressed or implied, of Diadrom AB.
 #ifndef MAL_ALIGNED_TYPE_HPP_
 #define MAL_ALIGNED_TYPE_HPP_
 
-#include <ufo_log/util/placement_new.hpp>
+#include <mal_log/util/placement_new.hpp>
 
 //------------------------------------------------------------------------------
 namespace mal {
