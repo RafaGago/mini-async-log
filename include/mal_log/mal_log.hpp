@@ -94,10 +94,10 @@ either expressed or implied, of Rafael Gago Castano.
     #define log_debug_sync_i(...)    ::mal::macro::silence_warnings()
     #define log_debug(...)           ::mal::macro::silence_warnings()
     #define log_debug_sync(...)      ::mal::macro::silence_warnings()
-	#define log_debug_i_if(...)      ::mal::macro::silence_warnings()
+    #define log_debug_i_if(...)      ::mal::macro::silence_warnings()
     #define log_debug_sync_i_if(...) ::mal::macro::silence_warnings()
     #define log_debug_if(...)        ::mal::macro::silence_warnings()
-	#define log_debug_sync_if(...)   ::mal::macro::silence_warnings()
+    #define log_debug_sync_if(...)   ::mal::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
@@ -133,10 +133,10 @@ either expressed or implied, of Rafael Gago Castano.
     #define log_trace_sync_i(...)    ::mal::macro::silence_warnings()
     #define log_trace(...)           ::mal::macro::silence_warnings()
     #define log_trace_sync(...)      ::mal::macro::silence_warnings()
-	#define log_trace_i_if(...)      ::mal::macro::silence_warnings()
+    #define log_trace_i_if(...)      ::mal::macro::silence_warnings()
     #define log_trace_sync_i_if(...) ::mal::macro::silence_warnings()
     #define log_trace_if(...)        ::mal::macro::silence_warnings()
-	#define log_trace_sync_if(...)   ::mal::macro::silence_warnings()
+    #define log_trace_sync_if(...)   ::mal::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
@@ -172,10 +172,10 @@ either expressed or implied, of Rafael Gago Castano.
     #define log_notice_sync_i(...)    ::mal::macro::silence_warnings()
     #define log_notice(...)           ::mal::macro::silence_warnings()
     #define log_notice_sync(...)      ::mal::macro::silence_warnings()
-	#define log_notice_i_if(...)      ::mal::macro::silence_warnings()
+    #define log_notice_i_if(...)      ::mal::macro::silence_warnings()
     #define log_notice_sync_i_if(...) ::mal::macro::silence_warnings()
     #define log_notice_if(...)        ::mal::macro::silence_warnings()
-	#define log_notice_sync_if(...)   ::mal::macro::silence_warnings()
+    #define log_notice_sync_if(...)   ::mal::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
@@ -211,10 +211,10 @@ either expressed or implied, of Rafael Gago Castano.
     #define log_warning_sync_i(...)    ::mal::macro::silence_warnings()
     #define log_warning(...)           ::mal::macro::silence_warnings()
     #define log_warning_sync(...)      ::mal::macro::silence_warnings()
-	#define log_warning_i_if(...)      ::mal::macro::silence_warnings()
+    #define log_warning_i_if(...)      ::mal::macro::silence_warnings()
     #define log_warning_sync_i_if(...) ::mal::macro::silence_warnings()
     #define log_warning_if(...)        ::mal::macro::silence_warnings()
-	#define log_warning_sync_if(...)   ::mal::macro::silence_warnings()
+    #define log_warning_sync_if(...)   ::mal::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
@@ -250,10 +250,10 @@ either expressed or implied, of Rafael Gago Castano.
     #define log_error_sync_i(...)    ::mal::macro::silence_warnings()
     #define log_error(...)           ::mal::macro::silence_warnings()
     #define log_error_sync(...)      ::mal::macro::silence_warnings()
-	#define log_error_i_if(...)      ::mal::macro::silence_warnings()
+    #define log_error_i_if(...)      ::mal::macro::silence_warnings()
     #define log_error_sync_i_if(...) ::mal::macro::silence_warnings()
     #define log_error_if(...)        ::mal::macro::silence_warnings()
-	#define log_error_sync_if(...)   ::mal::macro::silence_warnings()
+    #define log_error_sync_if(...)   ::mal::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
@@ -289,10 +289,10 @@ either expressed or implied, of Rafael Gago Castano.
     #define log_critical_sync_i(...)    ::mal::macro::silence_warnings()
     #define log_critical(...)           ::mal::macro::silence_warnings()
     #define log_critical_sync(...)      ::mal::macro::silence_warnings()
-	#define log_critical_i_if(...)      ::mal::macro::silence_warnings()
+    #define log_critical_i_if(...)      ::mal::macro::silence_warnings()
     #define log_critical_sync_i_if(...) ::mal::macro::silence_warnings()
     #define log_critical_if(...)        ::mal::macro::silence_warnings()
-	#define log_critical_sync_if(...)   ::mal::macro::silence_warnings()
+    #define log_critical_sync_if(...)   ::mal::macro::silence_warnings()
 
 #endif
 //------------------------------------------------------------------------------
