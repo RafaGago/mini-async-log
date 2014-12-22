@@ -24,7 +24,7 @@ After having maintained a slightly modified version of google log and given the 
  - Suitable for soft-realtime work. Once it's initialized the fast-path can be clear from heap allocations if properly configured.
  - File rotation-slicing (needs some external help at initialization time until std::filesystem isn't implemented in some compilers, see below).
  - One conditional call overhead for inactive severities.
- - Lazy parameter evaluation (as usual in most logging libraries).
+ - Lazy parameter evaluation (as usual with most logging libraries).
  - No ostreams (a very ugly part of C++ for my liking), just format strings checked at compile time (if the compiler supports it) with type safe values. An on-stack ostream adapter is available as last resort, but its use is more verbose and has more overhead.
  - Able to externally change the log severity at runtime by reading some file descriptors (if configured to).
  
