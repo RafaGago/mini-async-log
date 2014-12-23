@@ -146,6 +146,6 @@ inline bool silence_warnings() { return true; }
 
 #define MAL_LOG_TO_STR_PRIVATE(a) #a
 #define MAL_LOG_FILELINE_CONCAT_PRIVATE(file, lin)\
-    "(" file " :" MAL_LOG_TO_STR_PRIVATE (lin) ") "
+    "(" file ":" MAL_LOG_TO_STR_PRIVATE (lin) ") "
 
 #endif /* MAL_PRIVATE_HPP_ */
