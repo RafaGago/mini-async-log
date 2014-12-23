@@ -91,7 +91,7 @@ The functions never throw.
 ## Weaknesses ##
 
  1. Just ASCII.
- 2. No C++ ostream support. (not sure if it's a good or a bad thing...).
+ 2. No C++ ostream support. (not sure if it's a good or a bad thing...). Swapping logger in an existing codebase may not be worth the effort in some cases. Printing some classes that have overloaded the stream operator can be repetitive (I have to find a solution for this).
  3. Limited formatting abilities (it can be improved with more parser complexity).
  4. No way to output runtime strings/ memory regions without deep-copying them.
  
