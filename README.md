@@ -90,9 +90,10 @@ The functions never throw.
 
 ## Weaknesses ##
 
- 1. No C++ ostream support. (not sure if it's a good or a bad thing...)
- 2. Limited formatting abilities (it can be improved with more parser complexity).
- 3. No way to output runtime strings/ memory regions without deep-copying them.
+ 1. Just ASCII.
+ 2. No C++ ostream support. (not sure if it's a good or a bad thing...).
+ 3. Limited formatting abilities (it can be improved with more parser complexity).
+ 4. No way to output runtime strings/ memory regions without deep-copying them.
  
 The third point is the most restrictive for my liking, it's just inherent to the asynchronous/non-blocking design, there is no guarantee about the passed data lifetime.
 
