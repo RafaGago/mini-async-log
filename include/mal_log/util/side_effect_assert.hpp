@@ -40,9 +40,9 @@ either expressed or implied, of Rafael Gago Castano.
 #include <cassert>
 
 #ifdef NDEBUG
-    #define side_effect_assert(expr) (expr)
+    #define mal_side_effect_assert(expr) (expr)
 #else
-    #define side_effect_assert(expr) assert (expr)
+    #define mal_side_effect_assert(expr) assert (expr)
 #endif
 
 #endif /* MAL_LOG_SIDE_EFFECT_ASSERT_HPP_ */

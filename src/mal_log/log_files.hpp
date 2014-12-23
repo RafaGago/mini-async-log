@@ -257,7 +257,7 @@ private:
         mem_printf (str, sz + 1, fmt, cpu, m_cpu_time_base);
         str      += sz;
 
-        side_effect_assert(
+        mal_side_effect_assert(
             calendar_str::write (str, calendar_str::c_str_size, calendar_us) > 0
             );
         str      += calendar_str::str_size;

@@ -140,20 +140,20 @@ bool new_entry(                                                                 
 
     uword length = 0;
 
-    side_effect_assert (prebuild_data (a, a_field, length));
-    side_effect_assert (prebuild_data (b, b_field, length));
-    side_effect_assert (prebuild_data (c, c_field, length));
-    side_effect_assert (prebuild_data (d, d_field, length));
-    side_effect_assert (prebuild_data (e, e_field, length));
-    side_effect_assert (prebuild_data (f, f_field, length));
-    side_effect_assert (prebuild_data (g, g_field, length));
-    side_effect_assert (prebuild_data (h, h_field, length));
-    side_effect_assert (prebuild_data (i, i_field, length));
-    side_effect_assert (prebuild_data (j, j_field, length));
-    side_effect_assert (prebuild_data (k, k_field, length));
-    side_effect_assert (prebuild_data (l, l_field, length));
-    side_effect_assert (prebuild_data (m, m_field, length));
-    side_effect_assert (prebuild_data (n, n_field, length));
+    mal_side_effect_assert (prebuild_data (a, a_field, length));
+    mal_side_effect_assert (prebuild_data (b, b_field, length));
+    mal_side_effect_assert (prebuild_data (c, c_field, length));
+    mal_side_effect_assert (prebuild_data (d, d_field, length));
+    mal_side_effect_assert (prebuild_data (e, e_field, length));
+    mal_side_effect_assert (prebuild_data (f, f_field, length));
+    mal_side_effect_assert (prebuild_data (g, g_field, length));
+    mal_side_effect_assert (prebuild_data (h, h_field, length));
+    mal_side_effect_assert (prebuild_data (i, i_field, length));
+    mal_side_effect_assert (prebuild_data (j, j_field, length));
+    mal_side_effect_assert (prebuild_data (k, k_field, length));
+    mal_side_effect_assert (prebuild_data (l, l_field, length));
+    mal_side_effect_assert (prebuild_data (m, m_field, length));
+    mal_side_effect_assert (prebuild_data (n, n_field, length));
 
     auto td = fe.get_timestamp_data();
     hdr     = ser::make_header_data (sv, fmt, arity, td.producer_timestamps);
