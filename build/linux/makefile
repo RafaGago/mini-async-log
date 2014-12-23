@@ -32,7 +32,7 @@ pre-build :
 	
 
 post-build : so_file a_file
-	cp -Rf $(INCLUDE_PATH) .
+	ln -sf $(INCLUDE_PATH)
 
 so_file: pre-build frontend_def.o
 	$(CXX) -o $(LIB)/libmal-log.so.$(MAL_VERSION) $(STAGE)/frontend_def.o $(LDLIBS) $(LDFLAGS)
