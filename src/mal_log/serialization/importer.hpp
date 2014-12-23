@@ -131,8 +131,9 @@ public:
     static typename enable_if_signed<T, T>::type
     reconstruct_negative (T val)
     {
-        static const T sign_mask = ~(((T) -1) >> 1);
-        return (~val) | sign_mask;
+        typedef typename std::make_unsigned<T>::type U;
+        static const U sign_mask = ~(((U) -1) >> 1);
+        return (T)((~((U) val)) | sign_mask);
     }
     //--------------------------------------------------------------------------
     template <class T>
