@@ -97,7 +97,7 @@ The functions never throw.
  5. Ugly macros, but unfortunately the same syntax can't be achieved in any other way.
  6. Format string need to be literals. A const char* isn't enough (constexpr can't iterate them at compile time).
  
-The third point is the most restrictive for my liking, it's just inherent to the asynchronous/non-blocking design, there is no guarantee about the passed data lifetime.
+The fourth point is the most restrictive for my liking, it's just inherent to the asynchronous/non-blocking design, there is no guarantee about the passed data lifetime. This happens in every asynchronous logger.
 
 It's possible to artificially increment the refcount of a shared_ptr by copying it to an instance created using "placement_new" and to decrement it in the worker using the same trick, I keep this idea on hold for now.
 
