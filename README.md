@@ -99,8 +99,7 @@ The functions never throw.
  
 The fourth point is the most restrictive for my liking, it's just inherent to the asynchronous/non-blocking design, there is no guarantee about the passed data lifetime. This happens in every asynchronous logger.
 
-It's possible to artificially increment the refcount of a shared_ptr by copying it to an instance created using "placement_new" and to decrement it in the worker using the same trick, I keep this idea on hold for now.
-
+It's possible to artificially increment the refcount of a shared_ptr by copying it to an instance created using "placement_new" and to decrement it in the worker using the same trick, I keep this idea on hold for now, it's not a matter of uglyness (I don't have so much C++ "ethics") just practical considerations: most of the time in regular uses cases the deep copies will be small enough (under 128 bytes?) to don't bother.
 
 ## Compiler macros ##
 
