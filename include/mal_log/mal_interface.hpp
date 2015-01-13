@@ -167,7 +167,7 @@ bool new_entry(                                                                 
     {
         hdr.sync = &sync;
     }
-    side_effect_assert (prebuild_data (hdr, hdr_field, length));
+    mal_side_effect_assert (prebuild_data (hdr, hdr_field, length));
 
     auto enc = fe.get_encoder (length);
     if (enc.has_memory())
