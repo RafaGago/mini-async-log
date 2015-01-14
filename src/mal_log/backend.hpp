@@ -281,6 +281,7 @@ private:
         auto  next_flush  = ch::steady_clock::now() + ch::milliseconds (1000);
         auto  sev_check   = ch::steady_clock::now() + ch::milliseconds (1000);
         new_file_name_to_buffer();
+        severity_check();
 
         while (true)
         {
