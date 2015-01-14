@@ -27,6 +27,7 @@ After having maintained a slightly modified version of google log and given the 
  - Lazy parameter evaluation (as usual with most logging libraries).
  - No ostreams (a very ugly part of C++ for my liking), just format strings checked at compile time (if the compiler supports it) with type safe values. An on-stack ostream adapter is available as alast resort, but its use is more verbose and has more overhead.
  - The log severity can be externally changed outside of the process. The IPC mechanism is the simplest, the log worker periodically polls some file descriptors when idle (if configured to).
+ - Small, you can actually compile it as a part of your application.
  
 ## How does it work ##
 
