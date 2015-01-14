@@ -50,7 +50,9 @@ class stack_ostream : public std::basic_ostream<char, std::char_traits<char> >
 {
 public:
     //--------------------------------------------------------------------------
-    stack_ostream() { rdbuf (&m_buff); }
+    stack_ostream() :
+        std::basic_ostream<char, std::char_traits<char> > (&m_buff)
+    {}
     //--------------------------------------------------------------------------
     deep_copy_string get_deep_copy_string() const
     {
@@ -92,7 +94,7 @@ you_can_just_use_stack_ostream_with_ostr_deep_copy(
 //luated please, don't doubt to share.
 
 #define ostr_deep_copy(var, expr)\
-    ((typename std::remove_reference<decltype(var)>::type&)(\
+    ((std::remove_reference<decltype(var)>::type&)(\
         ::mal::macro::you_can_just_use_stack_ostream_with_ostr_deep_copy (var)\
         << expr\
         )).get_deep_copy_string()
