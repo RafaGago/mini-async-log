@@ -115,19 +115,31 @@ Those that are self-explanatory won't be explained.
  - *MAL_USE_BOOST_THREAD*
  - *MAL_NO_VARIABLE_INTEGER_WIDTH*: Integers are encoded ignoring the number trailing bytes set to zero, not based on its data type size. So when this isn't defined e.g. encoding an uint64 with a value up to 255 takes one byte (plus 1 byte header). Otherwise all uint64 values will take 8 bytes (plus header), so encoding is less space efficient in this way but it frees the CPU and allows the compiler to inline more.
  
-## Using the library ##
+## Linux compilation ##
 
 You can compile the files in the "src" folder and make a library or just use compile everything in your project.
 
 If you want to compile the library inside your project you need to merge the "src" and "include" folders (or to add both as an include directory to the compiler) and to compile "frontend_def.hpp" in one translation unit.
 
-Otherwise you can use the makefile in the /build/linux folder, one example of command invocation could be:
+Otherwise you can use the makefile in the "/build/linux" folder, one example of command invocation could be:
 
     make CXXFLAGS="-DNDEBUG -DMAL_USE_BOOST_THREAD -DMAL_USE_BOOST_CHRONO -DBOOST_ALL_DYN_LINK -DBOOST_CHRONO_HEADER_ONLY" LDLIBS="-lboost_thread" CXX="arm-linux-gnueabihf-g++"
 
-## Todo ##
+## Windows compilation ##
 
- - Explain the .sln to be able to build on Windows.
+There is a Visual Studio 2010 Solution the "/build/windows" folder, if you don't need the Boost libraries you should be able to compile directly (Disclaimer: this is just tested using VS2010 -> using boost).
 
+If you are using boost you need to do some steps before building:
+
+ 1. Copy the file "build\windows\mal-log\boost.props.templatetoedit" to "build\windows\mal-log\boost.props".
+ 2. Update the paths (as text/XML) in the "build\windows\mal-log\boost.props" file with your machine paths. You can add or disable boost related preprocessor macros on the copied file if required.
+ 3. Open the solution.
+ 4. Go to the "Property Manager".
+ 5. Select all projects.
+ 6. Right-click "Add Existing Property Sheet", select "build\windows\mal-log\boost.props".
+ 7. Expand all the executable projects ("overview" at this time) and select all the "Win32" configurations.
+ 8. Right-click "Add Existing Property Sheet", select "build\windows\mal-log\boost_exec_x86.props".
+ 9. All the executable projects should be already expanded, select all the "x64" configurations.
+ 10. Right-click "Add Existing Property Sheet", select "build\windows\mal-log\boost_exec_amd64.props".
+ 
 > Written with [StackEdit](https://stackedit.io/).
-
