@@ -2,7 +2,7 @@
 
 #include <cassert>
 #include <mal_log/mal_log.hpp>
-#include <mal_log/frontend_def.hpp> //UNCOMMENT IF YOU DON'T WANT TO COMPILE THE LIB SEPARATELY, COMMENT IF YOU DO
+//#include <mal_log/frontend_def.hpp> //UNCOMMENT IF YOU DON'T WANT TO COMPILE THE LIB SEPARATELY, COMMENT IF YOU DO
 #include <mal_log/util/stack_ostream.hpp>
 
 //------------------------------------------------------------------------------
