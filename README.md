@@ -129,19 +129,10 @@ Otherwise you can use the makefile in the "/build/linux" folder, one example of 
 
 ## Windows compilation ##
 
-There is a Visual Studio 2010 Solution the "/build/windows" folder, if you don't need the Boost libraries you should be able to compile directly (Disclaimer: this is just tested using VS2010 -> using boost).
+There is a Visual Studio 2010 Solution the "/build/windows" folder, but you need to do a step before opening. 
 
-If you are using boost you need to do some steps before building:
+If you don't need the Boost libraries you should run the "build\windows\mal-log\props\from_empty.bat" script. If you need them you should run the "build\windows\mal-log\props\from_non_empty.bat" script. 
 
- 1. Copy the file "build\windows\mal-log\boost.props.templatetoedit" to "build\windows\mal-log\boost.props".
- 2. Update the paths (as text/XML) in the "build\windows\mal-log\boost.props" file with your machine paths. You can add or disable boost related preprocessor macros on the copied file if required.
- 3. Open the solution.
- 4. Go to the "Property Manager".
- 5. Select all projects.
- 6. Right-click "Add Existing Property Sheet", select "build\windows\mal-log\boost.props".
- 7. Expand all the executable projects ("overview" at this time) and select all the "Win32" configurations.
- 8. Right-click "Add Existing Property Sheet", select "build\windows\mal-log\boost_exec_x86.props".
- 9. All the executable projects should be already expanded, select all the "x64" configurations.
- 10. Right-click "Add Existing Property Sheet", select "build\windows\mal-log\boost_exec_amd64.props".
- 
+If you don't need the Boost libraries you can open and compile the solution, otherwise you need to edit (with a text editor) the newly generated file ""build\windows\mal-log\props\mal_dependencies.props" before and to update the paths in the file. You can do this through the Visual Studio Property Manager too.
+
 > Written with [StackEdit](https://stackedit.io/).

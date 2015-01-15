@@ -1,0 +1,1 @@
+copy /Y non_empty\* .

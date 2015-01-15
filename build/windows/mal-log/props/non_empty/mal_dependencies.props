@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <boost_include>C:\include</boost_include>
+    <boost_lib_x86>C:\lib\x86</boost_lib_x86>
+    <boost_lib_x64>C:\lib\x64</boost_lib_x64>
+  </PropertyGroup>
+  <PropertyGroup>
+    <_PropertySheetDisplayName>mal_dependencies</_PropertySheetDisplayName>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(boost_include);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>MAL_USE_BOOST_ATOMIC;MAL_USE_BOOST_CHRONO;MAL_USE_BOOST_THREAD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <BuildMacro Include="boost_include">
+      <Value>$(boost_include)</Value>
+    </BuildMacro>
+    <BuildMacro Include="boost_lib_x86">
+      <Value>$(boost_lib_x86)</Value>
+    </BuildMacro>
+    <BuildMacro Include="boost_lib_x64">
+      <Value>$(boost_lib_x64)</Value>
+    </BuildMacro>
+  </ItemGroup>
+</Project>
