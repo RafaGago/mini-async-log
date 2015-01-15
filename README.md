@@ -109,7 +109,7 @@ Those that are self-explanatory won't be explained.
  - *MAL_GET_LOGGER_INSTANCE_FUNC*: See the "Initialization" chapter above.
  - *MAL_STRIP_LOG_SEVERITY*: Removes the entries of this severity and below at compile time. 0 is the "debug" severity, 5 is the "critical" severity. Stripping at level 5 leaves no log entries at all. Yo can define e.g. MAL_STRIP_LOG_DEBUG, MAL_STRIP_LOG_TRACE, etc. instead. If you define MAL_STRIP_LOG_TRACE all the severities below will be automatically defined for you (in this case MAL_STRIP_LOG_DEBUG).
  - *MAL_DYNLIB_COMPILE*: Define it when compiling as a dynamic library/shared object.
- - *MAL_DYNLIB*: Define it when using MAL as a dynamic library. Don't define if you are static linking or compiling the library with your project.
+ - *MAL_DYNLIB*: Define it when using MAL as a dynamic library. Don't define it if you are static linking or compiling the library with your project.
  - *MAL_CACHE_LINE_SIZE*: The cache line size of the machine you are compiling for. This is just used for data structure padding. 64 is defaulted when undefined.
  - *MAL_USE_BOOST_CSTDINT*: If your compiler doesn't have <cstdint> use boost.
  - *MAL_USE_BOOST_ATOMIC*
