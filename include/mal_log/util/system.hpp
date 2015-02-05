@@ -94,18 +94,22 @@ namespace mal {
 
 #ifndef MAL_DYN_LIB_CALL
 
-#if defined (_MSC_VER)
-    #define MAL_LIB_EXPORTED_FUNC WINAPI  //using def files
+#if defined (_MSC_VER)    
     #if defined (MAL_DYNLIB_COMPILE)
-        #define MAL_LIB_EXPORTED_CLASS __declspec(dllexport)
-    #else
+        #define MAL_LIB_EXPORTED_CLASS __declspec(dllexport)        
+    #elif defined (MAL_AS_DYNLIB)
         #define MAL_LIB_EXPORTED_CLASS __declspec(dllimport)
+    #else
+        #define MAL_LIB_EXPORTED_CLASS
     #endif
 #elif __GNUC__ >= 4
-    #define MAL_LIB_EXPORTED_FUNC __attribute__ ((visibility ("default")))
-    #define MAL_LIB_EXPORTED_CLASS __attribute__ ((visibility ("default")))
-#else
-    #define MAL_LIB_EXPORTED_FUNC
+    #if defined (MAL_DYNLIB_COMPILE) || defined (MAL_AS_DYNLIB)        
+        #define MAL_LIB_EXPORTED_CLASS
+            __attribute__ ((visibility ("default")))
+    #else
+        #define MAL_LIB_EXPORTED_CLASS
+    #endif
+#else    
     #define MAL_LIB_EXPORTED_CLASS
 #endif
 

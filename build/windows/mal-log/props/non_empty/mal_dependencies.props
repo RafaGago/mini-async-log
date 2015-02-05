@@ -7,7 +7,7 @@
     <boost_lib_x64>C:\lib\x64</boost_lib_x64>
   </PropertyGroup>
   <PropertyGroup>
-    <_PropertySheetDisplayName>boost</_PropertySheetDisplayName>
+    <_PropertySheetDisplayName>mal_dependencies</_PropertySheetDisplayName>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

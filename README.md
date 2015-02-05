@@ -27,6 +27,7 @@ After having maintained a slightly modified version of google log and given the 
  - Lazy parameter evaluation (as usual with most logging libraries).
  - No ostreams (a very ugly part of C++ for my liking), just format strings checked at compile time (if the compiler supports it) with type safe values. An on-stack ostream adapter is available as alast resort, but its use is more verbose and has more overhead.
  - The log severity can be externally changed outside of the process. The IPC mechanism is the simplest, the log worker periodically polls some file descriptors when idle (if configured to).
+ - Small, you can actually compile it as a part of your application.
  
 ## How does it work ##
 
@@ -107,7 +108,8 @@ Those that are self-explanatory won't be explained.
 
  - *MAL_GET_LOGGER_INSTANCE_FUNC*: See the "Initialization" chapter above.
  - *MAL_STRIP_LOG_SEVERITY*: Removes the entries of this severity and below at compile time. 0 is the "debug" severity, 5 is the "critical" severity. Stripping at level 5 leaves no log entries at all. Yo can define e.g. MAL_STRIP_LOG_DEBUG, MAL_STRIP_LOG_TRACE, etc. instead. If you define MAL_STRIP_LOG_TRACE all the severities below will be automatically defined for you (in this case MAL_STRIP_LOG_DEBUG).
- - *MAL_DYNLIB_COMPILE*: Define it when compiling as a library (Windows).
+ - *MAL_DYNLIB_COMPILE*: Define it when compiling as a dynamic library/shared object.
+ - *MAL_DYNLIB*: Define it when using MAL as a dynamic library. Don't define it if you are static linking or compiling the library with your project.
  - *MAL_CACHE_LINE_SIZE*: The cache line size of the machine you are compiling for. This is just used for data structure padding. 64 is defaulted when undefined.
  - *MAL_USE_BOOST_CSTDINT*: If your compiler doesn't have <cstdint> use boost.
  - *MAL_USE_BOOST_ATOMIC*
@@ -115,19 +117,22 @@ Those that are self-explanatory won't be explained.
  - *MAL_USE_BOOST_THREAD*
  - *MAL_NO_VARIABLE_INTEGER_WIDTH*: Integers are encoded ignoring the number trailing bytes set to zero, not based on its data type size. So when this isn't defined e.g. encoding an uint64 with a value up to 255 takes one byte (plus 1 byte header). Otherwise all uint64 values will take 8 bytes (plus header), so encoding is less space efficient in this way but it frees the CPU and allows the compiler to inline more.
  
-## Using the library ##
+## Linux compilation ##
 
 You can compile the files in the "src" folder and make a library or just use compile everything in your project.
 
 If you want to compile the library inside your project you need to merge the "src" and "include" folders (or to add both as an include directory to the compiler) and to compile "frontend_def.hpp" in one translation unit.
 
-Otherwise you can use the makefile in the /build/linux folder, one example of command invocation could be:
+Otherwise you can use the makefile in the "/build/linux" folder, one example of command invocation could be:
 
     make CXXFLAGS="-DNDEBUG -DMAL_USE_BOOST_THREAD -DMAL_USE_BOOST_CHRONO -DBOOST_ALL_DYN_LINK -DBOOST_CHRONO_HEADER_ONLY" LDLIBS="-lboost_thread" CXX="arm-linux-gnueabihf-g++"
 
-## Todo ##
+## Windows compilation ##
 
- - Explain the .sln to be able to build on Windows.
+There is a Visual Studio 2010 Solution the "/build/windows" folder, but you need to do a step before opening. 
+
+If you don't need the Boost libraries you should run the "build\windows\mal-log\props\from_empty.bat" script. If you need them you should run the "build\windows\mal-log\props\from_non_empty.bat" script. 
+
+If you don't need the Boost libraries you can open and compile the solution, otherwise you need to edit (with a text editor) the newly generated file ""build\windows\mal-log\props\mal_dependencies.props" before and to update the paths in the file. You can do this through the Visual Studio Property Manager too.
 
 > Written with [StackEdit](https://stackedit.io/).
-
