@@ -103,8 +103,8 @@ namespace mal {
         #define MAL_LIB_EXPORTED_CLASS
     #endif
 #elif __GNUC__ >= 4
-    #if defined (MAL_DYNLIB_COMPILE) || defined (MAL_AS_DYNLIB)        
-        #define MAL_LIB_EXPORTED_CLASS
+    #if defined (MAL_DYNLIB_COMPILE) || defined (MAL_AS_DYNLIB)
+        #define MAL_LIB_EXPORTED_CLASS\
             __attribute__ ((visibility ("default")))
     #else
         #define MAL_LIB_EXPORTED_CLASS
