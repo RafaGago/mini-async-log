@@ -6,7 +6,8 @@ INCLUDE_PATH = $(MAL_LOG_PATH)/include
 
 CXX = g++
 
-MAL_VERSION = 0.0.1
+#MAL_VERSION = 0.0.1
+MAL_VERSION = `cat $(MAL_LOG_PATH)/version`
 
 FIXED_COMPILE_FLAGS =-Wall -std=c++0x $(MAL_VARS) -I$(MAL_LOG_PATH)/src -I$(MAL_LOG_PATH)/include -O3 -fmessage-length=0 -fvisibility=hidden -fPIC -DMAL_DYNLIB_COMPILE
 
