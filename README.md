@@ -126,6 +126,8 @@ If you want to compile the library inside your project you need to merge the "sr
 Otherwise you can use the makefile in the "/build/linux" folder, one example of command invocation could be:
 
     make CXXFLAGS="-DNDEBUG -DMAL_USE_BOOST_THREAD -DMAL_USE_BOOST_CHRONO -DBOOST_ALL_DYN_LINK -DBOOST_CHRONO_HEADER_ONLY" LDLIBS="-lboost_thread" CXX="arm-linux-gnueabihf-g++"
+    
+REMEMBER: That the if the library is compiled with e.g. "MAL_USE_BOOST_THREAD" and "MAL_USE_BOOST_CHRONO" the client code must define them too. This needs to be improved in future versions by directly modifying the include files.
 
 ## Windows compilation ##
 
