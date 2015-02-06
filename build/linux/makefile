@@ -9,9 +9,9 @@ CXX = g++
 #MAL_VERSION = 0.0.1
 MAL_VERSION = `cat $(MAL_LOG_PATH)/version`
 
-FIXED_COMPILE_FLAGS =-Wall -std=c++0x $(MAL_VARS) -I$(MAL_LOG_PATH)/src -I$(MAL_LOG_PATH)/include -O3 -fmessage-length=0 -fvisibility=hidden -fPIC -DMAL_DYNLIB_COMPILE
+FIXED_COMPILE_FLAGS =-Wall -std=c++0x $(MAL_VARS) -I$(MAL_LOG_PATH)/src -I$(MAL_LOG_PATH)/include -fmessage-length=0 -fvisibility=hidden -fPIC -DMAL_DYNLIB_COMPILE
 
-override CXXFLAGS += $(FIXED_COMPILE_FLAGS)
+#override CXXFLAGS += $(FIXED_COMPILE_FLAGS)
 
 override LDFLAGS += -Wl,--exclude-libs,ALL -shared
 
@@ -21,10 +21,17 @@ LIB = ./lib
 
 INCLUDE = ./include
 
-.PHONY: all clean
+.PHONY: all clean debug
 
+all : override CXXFLAGS += $(FIXED_COMPILE_FLAGS) -O3
+all : BASENAME = libmal-log
 all : post-build
-	ln -sf libmal-log.so.$(MAL_VERSION) $(LIB)/libmal-log.so
+	ln -sf $(BASENAME).so.$(MAL_VERSION) $(LIB)/$(BASENAME).so
+
+debug : override CXXFLAGS += $(FIXED_COMPILE_FLAGS) -O0 -g3
+debug : BASENAME = libmal-log-d
+debug : post-build
+	ln -sf $(BASENAME).so.$(MAL_VERSION) $(LIB)/$(BASENAME).so
 	
 pre-build : 
 	mkdir -p stage
@@ -36,10 +43,10 @@ post-build : so_file a_file
 	ln -sf $(INCLUDE_PATH)
 
 so_file: pre-build frontend_def.o
-	$(CXX) -o $(LIB)/libmal-log.so.$(MAL_VERSION) $(STAGE)/frontend_def.o $(LDLIBS) $(LDFLAGS)
+	$(CXX) -o $(LIB)/$(BASENAME).so.$(MAL_VERSION) $(STAGE)/frontend_def.o $(LDLIBS) $(LDFLAGS)
 
 a_file: pre-build frontend_def.o
-	$(AR) rcs $(LIB)/libmal-log.a.$(MAL_VERSION) $(STAGE)/frontend_def.o
+	$(AR) rcs $(LIB)/$(BASENAME).a.$(MAL_VERSION) $(STAGE)/frontend_def.o
 
 frontend_def.o: $(STAGE)/frontend_def.cpp
 	$(CXX) $(CXXFLAGS) -c $(STAGE)/frontend_def.cpp -o $(STAGE)/frontend_def.o
