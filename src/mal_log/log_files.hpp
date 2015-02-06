@@ -105,12 +105,11 @@ public:
                 {
                     return false;
                 }
-            }
-
-            for (auto it = prev.begin(); it != prev.end(); ++it)
-            {
-                m_name_strings.push_tail();
-                std::memcpy (m_name_strings.tail(), &(*it)[0], it->size());
+                for (auto it = prev.begin(); it != prev.end(); ++it)
+                {
+                    m_name_strings.push_tail();
+                    std::memcpy (m_name_strings.tail(), &(*it)[0], it->size());
+                }
             }
             return true;
         }
@@ -120,7 +119,6 @@ public:
             std::cerr << "[logger] memory exception\n";
             return false;
         }
-
     }
     //--------------------------------------------------------------------------
     bool can_write_in_folder (std::string folder)

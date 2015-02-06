@@ -1,6 +1,7 @@
 0.0.2
 
 -Added debug target to Linux makefile
+-Fixed bug that happened when not slicing files (infinite length).
 
 0.0.1
 
