@@ -77,7 +77,7 @@ either expressed or implied, of Rafael Gago Castano.
     #endif
 #endif
 
-#ifdef MAL_STRIP_LOG_CRITICAL
+#if defined (MAL_STRIP_LOG_CRITICAL) || defined (MAL_STRIP_ALL)
     #ifndef MAL_STRIP_LOG_SEVERITY
         #define MAL_STRIP_LOG_SEVERITY 5
     #else
