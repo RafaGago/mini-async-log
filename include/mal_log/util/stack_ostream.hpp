@@ -94,7 +94,7 @@ you_can_just_use_stack_ostream_with_ostr_deep_copy(
 //luated please, don't doubt to share.
 
 #define ostr_deep_copy(var, expr)\
-    ((std::remove_reference<decltype(var)>::type&)(\
+    ((typename std::remove_reference<decltype(var)>::type&)(\
         ::mal::macro::you_can_just_use_stack_ostream_with_ostr_deep_copy (var)\
         << expr\
         )).get_deep_copy_string()

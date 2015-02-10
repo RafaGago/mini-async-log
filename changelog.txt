@@ -3,6 +3,7 @@
 -Added debug target to Linux makefile
 -Fixed bug that happened when not slicing files (infinite length).
 -Added MAL_STRIP_ALL macro (equivalent to MAL_STRIP_LOG_CRITICAL)
+-Missing typename for stack_ostream macro.
 
 0.0.1
 
