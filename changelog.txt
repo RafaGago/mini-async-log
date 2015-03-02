@@ -1,3 +1,8 @@
+0.0.3
+
+-renamed "frontend_def.hpp" to "frontend.cpp", it made no sense to have it as
+ ".hpp" under the "src" folder.
+
 0.0.2
 
 -Added debug target to Linux makefile
