@@ -121,8 +121,6 @@ Those that are self-explanatory won't be explained.
 
 You can compile the files in the "src" folder and make a library or just use compile everything in your project.
 
-If you want to compile the library inside your project you need to merge the "src" and "include" folders (or to add both as an include directory to the compiler) and to compile "frontend_def.hpp" in one translation unit.
-
 Otherwise you can use the makefile in the "/build/linux" folder, one example of command invocation could be:
 
     make CXXFLAGS="-DNDEBUG -DMAL_USE_BOOST_THREAD -DMAL_USE_BOOST_CHRONO -DBOOST_ALL_DYN_LINK -DBOOST_CHRONO_HEADER_ONLY" LDLIBS="-lboost_thread" CXX="arm-linux-gnueabihf-g++"

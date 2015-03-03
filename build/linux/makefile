@@ -36,20 +36,18 @@ debug : post-build
 pre-build : 
 	mkdir -p stage
 	mkdir -p $(LIB)
-	ln -sf ../$(SRC_MAL_PATH)/frontend_def.hpp $(STAGE)/frontend_def.cpp;
-	
 
 post-build : so_file a_file
 	ln -sf $(INCLUDE_PATH)
 
-so_file: pre-build frontend_def.o
-	$(CXX) -o $(LIB)/$(BASENAME).so.$(MAL_VERSION) $(STAGE)/frontend_def.o $(LDLIBS) $(LDFLAGS)
+so_file: pre-build frontend.o
+	$(CXX) -o $(LIB)/$(BASENAME).so.$(MAL_VERSION) $(STAGE)/frontend.o $(LDLIBS) $(LDFLAGS)
 
-a_file: pre-build frontend_def.o
-	$(AR) rcs $(LIB)/$(BASENAME).a.$(MAL_VERSION) $(STAGE)/frontend_def.o
+a_file: pre-build frontend.o
+	$(AR) rcs $(LIB)/$(BASENAME).a.$(MAL_VERSION) $(STAGE)/frontend.o
 
-frontend_def.o: $(STAGE)/frontend_def.cpp
-	$(CXX) $(CXXFLAGS) -c $(STAGE)/frontend_def.cpp -o $(STAGE)/frontend_def.o
+frontend.o: $(STAGE)/frontend_def.cpp
+	$(CXX) $(CXXFLAGS) -c ../$(SRC_MAL_PATH)/frontend.cpp -o $(STAGE)/frontend.o
 
 clean:
 	rm -rf lib stage include
