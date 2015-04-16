@@ -46,8 +46,8 @@ so_file: pre-build frontend.o
 a_file: pre-build frontend.o
 	$(AR) rcs $(LIB)/$(BASENAME).a.$(MAL_VERSION) $(STAGE)/frontend.o
 
-frontend.o: $(STAGE)/frontend_def.cpp
-	$(CXX) $(CXXFLAGS) -c ../$(SRC_MAL_PATH)/frontend.cpp -o $(STAGE)/frontend.o
+frontend.o: $(SRC_MAL_PATH)/frontend.cpp
+	$(CXX) $(CXXFLAGS) -c $(SRC_MAL_PATH)/frontend.cpp -o $(STAGE)/frontend.o
 
 clean:
 	rm -rf lib stage include
