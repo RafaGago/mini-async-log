@@ -6,14 +6,18 @@ INCLUDE_PATH = $(MAL_LOG_PATH)/include
 
 CXX = g++
 
+BOOST_LIB = .
+
+BOOST_INCLUDE = .
+
 #MAL_VERSION = 0.0.1
 MAL_VERSION = `cat $(MAL_LOG_PATH)/version`
 
-FIXED_COMPILE_FLAGS =-Wall -std=c++0x $(MAL_VARS) -I$(MAL_LOG_PATH)/src -I$(MAL_LOG_PATH)/include -fmessage-length=0 -fvisibility=hidden -fPIC -DMAL_DYNLIB_COMPILE
+FIXED_COMPILE_FLAGS =-Wall -std=c++0x $(MAL_VARS) -I$(MAL_LOG_PATH)/src -I$(MAL_LOG_PATH)/include -I$(BOOST_INCLUDE) -fmessage-length=0 -fvisibility=hidden -fPIC -DMAL_DYNLIB_COMPILE
 
 #override CXXFLAGS += $(FIXED_COMPILE_FLAGS)
 
-override LDFLAGS += -Wl,--exclude-libs,ALL -shared
+override LDFLAGS += -L$(BOOST_LIB) -Wl,--exclude-libs,ALL -shared
 
 STAGE = stage
 
@@ -47,7 +51,7 @@ a_file: pre-build frontend.o
 	$(AR) rcs $(LIB)/$(BASENAME).a.$(MAL_VERSION) $(STAGE)/frontend.o
 
 frontend.o: $(SRC_MAL_PATH)/frontend.cpp
-	$(CXX) $(CXXFLAGS) -c $(SRC_MAL_PATH)/frontend.cpp -o $(STAGE)/frontend.o
+	$(CXX) $(CXXFLAGS) -I$(BOOST_INCLUDE) -c $(SRC_MAL_PATH)/frontend.cpp -o $(STAGE)/frontend.o
 
 clean:
 	rm -rf lib stage include
