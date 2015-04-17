@@ -1,9 +1,6 @@
-0.0.4
-
--Linux makefile variables BOOST_INCLUDE and BOOST_LIB added.
-
 0.0.3
 
+-Linux makefile variables BOOST_INCLUDE and BOOST_LIB added.
 -renamed "frontend_def.hpp" to "frontend.cpp", it made no sense to have it as
  ".hpp" under the "src" folder.
 
