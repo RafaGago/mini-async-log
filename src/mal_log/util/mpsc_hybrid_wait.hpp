@@ -109,8 +109,9 @@ public:
                 return state == unblocked;
             };
             m_state.store (blocked, mo_relaxed);
+            th::unique_lock<decltype (m_dummy_mutex)> lock (m_dummy_mutex);       
             bool is_unblocked = m_cond.wait_for(                                 //note that it's possible that the worker misses a notification and waits the whole timeout, this is by design and preferable to mutex locking the callers. if you can't tolerate this latency in the worker you can throw CPU at it by setting cfg never_block
-                                    m_dummy_mutex,
+                                    lock,
                                     ch::microseconds (m_cfg.block_us),
                                     pred
                                     );
