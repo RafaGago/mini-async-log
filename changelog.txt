@@ -1,3 +1,7 @@
+0.0.4
+
+-Fixed bug on mspc_hybrid_wait: condition variable was called without locking.
+
 0.0.3
 
 -Linux makefile variables BOOST_INCLUDE and BOOST_LIB added.
