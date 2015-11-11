@@ -10,7 +10,7 @@ After having maintained a slightly modified fork of google log (glog) and given 
 ## Design rationale ##
 
  - Simple. Not over abstracted and feature bloated, explicit, easy to figure out what the code is doing, easy to modify.
- - Very low latency. Fast for the caller. No mutexes or OS synchronization primitives used.
+ - Very low latency. Fast for the caller. Lock-free.
  - Asynchronous (synchronous calls can be made on top for special messages, but they are way slower than using a synchronous logger in the first place).
  - Minimum string formatting in the calling thread for the most common use cases.
  - Keeps ordering between threads.
