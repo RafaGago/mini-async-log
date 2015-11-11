@@ -5,7 +5,7 @@ A non feature-bloated asynchronous data logger. Sponsored by my employer **Diadr
 
 We just wanted an asynchronous logger that can be used from many dynamically loaded libraries without doing link-time hacks like linking static and hiding symbols and some other "niceties".
 
-After having maintained a slightly modified version of google log and given the fact that this is a very small project we decided that existing wheels weren't round enough.
+After having maintained a slightly modified fork of google log (glog) and given the fact that this is a very small project we decided that existing wheels weren't round enough.
 
 ## Design rationale ##
 
@@ -22,10 +22,10 @@ After having maintained a slightly modified version of google log and given the 
  - Boost dependencies just for parts that will eventually go to the C++ standard.
  - No singleton by design, usable from dynamically loaded libraries. The user provides the instance either explicitly or by a global function (Koenig lookup).
  - Suitable for soft-realtime work. Once it's initialized the fast-path can be clear from heap allocations if properly configured.
- - File rotation-slicing (needs some external help at initialization time until std::filesystem isn't implemented in some compilers, see below).
+ - File rotation-slicing (needs some external help at initialization time until std::filesystem is implemented on some compilers, see below).
  - One conditional call overhead for inactive severities.
  - Lazy parameter evaluation (as usual with most logging libraries).
- - No ostreams (a very ugly part of C++ for my liking), just format strings checked at compile time (if the compiler supports it) with type safe values. An on-stack ostream adapter is available as alast resort, but its use is more verbose and has more overhead.
+ - No ostreams (a very ugly part of C++ for my liking), just format strings checked at compile time (if the compiler supports it) with type safe values. An on-stack ostream adapter is available as a last resort, but its use is more verbose and has more overhead.
  - The log severity can be externally changed outside of the process. The IPC mechanism is the simplest, the log worker periodically polls some file descriptors when idle (if configured to).
  - Small, you can actually compile it as a part of your application.
  
@@ -33,7 +33,7 @@ After having maintained a slightly modified version of google log and given the 
 
 It just borrows ideas from many of the loggers out there.
 
-When the user is to write a log message, the size is precomputed, then the memory is reclaimed either from the fixed size pool or the heap (configurable) and then message is passed to the log queue in an internal format.
+When the user is to write a log message, the size of an internal storage format is precomputed, then the required memory is reclaimed either from the fixed size pool or the heap (configurable) and then message is encoded and passed to the log queue in an internal format.
 
 Most of the time the user thread doesn't format strings, just encodes built-in type values (integers are variable-length encoded) and whole program duration C strings. Deep copies can be done if required too.
 
@@ -41,7 +41,7 @@ The messages are formatted by using printf-style strings, where the formatting s
 
 log_error ("the value of i is {} and the value of j is {}", i, j);
 
-The function is type-safe, when "constexpr" and variadic template parameters are available the format string is matched with the parameters at compile time, otherwise the errors are caught at run time in the logging output.
+The function is type-safe, when the compiler has "constexpr" and "variadic template parameters" available. In such case the format string is matched with the parameters at compile time and the compiler "complains" if the types don't match. Otherwise the errors are caught at run time on the logging output file.
 
 > see this [example](https://github.com/RafaGago/mini-async-log/blob/master/example/overview.cpp) that more or less shows all available features.
 
@@ -49,7 +49,7 @@ The function is type-safe, when "constexpr" and variadic template parameters are
 
 I used to have some benchmarks here showing that "my new thing (TM)" is the best invention since sliced-bread, but as the benchmarks were mostly an apples-to-oranges comparison (e.g. comparing with glog which is half-synchronous) I just removed them.
 
-With the actual performance and if the logger is configured to timestamp at the client/producer side it takes the same or more time to retrieve the timestamp with the std::chrono/boost::chrono library than to build and enqueue a simple message composed of e.g. a format string and three integers.
+With the actual performance and if the logger is configured to generate the timestamps at the client/producer side it takes longer for a client thread to retrieve the timestamp with std::chrono/boost::chrono than to build and enqueue a simple message composed of e.g. a format string and three integers.
 
 > [These were the benchmarks that I had](https://github.com/RafaGago/mini-async-log/blob/master/example/benchmark.cpp).
 
@@ -57,19 +57,19 @@ With the actual performance and if the logger is configured to timestamp at the 
 
 The library can rotate fixed size log files.
 
-Using the current C++11 standard files can just be created, modified and deleted. There is no way to list a directory, so the user is required to pass at start time the list of files generated by previous runs. I may add support for boost::filesystem/std::filesystem, but just as an optional but ready external code, so everyone can skip this heavy dependency. There is an example using boost::filesystem in the "/extras" folder
+Using the current C++11 standard files can just be created, modified and deleted. There is no way to list a directory, so the user is required to pass at start time the list of files generated by previous runs. I may add support for boost::filesystem/std::filesystem, but just as an optional (but ready to use) external code, so everyone can skip this heavy dependency. There is an example using boost::filesystem in the "/extras" folder
 
 > There is an [example](https://github.com/RafaGago/mini-async-log/blob/master/example/rotation.cpp) here.
 
 ## Initialization ##
 
-The library isn't a singleton, so the user should provide the logger instance. Even of many modules call the initialization function only one of them will succeed.
+The library isn't a singleton, so the user should provide a reference to the logger instance. Even if many modules call the initialization function only one of them will succeed.
 
-There are two methods to enqueue a log entry, one is to provide it explicitly and the other one is by accessing a global function.
+There are two methods to get the instance when enqueuing a log entry, one is to provide it explicitly and the other one is by providing it on a global function.
 
-If no instance is provided, the global function "get_mal_logger_instance()" will be called without being namespace qualified, so you can use Koenig lookup/ADL. This happens when the user calls the macros with no suffix, as e.g. "log_error(fmt string, ...)".
+If no instance is provided, the global function "get_mal_logger_instance()" will be called without being namespace qualified, so you can use Koenig lookup/ADL and provide it from there. This happens when the user calls the macros with no explicite instance suffix, as e.g. "log_error(fmt string, ...)".
 
-To provide the instance explictly the macros with the "_i" function need to be called, e.g. "log_error_i(instance, fmt_string, ...)"
+To provide the instance explictly the macros with the "_i" suffix need to be called, e.g. "log_error_i(instance, fmt_string, ...)"
 
 The name of the function can be changed at compile time, by defining MAL_GET_LOGGER_INSTANCE_FUNCNAME.
 
@@ -77,7 +77,7 @@ Be aware that it's dangerous to have a dynamic library or executable loaded mult
 
 ## Termination ##
 
-The worker blocks in its destructor until its work queue is empty when normally exiting a program.
+The worker blocks on its destructor until its work queue is empty when normally exiting a program.
 
 When a signal is sent you can call the frontend function  [on termination](https://github.com/RafaGago/mini-async-log/blob/master/include/mal_log/frontend.hpp). This will early interrupt any synchronous calls you made.
 
@@ -85,22 +85,22 @@ When a signal is sent you can call the frontend function  [on termination](https
 
 As for now, every function returns a boolean if it succeeded or false if it didn't. A filtered out/below severity call returns true.
 
-The only possible failures are either to be unable to allocate memory for a log entry, an asynchronous call that was interrupted by "on_termination" or a string byte that was to be deep copied but would overflow the length variable (mostly a bug, I highly doubt that someone will log messages that take 4GB).
+The only possible failures are either to be unable to allocate memory for a log entry, an asynchronous call that was interrupted by "on_termination" or a string byte that was about to be deep copied but would overflow the length variable (mostly a bug, I highly doubt that someone will log messages that take 4GB).
 
 The functions never throw.
 
 ## Weaknesses ##
 
  1. Just ASCII.
- 2. No C++ ostream support. (not sure if it's a good or a bad thing...). Swapping logger in an existing codebase may not be worth the effort in some cases. Printing some classes that have overloaded the stream operator can be repetitive (I have to find a solution for this).
+ 2. No C++ ostream support. (not sure if it's a good or a bad thing...). Swapping logger in an existing codebase may not be worth the effort in some cases.
  3. Limited formatting abilities (it can be improved with more parser complexity).
- 4. No way to output runtime strings/memory regions without deep-copying them.
- 5. Ugly macros, but unfortunately the same syntax can't be achieved in any other way.
- 6. Format string need to be literals. A const char* isn't enough (constexpr can't iterate them at compile time).
+ 4. No way to output runtime strings/memory regions without deep-copying them (could be easily fixed, but I won't for now).
+ 5. Some ugly macros, but unfortunately the same syntax can't be achieved in any other way AFAIK.
+ 6. Format strings need to be literals. A const char* isn't enough (constexpr can't iterate them at compile time).
  
-The fourth point is the most restrictive for my liking, it's just inherent to the asynchronous/non-blocking design, there is no guarantee about the passed data lifetime. This happens in every asynchronous logger.
+The fourth point is the most restrictive for my liking, it's just inherent to the asynchronous/non-blocking design, there is no guarantee about the passed data lifetime. This happens on every asynchronous logger.
 
-It's possible to artificially increment the refcount of a shared_ptr by copying it to an instance created using "placement_new" and to decrement it in the worker using the same trick, I keep this idea on hold for now, it's not a matter of uglyness (I don't have so much C++ "ethics") just practical considerations: most of the time in regular uses cases the deep copies will be small enough (under 128 bytes?) to don't bother.
+The point above would be solved by good-old reference counting. It's possible to artificially increment the refcount of a shared_ptr by copying it to an instance created using "placement_new" and to decrement it in the worker using the same trick. I keep this idea on hold for now, it's not a matter of uglyness (I don't have so much C++ "ethics") just practical considerations: on regular uses cases most of the time the deep copies will be small enough (under 128 bytes?) to don't bother.
 
 ## Compiler macros ##
 
