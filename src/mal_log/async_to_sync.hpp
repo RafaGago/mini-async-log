@@ -69,17 +69,14 @@ public:
     bool wait (sync_point& sync)
     {
         th::unique_lock<th::mutex> lock (m_lock);
-        try
-        {
-            auto pred = [&]()
-            {
+        try {
+            auto pred = [&]() {
                 return (sync.state == sync_point::touched) || m_cancel_all;
             };
             m_cond.wait (lock, pred);
             return !m_cancel_all;
         }
-        catch (...)
-        {
+        catch (...) {
             return false;
         }
     }

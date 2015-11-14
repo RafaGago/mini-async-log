@@ -101,8 +101,7 @@ public:
 
         m_buffer = new cell_t [buffer_size];
 
-        for (size_t i = 0; i != buffer_size; i += 1)
-        {
+        for (size_t i = 0; i != buffer_size; i += 1) {
             m_buffer[i].m_sequence = i;
         }
         m_enqueue_pos = 0;
@@ -111,8 +110,7 @@ public:
     //--------------------------------------------------------------------------
     ~mpmc_b_fifo()
     {
-        if (m_buffer)
-        {
+        if (m_buffer) {
             delete [] m_buffer;
         }
     }
@@ -122,26 +120,21 @@ public:
         assert (m_buffer);
         cell_t* cell;
         size_t pos = m_enqueue_pos;
-        for (;;)
-        {
+        while (true) {
             cell          = &m_buffer[pos & m_buffer_mask];
             size_t seq    = cell->m_sequence.load (mo_acquire);
             intptr_t diff = (intptr_t) seq - (intptr_t) pos;
-            if (diff == 0)
-            {
+            if (diff == 0) {
                 if (m_enqueue_pos.compare_exchange_weak(
                     pos, pos + 1, mo_relaxed
-                    ))
-                {
+                    )) {
                     break;
                 }
             }
-            else if (diff < 0)
-            {
+            else if (diff < 0) {
                 return false;
             }
-            else
-            {
+            else {
                 pos = m_enqueue_pos;
             }
         }
@@ -157,8 +150,7 @@ public:
         cell_t* cell  = &m_buffer[m_enqueue_pos & m_buffer_mask];
         size_t seq    = cell->m_sequence.load (mo_acquire);
         intptr_t diff = (intptr_t) seq - (intptr_t) m_enqueue_pos;
-        if (diff == 0)
-        {
+        if (diff == 0) {
             ++m_enqueue_pos;
             cell->m_data = data;
             cell->m_sequence.store (m_enqueue_pos, mo_release);
@@ -173,30 +165,24 @@ public:
         assert (m_buffer);
         cell_t* cell;
         size_t pos = m_dequeue_pos;
-        for (;;)
-        {
+        while (true) {
             cell          = &m_buffer[pos & m_buffer_mask];
             size_t seq    = cell->m_sequence.load (mo_acquire);
             intptr_t diff = (intptr_t) seq - (intptr_t) (pos + 1);
-            if (diff == 0)
-            {
+            if (diff == 0) {
                 if (m_dequeue_pos.compare_exchange_weak(
                     pos, pos + 1, mo_relaxed
-                    ))
-                {
+                    )) {
                     break;
                 }
             }
-            else if (diff < 0)
-            {
+            else if (diff < 0) {
                 return false;
             }
-            else
-            {
+            else {
                 pos = m_dequeue_pos;
             }
         }
-
         data = cell->m_data;
         cell->m_sequence.store (pos + m_buffer_mask + 1, mo_release);
 
@@ -209,8 +195,7 @@ public:
         cell_t* cell  = &m_buffer[m_dequeue_pos & m_buffer_mask];
         size_t seq    = cell->m_sequence.load (mo_acquire);
         intptr_t diff = (intptr_t) seq - (intptr_t) (m_dequeue_pos + 1);
-        if (diff == 0)
-        {
+        if (diff == 0) {
             ++m_dequeue_pos;
             data = cell->m_data;
             cell->m_sequence.store(

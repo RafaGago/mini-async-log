@@ -87,20 +87,18 @@ public:
         set_next_msg_fmt_string (h.fmt);
         o.entry_begin (h.severity);
 
-        if (prints_timestamp)
-        {
+        if (prints_timestamp) {
             write_timestamp(
                 o,
                 h.has_tstamp ? h.tstamp : (get_timestamp() - m_timestamp_base)
                 );
         }
-        if (prints_severity) { write_severity (o, h.severity);  }
+        if (prints_severity) { write_severity (o, h.severity); }
 
         uword params   = h.arity;
         bool fmt_param = find_param_in_fmt_str (o, params > 0);
 
-        while (params > 0 && fmt_param)
-        {
+        while (params > 0 && fmt_param) {
             consume_next (o, true);
             --params;
             fmt_param = find_param_in_fmt_str (o, params > 0);
@@ -109,10 +107,8 @@ public:
 #ifdef MAL_COMPILE_TIME_FMT_CHECK
         assert (params == 0 && !fmt_param);
 #else
-        if (params)
-        {
-            do
-            {
+        if (params) {
+            do {
                 consume_next (o, false);
                 --params;
             }
@@ -124,10 +120,8 @@ public:
             o.write (h.fmt);
             assert (false && "too many parameters, see log output for details");
         }
-        if (fmt_param)
-        {
-            do
-            {
+        if (fmt_param) {
+            do {
                 fmt_param = find_param_in_fmt_str (o, params > 0);
             }
             while (fmt_param);
@@ -142,8 +136,7 @@ public:
         }
 #endif
         o.entry_end();
-        if (h.severity >= sev::critical)
-        {
+        if (h.severity >= sev::critical) {
             o.flush();
         }
         return true;
@@ -160,20 +153,16 @@ private:
         using namespace ser;
         ser::decoding_field d;
         import_type (d);
-        if (d.gen.fclass == mal_numeric)
-        {
-            if (d.gen.nclass == mal_integral)
-            {
+        if (d.gen.fclass == mal_numeric) {
+            if (d.gen.nclass == mal_integral) {
                 output_integral (o, d.num_int, has_placeholder);
             }
-            else
-            {
+            else {
                 assert (d.gen.nclass == mal_non_integral);
                 output_non_integral (o, d.nom_no_int, has_placeholder);
             }
         }
-        else
-        {
+        else {
             assert (d.gen.fclass == mal_non_numeric);
             output_non_numeric (o, d.no_num, has_placeholder);
         }
@@ -187,8 +176,7 @@ private:
         uword type = f.original_type;
         type      += ((uword) f.is_negative) * 4;
 
-        switch (type)
-        {
+        switch (type) {
         case 0: return output_int_type<u8,  u8_modif>  (o, f, has_placeholder);
         case 1: return output_int_type<u16, u16_modif> (o, f, has_placeholder);
         case 2: return output_int_type<u32, u32_modif> (o, f, has_placeholder);
@@ -206,8 +194,7 @@ private:
             )
     {
         using namespace ser;
-        switch (f.niclass)
-        {
+        switch (f.niclass) {
         case mal_double:
             return output_floating_type<double, u64, double_modif>(
                     o, f, has_placeholder
@@ -216,8 +203,7 @@ private:
             return output_floating_type<float, u32, float_modif>(
                                             o, f, has_placeholder
                                             );
-        case mal_bool  :
-        {
+        case mal_bool: {
             if (!has_placeholder) { return; }
 
             static const char true_val[]  = "true";
@@ -237,18 +223,14 @@ private:
             )
     {
         using namespace ser;
-        switch (f.nnclass)
-        {
-        case mal_c_str:
-        {
+        switch (f.nnclass) {
+        case mal_c_str: {
             literal_wrapper l;
             do_import (l, f);
-            if (has_placeholder && l.lit)
-            {
+            if (has_placeholder && l.lit) {
                 o.write (l.lit);
             }
-            else if (!l.lit)
-            {
+            else if (!l.lit) {
                 static const char lit_null_err[] =
                     "([logger err]->nullptr literal, ignored)";
                 o.write (lit_null_err, sizeof lit_null_err - 1);
@@ -256,8 +238,7 @@ private:
             }
             break;
         }
-        case mal_ptr:
-        {
+        case mal_ptr: {
             static_assert (sizeof (uword) == 4 || sizeof (uword) == 8, "");
             const char* fmt = (sizeof (uword) == 4) ?
                                     u32_modif::hex : u64_modif::hex;
@@ -265,28 +246,23 @@ private:
             do_import (p, f);
             uword v = (uword) p.ptr;
 
-            if (has_placeholder)
-            {
+            if (has_placeholder) {
                 output_num (o, v, fmt);
             }
             break;
         }
-        case mal_deep_copied_str :
-        {
+        case mal_deep_copied_str : {
             deep_copy_string str;
             do_import (str, f);
-            if (has_placeholder)
-            {
+            if (has_placeholder) {
                 o.write (str.mem, str.size);
             }
             break;
         }
-        case mal_deep_copied_mem  :
-        {
+        case mal_deep_copied_mem : {
             deep_copy_bytes bytes;
             do_import (bytes, f);
-            if (has_placeholder)
-            {
+            if (has_placeholder) {
                 byte_stream_convert::execute(
                         o, (const u8*) bytes.mem, bytes.size
                         );
@@ -307,8 +283,7 @@ private:
         T v;
         do_import (v, f);
         const char* fmt;
-        switch (m_fmt_modif)
-        {
+        switch (m_fmt_modif) {
         case 0:
             fmt = fmt_struct::norm;
             break;
@@ -319,15 +294,13 @@ private:
             fmt = fmt_struct::fwidth;
             break;
         default:
-            if (has_placeholder)
-            {
+            if (has_placeholder) {
                 write_invalid_modifier (o);
             }
             fmt = fmt_struct::norm;
             break;
         }
-        if (has_placeholder)
-        {
+        if (has_placeholder) {
             output_num (o, v, fmt);
         }
     }
@@ -336,16 +309,14 @@ private:
     void output_floating_type(
             output& o, ser::non_integral_field f, bool has_placeholder)
     {
-        union hex_hack
-        {
+        union hex_hack {
             T floating;
             H hex;
         };
         hex_hack v;
         do_import (v.floating, f);
         const char* fmt;
-        switch (m_fmt_modif)
-        {
+        switch (m_fmt_modif) {
         case 0:
             fmt = fmt_struct::norm;
             break;
@@ -356,21 +327,17 @@ private:
             fmt = fmt_struct::sci;
             break;
         default:
-            if (has_placeholder)
-            {
+            if (has_placeholder) {
                 write_invalid_modifier (o);
             }
             fmt = fmt_struct::norm;
             break;
         }
-        if (has_placeholder)
-        {
-            if (fmt != fmt_struct::hex)
-            {
+        if (has_placeholder) {
+            if (fmt != fmt_struct::hex) {
                 output_num (o, v.floating, fmt);
             }
-            else
-            {
+            else {
                 output_num (o, v.hex, fmt);
             }
         }
@@ -387,36 +354,29 @@ private:
         static const char param_error[] = "{a parameter was expected here}";
 
         auto fmt_prev = m_fmt;
-        while (m_fmt != nullptr)
-        {
+        while (m_fmt != nullptr) {
             auto found = std::strchr (m_fmt, fmt::placeholder_open);
-            if (found && (found + 1) != 0)
-            {
+            if (found && (found + 1) != 0) {
                 m_fmt       = found + 1;
                 m_fmt_modif = *m_fmt;
             }
-            else
-            {
+            else {
                 o.write (fmt_prev);
                 m_fmt_modif = 0;
                 return false;
             }
-
-            if (*m_fmt == fmt::placeholder_close)
-            {
+            if (*m_fmt == fmt::placeholder_close) {
                 m_fmt_modif = 0;
                 ++m_fmt;
                 o.write (fmt_prev, found - fmt_prev);
             }
-            else if (*(m_fmt + 1) == fmt::placeholder_close)
-            {
+            else if (*(m_fmt + 1) == fmt::placeholder_close) {
                 m_fmt += 2;
                 o.write (fmt_prev, found - fmt_prev);
             }
             else { continue; }
 
-            if (!remaining_parameters)
-            {
+            if (!remaining_parameters) {
                 o.write (param_error, sizeof param_error - 1);
             }
             return true;
@@ -430,8 +390,7 @@ private:
     {
         char buff[64];                                                          //just to skip thinking, never is going to be that big.
         uword adv = mem_printf (buff, sizeof buff, fmt, val);
-        if (adv > 0)
-        {
+        if (adv > 0) {
             o.write (buff, adv);
             return true;
         }
@@ -441,40 +400,33 @@ private:
     //--------------------------------------------------------------------------
     static void write_severity (output& o, sev::severity s)
     {
-        switch (s)
-        {
-        case sev::debug   :
-        {
+        switch (s) {
+        case sev::debug: {
             char str[] = "[dbug] ";
             o.write (str, sizeof str - 1);
             break;
         }
-        case sev::trace   :
-        {
+        case sev::trace: {
             char str[] = "[trac] ";
             o.write (str, sizeof str - 1);
             break;
         }
-        case sev::notice  :
-        {
+        case sev::notice: {
             char str[] = "[note] ";
             o.write (str, sizeof str - 1);
             break;
         }
-        case sev::warning :
-        {
+        case sev::warning: {
             char str[] = "[warn] ";
             o.write (str, sizeof str - 1);
             break;
         }
-        case sev::error   :
-        {
+        case sev::error: {
             char str[] = "[err_] ";
             o.write (str, sizeof str - 1);
             break;
         }
-        case sev::critical:
-        {
+        case sev::critical: {
             char str[] = "[crit] ";
             o.write (str, sizeof str - 1);
             break;

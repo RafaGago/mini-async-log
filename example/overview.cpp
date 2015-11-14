@@ -17,9 +17,8 @@ void general_features()
 {
     using namespace mal;
     mal::frontend& fe                 = get_mal_logger_instance();
-    if (!fe.is_constructed())
-    {
-        return; //new failed in static initializator
+    if (!fe.is_constructed()) {
+        return; //new failed on static initializator
     }
     auto be_cfg                       = fe.get_backend_cfg();
     be_cfg.file.name_prefix           = "test-data.";
@@ -98,12 +97,10 @@ void general_features()
     std::string string = "this is deep copied";
     log_error ("message {}, raw = {}", i, deep_copy (string)); ++i;
 
-    u8 deep_copied_bytes[] =
-    {
+    u8 deep_copied_bytes[] = {
         0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7, 0xa8, 0xa9, 0xaa, 0xab,
         0xac, 0xad, 0xae, 0xaf, 0xb0, 0xb1, 0xb2, 0xb3, 0xb4, 0xb5, 0xb6,
     };
-
     log_error(
         "message {}, use with care: deeply copied bytes = {}",
         i,
@@ -150,11 +147,9 @@ void general_features()
     log_notice_if (true, "you should see this conditional entry...");
     log_notice_if (false, "...but not this one");
 
-    for (unsigned j = 0; j < 15; ++j)
-    {
+    for (unsigned j = 0; j < 15; ++j)  {
         log_every (4, log_notice ("every 4, count = {}", j));
     }
-
     bool called           = false;
     auto side_effect_expr = [&]()->bool { called = true; return called; };
 
@@ -164,18 +159,15 @@ void general_features()
         "that no passed expression has side effects. {}",
         side_effect_expr()
         );
-
     assert (!called);
 
     fe.set_file_severity (sev::debug);
     fe.set_console_severity (sev::debug);
-
     log_trace(
         "now this is above the logged severity, you should see this, the "
         "function with side effects is called now: {}",
         side_effect_expr()
         );
-
     assert (called);
 
     log_debug(
@@ -196,7 +188,7 @@ void general_features()
     stack_ostream<32> ostr;
     log_error(
         "I claim no support for ostreams because this is a very last resort "
-        "hack to be able to print classes that doesn't expose members but are "
+        "hack to be able to print classes that don't expose members but are "
         "ostreamable. It still is stack based and lazy evaluated. Use only "
         "through the ugly macro like is done here. {}",
         ostr_deep_copy (ostr, "ostream hack: " << 1 << " " << 2 << " " << 3)

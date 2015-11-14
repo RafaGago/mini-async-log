@@ -157,21 +157,17 @@ bool new_entry(                                                                 
 
     auto td = fe.get_timestamp_data();
     hdr     = ser::make_header_data (sv, fmt, arity, td.producer_timestamps);
-    if (hdr.has_tstamp)                                                         //timestamping is actually slow! in my machine slows down the producers by a factor of 2
-    {
+    if (hdr.has_tstamp) {                                                        //timestamping is actually slow! in my machine slows down the producers by a factor of 2
         hdr.tstamp = get_timestamp() - td.base;
     }
-
     sync_point sync;
-    if (!is_async)
-    {
+    if (!is_async) {
         hdr.sync = &sync;
     }
     mal_side_effect_assert (prebuild_data (hdr, hdr_field, length));
 
     auto enc = fe.get_encoder (length);
-    if (enc.has_memory())
-    {
+    if (enc.has_memory()) {
         enc.do_export (hdr, hdr_field);
         enc.do_export (a, a_field);
         enc.do_export (b, b_field);
@@ -187,13 +183,11 @@ bool new_entry(                                                                 
         enc.do_export (l, l_field);
         enc.do_export (m, m_field);
         enc.do_export (n, n_field);
-        if (is_async)
-        {
-           fe.async_push_encoded (enc);
-           return true;
+        if (is_async) {
+            fe.async_push_encoded (enc);
+            return true;
         }
-        else
-        {
+        else {
             return fe.sync_push_encoded (enc, sync);
         }
     }

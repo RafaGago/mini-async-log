@@ -69,8 +69,7 @@ public:
         assert (m_state.load (mo_relaxed) == init);
         ser::exporter e;        
         auto commit_data = m_back.allocate_entry (required_bytes);
-        if (commit_data.get_mem())
-        {
+        if (commit_data.get_mem()) {
             e.init (commit_data.get_mem(), required_bytes);
             e.opaque_data.write (commit_data);
         }
@@ -87,13 +86,11 @@ public:
             )
     {
         assert (m_state.load (mo_relaxed) == init);
-        if (encoder.has_memory())
-        {
+        if (encoder.has_memory()) {
             m_back.push_entry (encoder.opaque_data.read_as<queue_prepared>());
             return m_sync.wait (sync);
         }
-        else
-        {
+        else {
             assert (false && "bug!");
             return false;
         }
@@ -102,12 +99,10 @@ public:
     void async_push_encoded (ser::exporter& encoder)
     {
         assert (m_state.load (mo_relaxed) == init);
-        if (encoder.has_memory())
-        {
+        if (encoder.has_memory()) {
             m_back.push_entry (encoder.opaque_data.read_as<queue_prepared>());
         }
-        else
-        {
+        else {
             assert (false && "bug!");
         }
     }
@@ -120,8 +115,7 @@ public:
     frontend::init_status init_backend (const backend_cfg& cfg)
     {
         uword actual = no_init;
-        if (m_state.compare_exchange_strong (actual, on_init, mo_acquire))
-        {
+        if (m_state.compare_exchange_strong (actual, on_init, mo_acquire)) {
             m_timestamp_base = get_timestamp();
             auto sev_ch = [=]() { this->severity_updated_event(); };
             if (m_back.init (cfg, m_sync, m_timestamp_base, sev_ch))
@@ -130,19 +124,15 @@ public:
                 m_state.store (init, mo_release);
                 return frontend::init_ok;
             }
-            else
-            {
+            else {
                 m_state.store (no_init, mo_relaxed);
                 return frontend::init_tried_but_failed;
             }
         }
-        switch (actual)
-        {
-        case on_init:
-        {
+        switch (actual) {
+        case on_init: {
             uword actual = on_init;
-            while (actual == on_init);
-            {
+            while (actual == on_init) {
                 th::this_thread::yield();
                 actual = m_state.load (mo_acquire);
             }
@@ -167,8 +157,7 @@ public:
     void on_termination()
     {
         uword actual = init;
-        if (m_state.compare_exchange_strong (actual, terminated, mo_relaxed))
-        {
+        if (m_state.compare_exchange_strong (actual, terminated, mo_relaxed)) {
             m_sync.cancel_all();
             m_back.on_termination();
         }
@@ -176,13 +165,11 @@ public:
     //--------------------------------------------------------------------------
     bool set_console_severity (sev::severity std_err, sev::severity std_out)
     {
-        if ((std_out >= sev::invalid || std_err >= sev::invalid))
-        {
+        if ((std_out >= sev::invalid || std_err >= sev::invalid)) {
             assert (false);
             return false;
         }
-        else if ((std_err <= std_out) && (std_out != sev::off))
-        {
+        else if ((std_err <= std_out) && (std_out != sev::off)) {
             assert (false);
             return false;
         }

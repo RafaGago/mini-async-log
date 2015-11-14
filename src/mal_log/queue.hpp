@@ -178,19 +178,16 @@ public:
     ~queue()
     {
         mpsc_result r;
-        do
-        {
+        do {
             r = m_heap_fifo.pop();
-            if (r.error == mpsc_result::no_error)
-            {
+            if (r.error == mpsc_result::no_error) {
                 assert (false && "user didn't cleanup");
                 auto n = (heap_node*) r.node;
                 ::operator delete (n, std::nothrow);
             }
         }
         while (r.error != mpsc_result::empty);
-        if (m_heap_pop.mem)
-        {
+        if (m_heap_pop.mem) {
             assert (false && "user didn't cleanup");
             heap_node* n = heap_node::from_storage (m_heap_pop.mem);
             ::operator delete (n, std::nothrow);
@@ -200,8 +197,7 @@ public:
     //--------------------------------------------------------------------------
     void clear()                                                                //Dangerous, just to be used after failed initializations
     {
-        if (m_mem)
-        {
+        if (m_mem) {
             ::operator delete (m_mem);
         }
         m_mem         = nullptr;
@@ -222,8 +218,7 @@ public:
         if ((fixed_entries >= 2) &&
             ((fixed_entries & (fixed_entries - 1)) == 0) &&
             (fixed_bytes >= fixed_entries)
-            )
-        {
+            ) {
             clear();
             fixed_bytes   = (fixed_bytes / fixed_entries) * fixed_entries;      //just rounding...
             m_entry_size  = fixed_bytes / fixed_entries;
@@ -235,20 +230,17 @@ public:
             m_mem         = (u8*) ::operator new(
                                 m_entry_size * fixed_entries, std::nothrow
                                 );
-            if (!m_mem)
-            {
+            if (!m_mem) {
                 return false;
             }
             m_mem_end = m_mem + (m_entry_size * fixed_entries);
-            for (size_t i = 0; i < fixed_entries; ++i)
-            {
+            for (size_t i = 0; i < fixed_entries; ++i) {
                 get_cell (i)->sequence = i;
             }
             m_use_heap = can_use_heap;
             return true;
         }
-        else if (can_use_heap && (fixed_bytes == 0) && (fixed_entries == 0))
-        {
+        else if (can_use_heap && (fixed_bytes == 0) && (fixed_entries == 0)) {
             clear();
             m_use_heap = true;
             return true;
@@ -269,48 +261,39 @@ public:
     queue_prepared mp_bounded_push_prepare (size_t size)
     {
         queue_prepared pp;
-        if (m_mem && (size <= fixed_entry_size()))
-        {
+        if (m_mem && (size <= fixed_entry_size())) {
             local_cell* cell;
             size_t pos = m_enqueue_pos;
-            for (;;)
-            {
+            while (true) {
                 cell          = get_cell (pos & m_cell_mask);
                 size_t seq    = cell->sequence.load (mo_acquire);
                 intptr_t diff = (intptr_t) seq - (intptr_t) pos;
-                if (diff == 0)
-                {
+                if (diff == 0) {
                     if (m_enqueue_pos.compare_exchange_weak(
                         pos, pos + 1, mo_relaxed
-                        ))
-                    {
+                        )) {
                         break;
                     }
                 }
-                else if (diff < 0)
-                {
-                    if (m_use_heap)
-                    {
+                else if (diff < 0) {
+                    if (m_use_heap) {
                         alloc_from_heap (pp, size, pos);
                     }
                     return pp;
                 }
-                else
-                {
+                else {
                     pos = m_enqueue_pos;
                 }
             }
             pp.pos  = pos + 1;
             pp.mem  = cell->storage();
         }
-        else if (m_use_heap)
-        {
+        else if (m_use_heap) {
             alloc_from_heap(
                 pp, size, m_mem ? m_enqueue_pos.load (mo_relaxed) : 0
                 );
         }
-        else
-        {
+        else {
             //no alloc, size > fixed_entry_size()
         }
         return pp;
@@ -319,13 +302,11 @@ public:
     void bounded_push_commit (const queue_prepared& pp)
     {
         assert (pp.mem);
-        if (is_local_mem (pp.mem))
-        {
+        if (is_local_mem (pp.mem)) {
             auto cell = local_cell::from_storage (pp.mem);
             cell->sequence.store (pp.pos, mo_release);
         }
-        else
-        {
+        else {
             heap_node* n = heap_node::from_storage (pp.mem);
             m_heap_fifo.push (*n);
         }
@@ -337,55 +318,44 @@ public:
         queue_prepared pp;
         bool again = false;
     try_again:
-        if (m_use_heap && (m_heap_pop.mem == nullptr))
-        {
+        if (m_use_heap && (m_heap_pop.mem == nullptr)) {
             auto res = m_heap_fifo.pop();
-            if (res.error == mpsc_result::no_error)
-            {
+            if (res.error == mpsc_result::no_error) {
                 heap_node* n   = (heap_node*) res.node;
                 m_heap_pop.mem = n->storage();
                 m_heap_pop.pos = n->pos;
                 again          = false;
             }
-            else if (res.error == mpsc_result::busy_try_again)
-            {
+            else if (res.error == mpsc_result::busy_try_again) {
                 again = true;
             }
         }
-        if (m_mem && (m_fixed_pop.mem == nullptr))
-        {
+        if (m_mem && (m_fixed_pop.mem == nullptr)) {
             local_cell* cell = get_cell (m_dequeue_pos & m_cell_mask);
             size_t seq            = cell->sequence.load (mo_acquire);
             auto pos              = m_dequeue_pos.load (mo_relaxed);
             intptr_t diff         = (intptr_t) seq - (intptr_t) (pos + 1);
-            if (diff == 0)
-            {
+            if (diff == 0) {
                 m_dequeue_pos   = pos + 1;
                 m_fixed_pop.pos = m_dequeue_pos + m_cell_mask;
                 m_fixed_pop.mem = cell->storage();
             }
         }
-        if (again)
-        {
+        if (again) {
             goto try_again;
         }
-        if (m_heap_pop.mem && m_fixed_pop.mem)
-        {
-            if ((m_fixed_pop.pos - 1 - m_cell_mask) < m_heap_pop.pos)
-            {
+        if (m_heap_pop.mem && m_fixed_pop.mem) {
+            if ((m_fixed_pop.pos - 1 - m_cell_mask) < m_heap_pop.pos) {
                 set (pp, m_fixed_pop);
             }
-            else
-            {
+            else {
                 set (pp, m_heap_pop);
             }
         }
-        else if (m_heap_pop.mem)
-        {
+        else if (m_heap_pop.mem) {
             set (pp, m_heap_pop);
         }
-        else if (m_fixed_pop.mem)
-        {
+        else if (m_fixed_pop.mem) {
             set (pp, m_fixed_pop);
         }
         return pp;
@@ -394,13 +364,11 @@ public:
     void pop_commit (const queue_prepared& pp)
     {
         assert (pp.mem);
-        if (is_local_mem (pp.mem))
-        {
+        if (is_local_mem (pp.mem)) {
             auto cell = local_cell::from_storage (pp.mem);
             cell->sequence.store (pp.pos, mo_release);
         }
-        else
-        {
+        else {
             heap_node* n = heap_node::from_storage (pp.mem);
             ::operator delete (n, std::nothrow);
         }
@@ -426,8 +394,7 @@ private:
     {
         if (auto n = (heap_node*) operator new(
                             heap_node::strict_total_size (sz), std::nothrow
-                            ))
-        {
+                            )) {
             pp.mem = n->storage();
             n->pos = pos;
         }

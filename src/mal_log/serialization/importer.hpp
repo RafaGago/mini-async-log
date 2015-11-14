@@ -67,12 +67,10 @@ public:
         hd.severity   = (sev::severity) h.severity;
         hd.sync       = nullptr;
 
-        if (hd.has_tstamp)
-        {
+        if (hd.has_tstamp) {
             decode_unsigned (hd.tstamp, ((uword) h.timestamp_bytes) + 1);
         }
-        if (h.is_sync)
-        {
+        if (h.is_sync) {
             import_type (hd.sync);
         }
     }
@@ -141,8 +139,7 @@ public:
     {
         assert (m_pos + size <= m_end);
         val = 0;
-        for (uword i = 0; i < size; ++i, ++m_pos)
-        {
+        for (uword i = 0; i < size; ++i, ++m_pos) {
             val |= ((T) *m_pos) << (i * 8);
         }
     }

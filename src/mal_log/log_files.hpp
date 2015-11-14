@@ -71,15 +71,13 @@ public:
         )
     {
         assert (file_count == 0 || file_count > 1);
-        try
-        {
+        try {
             append_separator_if (folder);
             uword max_name = folder.size() +
                              prefix.size() +
                              fixed_chars_in_name +
                              suffix.size();
-            for (uword i = 0; i < previous.size(); ++i)
-            {
+            for (uword i = 0; i < previous.size(); ++i) {
                 max_name = (previous[i].size() > max_name) ?
                                 previous[i].size() : max_name;
             }
@@ -89,8 +87,7 @@ public:
             m_buffer.resize (max_name, 0);
 
             prev = previous;
-            while (file_count && ((prev.size() > file_count)))
-            {
+            while (file_count && ((prev.size() > file_count))) {
                 erase_file (prev.front().c_str());
                 prev.pop_front();
             }
@@ -98,23 +95,19 @@ public:
             m_prefix = prefix;
             m_suffix = suffix;
 
-            if (file_count)
-            {
+            if (file_count) {
                 m_name_strings.free();
-                if (!m_name_strings.init (max_name, file_count))
-                {
+                if (!m_name_strings.init (max_name, file_count)) {
                     return false;
                 }
-                for (auto it = prev.begin(); it != prev.end(); ++it)
-                {
+                for (auto it = prev.begin(); it != prev.end(); ++it) {
                     m_name_strings.push_tail();
                     std::memcpy (m_name_strings.tail(), &(*it)[0], it->size());
                 }
             }
             return true;
         }
-        catch (...)
-        {
+        catch (...) {
             assert (false && "log: memory exception");
             std::cerr << "[logger] memory exception\n";
             return false;
@@ -123,29 +116,24 @@ public:
     //--------------------------------------------------------------------------
     bool can_write_in_folder (std::string folder)
     {
-        try
-        {
+        try {
             append_separator_if (folder);
-            if (m_buffer.size() < (folder.size() + fixed_chars_in_name + 1))
-            {
+            if (m_buffer.size() < (folder.size() + fixed_chars_in_name + 1)) {
                 m_buffer.resize (folder.size() + fixed_chars_in_name + 1, -1);
             }
-            for (uword i = 0; ; ++i)
-            {
+            for (uword i = 0; ; ++i) {
                 std::string empty;
                 new_file_name_c_str_in_buffer (folder, empty, empty, i ,i + 1);
                 const char* fn = filename_in_buffer();
                 std::ofstream file (fn);
                 file.write ((const char*) &fn, m_buffer.size());
-                if (file.good())
-                {
+                if (file.good()) {
                     file.close();
                     erase_file (fn);
                     break;
                 }
                 erase_file (fn);
-                if (i == 20) //FIXME
-                {
+                if (i == 20) { //FIXME
                     std::cerr << "[logger] unable to create verification file: "
                                  "\""
                               << fn
@@ -159,8 +147,7 @@ public:
                 th::this_thread::sleep_for (ch::milliseconds (1));
             }
         }
-        catch (...)
-        {
+        catch (...) {
             assert (false && "log: memory exception");
             return false;
         }
@@ -192,8 +179,7 @@ public:
     void keep_newer_files (uword keep_count)
     {
         assert (rotates());
-        while (m_name_strings.size() > keep_count)
-        {
+        while (m_name_strings.size() > keep_count) {
             erase_file ((const char*) m_name_strings.head());
             m_name_strings.pop_head();
         }
@@ -208,8 +194,7 @@ private:
     //--------------------------------------------------------------------------
     void append_separator_if (std::string& folder)
     {
-        if (folder[folder.size() - 1] != fs_separator)
-        {
+        if (folder[folder.size() - 1] != fs_separator) {
             folder.append (1, fs_separator);
         }
     }

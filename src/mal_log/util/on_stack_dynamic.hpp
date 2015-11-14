@@ -104,8 +104,7 @@ public:
     //--------------------------------------------------------------------------
     void destruct_if()
     {
-        if (m_constructed)
-        {
+        if (m_constructed) {
             m_mem.destruct();
             m_constructed = false;
         }
@@ -339,8 +338,7 @@ public:
     //--------------------------------------------------------------------------
     ~on_stack_dynamic_scoped_destructor()
     {
-        if (m_destruct)
-        {
+        if (m_destruct) {
             m_destruct->destruct();
         }
     }

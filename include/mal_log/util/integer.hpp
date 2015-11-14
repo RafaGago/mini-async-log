@@ -97,29 +97,25 @@ struct integer_for_bytes
 };
 //------------------------------------------------------------------------------
 template <>
-struct integer_for_bytes <8>
-{
+struct integer_for_bytes <8> {
     typedef u64 unsigned_type;
     typedef i64 signed_type;
 };
 //------------------------------------------------------------------------------
 template <>
-struct integer_for_bytes <4>
-{
+struct integer_for_bytes <4> {
     typedef u32 unsigned_type;
     typedef i32 signed_type;
 };
 //------------------------------------------------------------------------------
 template <>
-struct integer_for_bytes <2>
-{
+struct integer_for_bytes <2> {
     typedef u16 unsigned_type;
     typedef i16 signed_type;
 };
 //------------------------------------------------------------------------------
 template <>
-struct integer_for_bytes <1>
-{
+struct integer_for_bytes <1> {
     typedef u8 unsigned_type;
     typedef i8 signed_type;
 };

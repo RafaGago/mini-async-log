@@ -85,24 +85,19 @@ public:
     //--------------------------------------------------------------------------
     bool block()
     {
-        if (m_spins < m_cfg.spin_max)
-        {
+        if (m_spins < m_cfg.spin_max) {
             ++m_spins;
             return false;
         }
-        else if (m_yields < m_cfg.yield_max)
-        {
+        else if (m_yields < m_cfg.yield_max) {
             m_yields += ((!m_cfg.never_block) ? 1 : 0);
             th::this_thread::yield();
             return false;
         }
-        else
-        {
-            auto pred = [&]() -> bool
-            {
+        else {
+            auto pred = [&]() -> bool {
                 auto state = m_state.load (mo_relaxed);
-                if (state == blocked)
-                {
+                if (state == blocked) {
                     th::this_thread::yield();                                   //waiting an extra timeslice in case there was no memory visibility for the changes made (a case were the scheduler gives control to this thread just after the notify call). If this was a spurious wakeup it won't hurt either, as the mutex is a dummy. We still can miss the user notificatio and then wait for the whole timeout, but I think that if it happens it won't be frequently.
                     state = m_state.load (mo_relaxed);
                 }
@@ -144,8 +139,7 @@ public:
     //--------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------
-    enum state
-    {
+    enum state {
         unblocked,
 //        will_block,
         blocked,

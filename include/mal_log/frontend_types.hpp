@@ -45,10 +45,8 @@ either expressed or implied, of Rafael Gago Castano.
 namespace mal {
 
 //------------------------------------------------------------------------------
-struct sev
-{
-    enum severity
-    {
+struct sev {
+    enum severity {
         debug    = 0,
         trace    = 1,
         notice   = 2,
@@ -60,8 +58,7 @@ struct sev
     };
 };
 //------------------------------------------------------------------------------
-struct delimited_mem
-{
+struct delimited_mem {
     const void* mem;
     uword       size;
 };
@@ -70,13 +67,11 @@ struct deep_copy_bytes : public delimited_mem {};
 //------------------------------------------------------------------------------
 struct deep_copy_string : public delimited_mem {};
 //------------------------------------------------------------------------------
-struct literal_wrapper
-{
+struct literal_wrapper {
     const char* lit;
 };
 //------------------------------------------------------------------------------
-struct ptr_wrapper
-{
+struct ptr_wrapper {
     const void* ptr;
 };
 //------------------------------------------------------------------------------

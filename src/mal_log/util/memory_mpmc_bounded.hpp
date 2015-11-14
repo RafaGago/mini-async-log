@@ -133,12 +133,10 @@ public:
     //--------------------------------------------------------------------------
     void clear()                                                                //Dangerous, just to be used after failed initializations
     {
-        if (m_buffer)
-        {
+        if (m_buffer) {
             delete [] m_buffer;
         }
-        if (m_mem)
-        {
+        if (m_mem) {
             ::operator delete (m_mem);
         }
     }
@@ -149,8 +147,7 @@ public:
             ((entries & (entries - 1)) == 0) &&
             (total_bytes >= entries) &&
             !initialized()
-            )
-        {
+            ) {
             clear();
             auto real_bytes = (total_bytes / entries) * entries;
 
@@ -165,8 +162,7 @@ public:
             m_mem = (u8*) ::operator new (real_bytes, std::nothrow);
             if (!m_mem) { return false; }
 
-            for (size_t i = 0; i != entries; i += 1)
-            {
+            for (size_t i = 0; i != entries; i += 1) {
                 m_buffer[i].sequence = i;
                 m_buffer[i].mem      = m_mem + (i * m_entry_size);
             }
@@ -188,26 +184,21 @@ public:
         mem_mpmc_b_prepared pp;
         cell_t* cell;
         size_t pos = m_enqueue_pos;
-        for (;;)
-        {
+        while (true) {
             cell          = &m_buffer[pos & m_buffer_mask];
             size_t seq    = cell->sequence.load (mo_acquire);
             intptr_t diff = (intptr_t) seq - (intptr_t) pos;
-            if (diff == 0)
-            {
+            if (diff == 0) {
                 if (m_enqueue_pos.compare_exchange_weak(
                     pos, pos + 1, mo_relaxed
-                    ))
-                {
+                    )) {
                     break;
                 }
             }
-            else if (diff < 0)
-            {
+            else if (diff < 0) {
                 return pp;
             }
-            else
-            {
+            else {
                 pos = m_enqueue_pos;
             }
         }
@@ -225,8 +216,7 @@ public:
         cell_t* cell  = &m_buffer[m_enqueue_pos & m_buffer_mask];
         size_t seq    = cell->sequence.load (mo_acquire);
         intptr_t diff = (intptr_t) seq - (intptr_t) m_enqueue_pos;
-        if (diff == 0)
-        {
+        if (diff == 0) {
             ++m_enqueue_pos;
             pp.cell = cell;
             pp.pos  = m_enqueue_pos;
@@ -240,8 +230,7 @@ public:
     //--------------------------------------------------------------------------
     void bounded_push_commit (const mem_mpmc_b_prepared& pp)
     {
-        if (pp.cell)
-        {
+        if (pp.cell) {
             ((cell_t*) pp.cell)->sequence.store (pp.pos, mo_release);
         }
     }
@@ -252,26 +241,21 @@ public:
         mem_mpmc_b_prepared pp;
         cell_t* cell;
         size_t pos = m_dequeue_pos;
-        for (;;)
-        {
+        while (true) {
             cell          = &m_buffer[pos & m_buffer_mask];
             size_t seq    = cell->sequence.load (mo_acquire);
             intptr_t diff = (intptr_t) seq - (intptr_t) (pos + 1);
-            if (diff == 0)
-            {
+            if (diff == 0) {
                 if (m_dequeue_pos.compare_exchange_weak(
                     pos, pos + 1, mo_relaxed
-                    ))
-                {
+                    )) {
                     break;
                 }
             }
-            else if (diff < 0)
-            {
+            else if (diff < 0) {
                 return pp;
             }
-            else
-            {
+            else {
                 pos = m_dequeue_pos;
             }
         }
@@ -289,8 +273,7 @@ public:
         cell_t* cell  = &m_buffer[m_dequeue_pos & m_buffer_mask];
         size_t seq    = cell->sequence.load (mo_acquire);
         intptr_t diff = (intptr_t) seq - (intptr_t) (m_dequeue_pos + 1);
-        if (diff == 0)
-        {
+        if (diff == 0) {
             ++m_dequeue_pos;
             pp.cell = cell;
             pp.pos  = m_dequeue_pos + m_buffer_mask;
@@ -304,8 +287,7 @@ public:
     //--------------------------------------------------------------------------
     void pop_commit (const mem_mpmc_b_prepared& pp)
     {
-        if (pp.cell)
-        {
+        if (pp.cell) {
             ((cell_t*) pp.cell)->sequence.store (pp.pos, mo_release);
         }
     }

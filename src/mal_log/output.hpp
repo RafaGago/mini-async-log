@@ -166,23 +166,18 @@ public:
         if (str == nullptr || str[0] == 0) { return; }
 
         uword i = 1;
-        for (; i <= max_str; ++i)
-        {
-            if ((i & block_mask) == 0)
-            {
+        for (; i <= max_str; ++i) {
+            if ((i & block_mask) == 0) {
                 uword last_block_first = ((i - 1) & ~block_mask);
                 write_impl (s, str + last_block_first, block_max);
             }
-            if (str[i] == 0)
-            {
+            if (str[i] == 0) {
                 uword this_block_offset = i & block_mask;
                 write_impl (s, str + i - this_block_offset, this_block_offset); //if /0 is the first character of the block I perform a 0 length write.
                 return;
             }
         }
-
-        if (i == max_str + 1)
-        {
+        if (i == max_str + 1) {
             static const char too_long[] = " [logger err]->string too long";
             write_impl (s, too_long, sizeof too_long - 1);
         }
@@ -192,18 +187,14 @@ private:
     //--------------------------------------------------------------------------
     void write_impl (sev::severity s, const void* d, uword sz)
     {
-        if (sz && d)
-        {
-            if (s >= m_file_sev)
-            {
+        if (sz && d) {
+            if (s >= m_file_sev) {
                 m_file.write ((const char*) d, sz);
             }
-            if (s >= m_stderr_sev)
-            {
+            if (s >= m_stderr_sev) {
                 std::cerr.write ((const char*) d, sz);
             }
-            else if (s >= m_stdout_sev)
-            {
+            else if (s >= m_stdout_sev) {
                 std::cout.write ((const char*) d, sz);
             }
         }

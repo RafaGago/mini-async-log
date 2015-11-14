@@ -56,8 +56,7 @@ namespace mal {
 inline int mem_printf (char* mem, int mem_size, const char* fmt, ...)
 {
     assert (mem && fmt);
-    if (mem && (mem_size > 0) && fmt && (fmt[0] != 0))
-    {
+    if (mem && (mem_size > 0) && fmt && (fmt[0] != 0)) {
         va_list args;
         va_start (args, fmt);
 #ifdef MAL_WINDOWS
@@ -68,12 +67,10 @@ inline int mem_printf (char* mem, int mem_size, const char* fmt, ...)
     #pragma warning(default: 4996)
 #endif
         va_end (args);
-        if ((res > 0) && (res < mem_size))
-        {
+        if ((res > 0) && (res < mem_size)) {
             return res;
         }
-        else
-        {
+        else {
             mem[mem_size - 1] = 0;
             return 1 - mem_size;
         }

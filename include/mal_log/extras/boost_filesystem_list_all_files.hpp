@@ -53,10 +53,8 @@ past_executions_file_list list_all_files (const char* path)
     namespace bfs = boost::filesystem;
     typedef bfs::directory_iterator dir_it;
     past_executions_file_list ret;
-    for (dir_it it (path), end; it != end; ++it)
-    {
-        if (bfs::is_regular_file (*it) && !bfs::is_symlink (*it))
-        {
+    for (dir_it it (path), end; it != end; ++it) {
+        if (bfs::is_regular_file (*it) && !bfs::is_symlink (*it)) {
             ret.push_back (it->path().string());
         }
     }

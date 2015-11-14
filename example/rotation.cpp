@@ -18,7 +18,7 @@ void rotation_test()
     using namespace mal;
     mal::frontend fe;
 
-    //WARNING WARNING WARNING, files in this path will be deleted! (rotated)
+    //WARNING WARNING WARNING, files inside this folder will be deleted!
     const char* path = "./log_out/";
 
     auto be_cfg                             = fe.get_backend_cfg();
@@ -33,8 +33,7 @@ void rotation_test()
     const uword msg_count = 10000000;
     auto init = ch::steady_clock::now();
 
-    for (unsigned i = 0; i < msg_count; ++i)
-    {
+    for (unsigned i = 0; i < msg_count; ++i) {
         log_error_i (fe, "this is a very simple message {}", i);
     }
     auto reader_ns = ch::duration_cast<ch::nanoseconds>(
@@ -66,7 +65,6 @@ void rotation_test()
             reader_ns,
             reader_msgs_s
             );
-
     std::printf(
             "%u msgs dispatched in %lld ns. %f msgs/sec\n",
             msg_count,

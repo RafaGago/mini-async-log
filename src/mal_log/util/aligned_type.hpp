@@ -63,7 +63,6 @@ public:
     {
         m_mem.construct (std::forward<args>(a)...);
     }
-
 #else
     //--------------------------------------------------------------------------
     aligned_type()

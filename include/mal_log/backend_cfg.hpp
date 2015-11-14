@@ -60,15 +60,13 @@ typedef std::deque<std::string> past_executions_file_list;
 // the user simply uses e.g. logrotate, I don't want to force anything now.
 //
 //------------------------------------------------------------------------------
-struct backend_rotation_cfg
-{
+struct backend_rotation_cfg {
     past_executions_file_list past_files;                                       //oldest at front
     uword                     file_count;                                       //0 = infinite/externally managed (e.g. logrotate)
     uword                     delayed_file_count;                               //when this parameter is 0, the log files are rotated when starting a new file, you may not want to block the worker in a potentially time-consuming call, so setting this parameter to some value will allow the worker to skip rotating during high load peaks.
 };
 //------------------------------------------------------------------------------
-struct backend_file_config
-{
+struct backend_file_config {
     std::string          name_prefix;
     std::string          name_suffix;
     std::string          out_folder;                                            //Existing out folder ended in slash/backslash depending on the platform. Can't be zero sized
@@ -76,28 +74,24 @@ struct backend_file_config
     backend_rotation_cfg rotation;
 };
 //------------------------------------------------------------------------------
-struct backend_log_entry_alloc_config                                           //the allocator for log entries, the backend still uses the heap for some std::strings when rotating files. I found excessive to use fixed size static strings at this point.
-{
+struct backend_log_entry_alloc_config {                                          //the allocator for log entries, the backend still uses the heap for some std::strings when rotating files. I found excessive to use fixed size static strings at this point.
     bool  use_heap_if_required;
     uword fixed_block_size;
     uword fixed_entry_size;
 };
 //------------------------------------------------------------------------------
-struct backend_visualization_config
-{
+struct backend_visualization_config {
     bool show_timestamp;
     bool show_severity;
 };
 //------------------------------------------------------------------------------
-struct backend_severity_files                                                   //These files will be tried to read periodically by the worker when idle to set update the log priority if required. If for some reason you want to save disk accesses you can make them memory mapped.
-{
+struct backend_severity_files {                                                 //These files will be tried to read periodically by the worker when idle to set update the log priority if required. If for some reason you want to save disk accesses you can make them memory mapped.
     std::string file_sev_fd;
     std::string stdout_sev_fd;
     std::string stderr_sev_fd;
 };
 //------------------------------------------------------------------------------
-struct backend_cfg
-{
+struct backend_cfg {
     backend_file_config            file;
     backend_log_entry_alloc_config alloc;
     backend_visualization_config   display;

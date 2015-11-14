@@ -23,8 +23,7 @@ void run()
 {
     using namespace mal;
     mal::frontend& fe                 = get_mal_logger_instance();
-    if (!fe.is_constructed())
-    {
+    if (!fe.is_constructed()) {
         return; //new failed in static initializator
     }
     auto be_cfg                       = fe.get_backend_cfg();
@@ -45,14 +44,12 @@ void run()
     fe.set_console_severity (sev::off);
     int i = 0;
 
-    while (true)
-    {
+    while (true) {
 // by creating/modifying the file "./stderrsev" using values from 0 to 6 you
 // can modify the console logged severity. In Linux you can enter
 // "echo 0 > stderr_sev".
 
-// These files are good candidates to be placed in memory mapped folders/drives.
-
+// These files are good candidates to be placed on memory mapped folders/drives.
         log_debug ("idx {}", i); ++i;
         log_trace ("idx {}", i); ++i;
         log_notice ("idx {}", i); ++i;

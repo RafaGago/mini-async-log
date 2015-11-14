@@ -38,12 +38,9 @@ either expressed or implied, of Rafael Gago Castano.
 
 namespace mal {
 
-struct max_align_type_reinvent
-{
+struct max_align_type_reinvent {
     struct dummy {};
-
-    union 
-    {
+    union {
         char            a;
         short           b;
         int             c;

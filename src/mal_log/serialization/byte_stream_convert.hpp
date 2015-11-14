@@ -126,15 +126,12 @@ class byte_stream_convert
         char buff[unroll_size * 2];
 
         uword end = sz >> unroll_bits;
-        for (uword i = 0; i < end; ++i)
-        {
+        for (uword i = 0; i < end; ++i) {
             mem = detail::hex_unroll<unroll_size>::convert (buff, mem);
             o.write (buff, sizeof buff);
         }
-
         end = sz & unroll_mask;
-        for (uword i = 0; i < end; ++i)
-        {
+        for (uword i = 0; i < end; ++i) {
             mem = detail::hex_unroll<1>::convert (buff, mem);
             o.write (buff, 2);
         }

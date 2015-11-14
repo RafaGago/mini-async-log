@@ -64,12 +64,10 @@ public:
     bool init (uword elem_size, uword elem_count)
     {
         assert (!is_initialized());
-        if (elem_size && elem_count)
-        {
+        if (elem_size && elem_count) {
             m_entry_size = elem_size;
             m_total_size = elem_size * elem_count;
-            if ((m_total_size / m_entry_size) == elem_count)
-            {
+            if ((m_total_size / m_entry_size) == elem_count) {
                 return allocate();
             }
         }
@@ -78,8 +76,7 @@ public:
     //--------------------------------------------------------------------------
     void free()
     {
-        if (m_mem)
-        {
+        if (m_mem) {
             ::operator delete (m_mem);
         }
         m_size = m_entry_size = m_total_size = 0;
@@ -138,8 +135,7 @@ private:
     bool allocate()
     {
         m_mem = (u8*) ::operator new (m_total_size, std::nothrow);
-        if (m_mem)
-        {
+        if (m_mem) {
             m_tail = m_mem + m_total_size;
             m_size = 0;
             return true;

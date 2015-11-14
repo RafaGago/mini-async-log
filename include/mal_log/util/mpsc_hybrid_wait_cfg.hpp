@@ -41,8 +41,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 namespace mal {
 //------------------------------------------------------------------------------
-struct mpsc_hybrid_wait_cfg
-{
+struct mpsc_hybrid_wait_cfg {
     uword spin_max;
     uword yield_max;
     uword block_us;

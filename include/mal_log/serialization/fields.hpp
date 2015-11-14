@@ -44,8 +44,7 @@ namespace mal { namespace ser {
 //------------------------------------------------------------------------------
 static const uword numeric_bytes_bits = 3;
 //------------------------------------------------------------------------------
-struct header_field
-{
+struct header_field {
     typedef u16 raw_type;
 
     static const uword arity_bits           = 6;                                //0 = just fmt string
@@ -62,24 +61,21 @@ struct header_field
 //------------------------------------------------------------------------------
 static_assert (sizeof (header_field) == sizeof (header_field::raw_type), "");
 //------------------------------------------------------------------------------
-enum field_class
-{
+enum field_class {
     mal_numeric,
     mal_non_numeric,
 };
 //------------------------------------------------------------------------------
 static const uword field_class_bits = 1;
 //------------------------------------------------------------------------------
-enum numeric_class
-{
+enum numeric_class {
     mal_integral,
     mal_non_integral,
 };
 //------------------------------------------------------------------------------
 static const uword numeric_class_bits = 1;
 //------------------------------------------------------------------------------
-enum non_integral_class
-{
+enum non_integral_class {
     mal_double,
     mal_float,
     mal_bool,
@@ -87,8 +83,7 @@ enum non_integral_class
 //------------------------------------------------------------------------------
 static const uword non_integral_class_bits = 2;
 //------------------------------------------------------------------------------
-enum non_numeric_class
-{
+enum non_numeric_class {
     mal_c_str,
     mal_ptr,
     mal_deep_copied_str,
@@ -99,15 +94,12 @@ enum non_numeric_class
 //------------------------------------------------------------------------------
 static const uword non_numeric_class_bits = 3;
 //------------------------------------------------------------------------------
-struct integral_field
-{
+struct integral_field {
     typedef u8 raw_type;
 
-    enum original_type_values
-    {
+    enum original_type_values {
         b8, b16, b32, b64
     };
-
     static const uword original_type_bits = 2;
     static const uword is_negative_bits   = 1;
 
@@ -122,8 +114,7 @@ static_assert(
         sizeof (integral_field) == sizeof (integral_field::raw_type), ""
         );
 //------------------------------------------------------------------------------
-struct non_integral_field
-{
+struct non_integral_field {
     typedef u8 raw_type;
     static const uword bool_val_bits = 1;
 
@@ -137,8 +128,7 @@ static_assert(
         sizeof (non_integral_field) == sizeof (non_integral_field::raw_type), ""
         );
 //------------------------------------------------------------------------------
-struct non_numeric_field
-{
+struct non_numeric_field {
     typedef u8 raw_type;
     static const uword nnclass_bits = 2;
 
@@ -165,8 +155,7 @@ static_assert(
         ""
         );
 //------------------------------------------------------------------------------
-union decoding_field
-{
+union decoding_field {
     typedef u8 raw_type;
 
     generic_decoder_field gen;

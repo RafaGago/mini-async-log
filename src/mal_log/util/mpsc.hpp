@@ -90,8 +90,7 @@ struct mpsc_node_hook
 //------------------------------------------------------------------------------
 struct mpsc_result
 {
-    enum error_type
-    {
+    enum error_type {
         no_error,
         empty,
         busy_try_again
@@ -146,39 +145,32 @@ public:
     {
         mpsc_node_hook* first_node  = *m_head;
         mpsc_node_hook* second_node = first_node->next.load (mo_acquire);
-        if (first_node == &m_stable_node.get())
-        {
-            if (second_node)
-            {                                                                   // non empty, but as the stable node has no useful data (is used to save a a compare exchange strong) we need to update the head and local vars before proceeding.
+        if (first_node == &m_stable_node.get()) {
+            if (second_node)  {                                                       // non empty, but as the stable node has no useful data (is used to save a a compare exchange strong) we need to update the head and local vars before proceeding.
                 *m_head     = second_node;
                 first_node  = second_node;
                 second_node = second_node->next;
             }
-            else
-            {
+            else {
                 return mpsc_result (mpsc_result::empty);
             }
         }
-        if (second_node)
-        {                                                                       // (completely commited pushes > 1), we don't need to care about what happens in the tail (arbitrate with the stable node).
+        if (second_node) {                                                            // (completely commited pushes > 1), we don't need to care about what happens in the tail (arbitrate with the stable node).
             *m_head = second_node;
             return mpsc_result (mpsc_result::no_error, first_node);
         }
                                                                                 // (completely commited pushes <= 1 from here and below) first_node.next = second_node = nullptr
         mpsc_node_hook* tail = *m_tail;
-        if (first_node != tail)
-        {                                                                       // if the first node isn't the tail the memory snapshot that we have shows that someone is pushing just now. The snapshot comes from the moment in time marked with an asterisk in a comment line in the push() function. We have unconsistent data and we need to wait.
+        if (first_node != tail) {                                               // if the first node isn't the tail the memory snapshot that we have shows that someone is pushing just now. The snapshot comes from the moment in time marked with an asterisk in a comment line in the push() function. We have unconsistent data and we need to wait.
             return mpsc_result (mpsc_result::busy_try_again);
         }
         push (*m_stable_node);                                                  // insert the stable node, so we can detect contention with other pushes.
         second_node = first_node->next;                                         // remember that "push" had a full fence, the view now is consistent.
-        if (second_node)
-        {                                                                       // "first_node.next" should point to either the stable node or something new that was completely pushed in between.
+        if (second_node) {                                                      // "first_node.next" should point to either the stable node or something new that was completely pushed in between.
             *m_head = second_node;
             return mpsc_result (mpsc_result::no_error, first_node);
         }
-        else
-        {                                                                       // we see the nullptr in next from a push that came before ours and the stable node is inserted after this new node. this new push that came is incomplete (at the asterisk (*) point)
+        else {                                                                  // we see the nullptr in next from a push that came before ours and the stable node is inserted after this new node. this new push that came is incomplete (at the asterisk (*) point)
             return mpsc_result (mpsc_result::busy_try_again);
         }
     }
@@ -236,37 +228,29 @@ public:
     {
         mpsc_node_hook* first_node  = *m_head;
         mpsc_node_hook* second_node = first_node->next.load (mo_acquire);
-        if (first_node == &m_stable_node.get())
-        {
-            if (second_node)
-            {                                                                   // non empty, but as the stable node has no useful data (is used to save a a compare exchange strong) we need to update the head and local vars before proceeding.
+        if (first_node == &m_stable_node.get()) {
+            if (second_node) {                                                   // non empty, but as the stable node has no useful data (is used to save a a compare exchange strong) we need to update the head and local vars before proceeding.
                 *m_head     = second_node;
                 first_node  = second_node;
                 second_node = second_node->next;
             }
-            else
-            {
+            else {
                 return mpsc_result (mpsc_result::empty);
             }
         }
-        if (second_node)
-        {                                                                       // (completely commited pushes > 1), we don't need to care about what happens in the tail (arbitrate with the stable node).
+        if (second_node) {                                                      // (completely commited pushes > 1), we don't need to care about what happens in the tail (arbitrate with the stable node).
             *m_head = second_node;
             return mpsc_result (mpsc_result::no_error, first_node);
-        }
-                                                                                // (completely commited pushes <= 1 from here and below) first_node.next = second_node = nullptr
+        }                                                                       // (completely commited pushes <= 1 from here and below) first_node.next = second_node = nullptr
         mpsc_node_hook* tail = *m_tail;
-        if (first_node != tail)
-        {                                                                       // if the first node isn't the tail the memory snapshot that we have shows that someone is pushing just now. The snapshot comes from the moment in time marked with an asterisk in a comment line in the push() function. We have unconsistent data and we need to wait.
+        if (first_node != tail) {                                               // if the first node isn't the tail the memory snapshot that we have shows that someone is pushing just now. The snapshot comes from the moment in time marked with an asterisk in a comment line in the push() function. We have unconsistent data and we need to wait.
             return mpsc_result (mpsc_result::busy_try_again);
         }
-        else
-        {
+        else {
             m_stable_node->next = nullptr;
             if (m_tail->compare_exchange_strong(
                     first_node, tag (&m_stable_node.get()), mo_release
-                    ))
-            {
+                    )) {
                 *m_head = &m_stable_node.get();
                 return mpsc_result (mpsc_result::no_error, first_node);
             }

@@ -44,34 +44,26 @@ public:
         m_data_visible           = 0;
 
         static_cast<derived&> (*this).create();
-        if (!static_cast<derived&> (*this).configure())
-        {
+        if (!static_cast<derived&> (*this).configure()) {
             static_cast<derived&> (*this).destroy();
             return false;
         }
-
         std::unique_ptr<th::thread[]> threads;
-        if (thread_count > 1)
-        {
+        if (thread_count > 1) {
             threads.reset (new th::thread [thread_count - 1]);
         }
-
         auto init = ch::steady_clock::now();
 
-        for (unsigned i = 0; i < (thread_count - 1); ++i)
-        {
+        for (unsigned i = 0; i < (thread_count - 1); ++i) {
             threads[i] = th::thread ([=]()
             {
                 this->thread (msgs / thread_count);
             });
         }
         thread (msgs / thread_count);
-
-        for (unsigned i = 0; i < (thread_count - 1); ++i)
-        {
+        for (unsigned i = 0; i < (thread_count - 1); ++i) {
             threads[i].join();
         }
-
         auto join_ns = (ch::duration_cast<ch::nanoseconds>(
                 ch::steady_clock::now() - init
                 ).count());
@@ -245,12 +237,10 @@ private:
     //--------------------------------------------------------------------------
     void thread (mal::uword msg_count)
     {
-        for (mal::u64 i = 0; i < msg_count; ++i)
-        {
+        for (mal::u64 i = 0; i < msg_count; ++i) {
             bool res =
                 log_error_i (m_fe.get(), log_fileline TEST_LITERAL "{}", i);
-            if (!res)
-            {
+            if (!res) {
                 add_alloc_fault();
             }
         }
@@ -277,8 +267,7 @@ private:
     {
         static bool configured = false;
 
-        if (!configured)
-        {
+        if (!configured) {
             FLAGS_log_dir         = OUT_FOLDER "/";
             FLAGS_logtostderr     = false;
             FLAGS_alsologtostderr = false;
@@ -297,8 +286,7 @@ private:
     //--------------------------------------------------------------------------
     void thread (mal::uword msg_count)
     {
-        for (mal::u64 i = 0; i < msg_count; ++i)
-        {
+        for (mal::u64 i = 0; i < msg_count; ++i) {
             LOG (ERROR) << TEST_LITERAL << i;
         }
     }
@@ -335,8 +323,7 @@ private:
     //--------------------------------------------------------------------------
     void thread (mal::uword msg_count)
     {
-        for (mal::u64 i = 0; i < msg_count; ++i)
-        {
+        for (mal::u64 i = 0; i < msg_count; ++i) {
             m_logger->info (log_fileline TEST_LITERAL, i);
         }
     }
@@ -371,8 +358,7 @@ private:
     //--------------------------------------------------------------------------
     void thread (mal::uword msg_count)
     {
-        for (unsigned i = 0; i < msg_count; ++i)
-        {
+        for (unsigned i = 0; i < msg_count; ++i) {
             m_logger->info (log_fileline TEST_LITERAL, i);
         }
     }
@@ -503,27 +489,22 @@ int main (int argc, const char* argv[])
 {
     const mal::uword msgs = 1600000;
 
-    if (argc < 2)
-    {
+    if (argc < 2) {
         std::printf ("no parameter specified (mal, spdlog, glog)\n");
         return 1;
     }
     std::string choice = argv[1];
 
-    if (choice.compare ("mal") == 0)
-    {
+    if (choice.compare ("mal") == 0) {
         mal_tests (msgs);
     }
-    else if (choice.compare ("glog") == 0)
-    {
+    else if (choice.compare ("glog") == 0) {
         google_tests (msgs);
     }
-    else if (choice.compare ("spdlog") == 0)
-    {
+    else if (choice.compare ("spdlog") == 0) {
         spdlog_tests (msgs);
     }
-    else
-    {
+    else {
         std::printf ("invalid choice\n");
         return 2;
     }

@@ -326,8 +326,7 @@ private:
         assert (m_pos + size <= m_end);
         assert (size <= sizeof (T));
 
-        for (uword i = 0; i < size; ++i, ++m_pos)
-        {
+        for (uword i = 0; i < size; ++i, ++m_pos) {
             *m_pos = (u8) (val >> (i * 8));
         }
     }

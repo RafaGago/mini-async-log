@@ -528,11 +528,9 @@ unsigned bit_array_write_8(
 
     bitvar_set_offset (buff + buff_idx, val, bits_first, first_offset);
 
-    if (bits_second)  //we need to write the next array position
-    {
+    if (bits_second) { //we need to write the next array position
         bitvar_set (buff + buff_idx + 1, val >> bits_first, bits_second);
     }
-
     return buff_bit_idx + val_bit_count;
 };
 //------------------------------------------------------------------------------
@@ -553,8 +551,7 @@ unsigned bit_array_write_16(
                             buff_bit_idx,
                             (two_steps) ? 8 : val_bit_count
                             );
-    if (two_steps)
-    {
+    if (two_steps) {
         buff_idx = bit_array_write_8(
                     buff,
                     (uint8_t) (val >> 8),
@@ -562,7 +559,6 @@ unsigned bit_array_write_16(
                     val_bit_count - 8
                     );
     }
-
     return buff_idx;
 };
 //------------------------------------------------------------------------------
@@ -583,8 +579,7 @@ unsigned bit_array_write_32(
                             buff_bit_idx,
                             (two_steps) ? 16 : val_bit_count
                             );
-    if (two_steps)
-    {
+    if (two_steps) {
         buff_idx = bit_array_write_16(
                     buff,
                     (uint16_t) (val >> 16),
@@ -592,7 +587,6 @@ unsigned bit_array_write_32(
                     val_bit_count - 16
                     );
     }
-
     return buff_idx;
 };
 //------------------------------------------------------------------------------
@@ -613,9 +607,7 @@ unsigned bit_array_write_64(
                             buff_bit_idx,
                             (two_steps) ? 32 : val_bit_count
                             );
-
-    if (two_steps)
-    {
+    if (two_steps) {
         buff_idx = bit_array_write_32(
                         buff,
                         (uint32_t) (val >> 32),
@@ -623,7 +615,6 @@ unsigned bit_array_write_64(
                         val_bit_count - 32
                         );
     }
-
     return buff_idx;
 };
 //------------------------------------------------------------------------------
@@ -645,13 +636,11 @@ unsigned bit_array_read_8(
 
     bitvar_get_offset (result, buff[buff_idx], bits_first, first_offset);
 
-    if (bits_second)  //we need to write the next array position
-    {
+    if (bits_second) { //we need to write the next array position
         uint8_t val;
         bitvar_get (&val, buff[buff_idx + 1], bits_second);
         *result |= val << bits_first;
     }
-
     return buff_bit_idx + bit_count;
 };
 //------------------------------------------------------------------------------
@@ -673,12 +662,10 @@ unsigned bit_array_read_16(
 
     *result = (uint16_t) acum;
 
-    if (two_steps)
-    {
+    if (two_steps) {
         buff_idx = bit_array_read_8 (&acum, buff, buff_idx, bit_count - 8);
         *result |= ((uint16_t) acum) << 8;
     }
-
     return buff_idx;
 };
 //------------------------------------------------------------------------------
@@ -697,15 +684,12 @@ unsigned bit_array_read_32(
     unsigned buff_idx = bit_array_read_16(
                         &acum, buff, buff_bit_idx, (two_steps) ? 16 : bit_count
                         );
-
     *result = (uint32_t) acum;
 
-    if (two_steps)
-    {
+    if (two_steps) {
         buff_idx = bit_array_read_16 (&acum, buff, buff_idx, bit_count - 16);
         *result |= ((uint32_t) acum) << 16;
     }
-
     return buff_idx;
 };
 //------------------------------------------------------------------------------
@@ -724,15 +708,12 @@ unsigned bit_array_read_64(
     unsigned buff_idx = bit_array_read_32(
                         &acum, buff, buff_bit_idx, (two_steps) ? 32 : bit_count
                         );
-
     *result = (uint64_t) acum;
 
-    if (two_steps)
-    {
+    if (two_steps) {
         buff_idx = bit_array_read_32 (&acum, buff, buff_idx, bit_count - 32);
         *result |= ((uint64_t) acum) << 32;
     }
-
     return buff_idx;
 };
 //------------------------------------------------------------------------------

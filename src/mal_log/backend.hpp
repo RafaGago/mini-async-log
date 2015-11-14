@@ -95,12 +95,10 @@ public:
     //--------------------------------------------------------------------------
     queue_prepared allocate_entry (uword size)
     {
-        if (size)
-        {
+        if (size) {
             return m_fifo.mp_bounded_push_prepare (size);
         }
-        else
-        {
+        else {
             assert (false && "invalid size");
             return queue_prepared();
         }
@@ -141,8 +139,7 @@ public:
         if (!validate_cfg (c)) { return false; }
 
         uword exp = constructed;
-        if (!m_status.compare_exchange_strong (exp, initializing, mo_relaxed))
-        {
+        if (!m_status.compare_exchange_strong (exp, initializing, mo_relaxed)) {
             std::cerr << "[logger] already initialized\n";
             assert (false && "log: already initialized");
             return false;
@@ -154,21 +151,18 @@ public:
                 c.alloc.fixed_block_size,
                 entries,
                 c.alloc.use_heap_if_required
-                ))
-        {
+                )) {
             std::cerr << "[logger] queue initialization failed\n";
             assert (false && "queue initialization failed");
             return false;
         }
-
         if (!m_files.init(
                 c.file.rotation.file_count + c.file.rotation.delayed_file_count,
                 c.file.out_folder,
                 c.file.name_prefix,
                 c.file.name_suffix,
                 c.file.rotation.past_files
-                ))
-        {
+                )) {
             m_fifo.clear();
             return false;
         }
@@ -184,16 +178,13 @@ public:
         m_sev_evt    = su;
         m_log_thread = th::thread ([this](){ this->thread(); });
 
-        while (m_status.load (mo_relaxed) == initialized)
-        {
+        while (m_status.load (mo_relaxed) == initialized) {
             th::this_thread::yield();
         }
-        if (m_status.load (mo_relaxed) == running)
-        {
+        if (m_status.load (mo_relaxed) == running) {
             return true;
         }
-        else
-        {
+        else {
             set_cfg (rollback_cfg);
             return false;
         }
@@ -224,46 +215,38 @@ private:
         auto& a = c.alloc;
         if (((!a.fixed_block_size || !a.fixed_entry_size)) &&
               !a.use_heap_if_required
-            )
-        {
+            ) {
             std::cerr << "[logger] alloc cfg values can't be 0\n";
             assert (false && "alloc cfg invalid");
             return false;
         }
-        if (a.fixed_block_size && a.fixed_entry_size)
-        {
-            if (a.fixed_entry_size < 32)
-            {
+        if (a.fixed_block_size && a.fixed_entry_size) {
+            if (a.fixed_entry_size < 32) {
                 std::cerr << "[logger] minimum fixed block size is 32\n";
                 return false;
             }
-            else if (a.fixed_block_size < a.fixed_entry_size)
-            {
+            else if (a.fixed_block_size < a.fixed_entry_size) {
                 std::cerr << "[logger] entry size bigger than the block size\n";
                 return false;
             }
         }
-        if (c.file.rotation.file_count != 0 && c.file.aprox_size == 0)
-        {
+        if (c.file.rotation.file_count != 0 && c.file.aprox_size == 0) {
             std::cerr <<
                     "[logger] won't be able to rotate infinite size files\n";
             assert (false && "won't be able to rotate infinite size files");
             return false;
         }
-        if (c.file.rotation.file_count == 1)
-        {
+        if (c.file.rotation.file_count == 1) {
             std::cerr << "[logger] won't be able to rotate a single file\n";
             assert (false && "won't be able to rotate a single file");
             return false;
         }
-        if (c.file.out_folder.size() == 0)
-        {
+        if (c.file.out_folder.size() == 0) {
             std::cerr << "[logger] no output folder\n";
             assert (false && "log folder can't be empty");
             return false;
         }
-        if (!m_files.can_write_in_folder (c.file.out_folder))
-        {
+        if (!m_files.can_write_in_folder (c.file.out_folder)) {
             return false;
         }
         return true;
@@ -271,8 +254,7 @@ private:
     //--------------------------------------------------------------------------
     void thread()
     {
-        while (m_status.load (mo_acquire) != initialized)                       // I guess that all Kernels do this for me when launching a thread, just being on the safe side in case is not true
-        {
+        while (m_status.load (mo_acquire) != initialized) {                     // I guess that all Kernels do this for me when launching a thread, just being on the safe side in case is not true
             th::this_thread::yield();
         }
         idle_rotate_if();
@@ -283,13 +265,10 @@ private:
         new_file_name_to_buffer();
         severity_check();
 
-        while (true)
-        {
+        while (true) {
             auto res = m_fifo.sc_pop_prepare();
-            if (res.get_mem())
-            {
-                while (!non_idle_newfile_if())
-                {
+            if (res.get_mem()) {
+                while (!non_idle_newfile_if()) {
                     th::this_thread::sleep_for (ch::milliseconds (1));
                     //how to and when to notify this???
                 }
@@ -297,23 +276,18 @@ private:
                 m_writer.decode_and_write (m_out, res.get_mem());
                 m_fifo.pop_commit (res);
             }
-            else
-            {
-                if (m_status.load (mo_relaxed) != running)
-                {
+            else {
+                if (m_status.load (mo_relaxed) != running) {
                     break;
                 }
-                if (m_wait.would_block_now_hint())
-                {
+                if (m_wait.would_block_now_hint()) {
                     idle_rotate_if();
                     auto now = ch::steady_clock::now();
-                    if (now >= next_flush)
-                    {
+                    if (now >= next_flush) {
                         next_flush = now + ch::milliseconds (1000);
                         m_out.flush();
                     }
-                    if (now >= sev_check)
-                    {
+                    if (now >= sev_check) {
                         sev_check = now + ch::milliseconds (1000);
                         severity_check();
                     }
@@ -321,8 +295,7 @@ private:
                 m_wait.block();
             }
             uword allocf_now = m_alloc_fault.load (mo_relaxed);
-            if (alloc_fault != allocf_now)
-            {
+            if (alloc_fault != allocf_now) {
                 write_alloc_fault (allocf_now - alloc_fault);
                 alloc_fault = allocf_now;
             }
@@ -386,15 +359,11 @@ private:
     bool non_idle_newfile_if()
     {
         bool error = !m_out.file_is_open() || !m_out.file_no_error();
-        if (slices_files())
-        {
-            if (has_to_slice_now() || error)
-            {
+        if (slices_files()) {
+            if (has_to_slice_now() || error) {
                 auto success = slice_file();
-                if (success)
-                {
-                    if (rotates())
-                    {
+                if (success) {
+                    if (rotates()) {
                         m_files.keep_newer_files(
                             m_cfg.file.rotation.file_count +
                             m_cfg.file.rotation.delayed_file_count - 1
@@ -405,8 +374,7 @@ private:
                 return success;
             }
         }
-        else if (error)
-        {
+        else if (error) {
             return reopen_file();
         }
         return true;
@@ -414,8 +382,7 @@ private:
     //--------------------------------------------------------------------------
     void idle_rotate_if()
     {
-        if (rotates())
-        {
+        if (rotates()) {
             m_files.keep_newer_files (m_cfg.file.rotation.file_count);
         }
     }
@@ -433,34 +400,26 @@ private:
 
         bool change = false;
 
-        if (err_prev != err || out_prev != out)
-        {
-            if (out < err || out == sev::off)
-            {
+        if (err_prev != err || out_prev != out) {
+            if (out < err || out == sev::off) {
                 m_out.set_console_severity (err, out);
                 change = true;
             }
         }
-
-        if (file_prev != file)
-        {
+        if (file_prev != file) {
             m_out.set_file_severity (file);
             change = true;
         }
-
-        if (change && m_sev_evt)
-        {
+        if (change && m_sev_evt) {
             m_sev_evt();
         }
     }
     //--------------------------------------------------------------------------
     void sev_read (sev::severity& s, const std::string& fd)
     {
-        if (fd.size())
-        {
+        if (fd.size()) {
             int rs = sev_fd_check (fd.c_str());
-            if (rs >= sev::debug && rs < sev::invalid)
-            {
+            if (rs >= sev::debug && rs < sev::invalid) {
                 s = (sev::severity) rs;
             }
         }
@@ -471,16 +430,14 @@ private:
         assert (fd_path);
         int v = -1;
         std::ifstream fd (fd_path);
-        if (fd.is_open())
-        {
+        if (fd.is_open()) {
             fd >> v;
             return v;
         }
         return -1;
     }
     //--------------------------------------------------------------------------
-    enum status
-    {
+    enum status {
         constructed,
         initializing,
         initialized,
