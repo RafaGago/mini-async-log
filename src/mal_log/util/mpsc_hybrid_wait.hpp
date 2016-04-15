@@ -106,9 +106,6 @@ public:
             m_state.store (blocked, mo_relaxed);
             th::unique_lock<decltype (m_dummy_mutex)> lock (m_dummy_mutex);       
             //The condition is never called on this library, as losing some milliseconds when writing to slow io (files, console) isn't going to make a difference, but for this type of usage a semaphore can be more suitable.
-
-
-but a semaphore is safer in the sense that it can't miss notifications.
             bool is_unblocked = m_cond.wait_for(                                 //note that it's possible that the worker misses a notification and waits the whole timeout, this is by design and preferable to mutex locking the callers. if you can't tolerate this latency in the worker you can throw CPU at it by setting cfg never_block
                                     lock,
                                     ch::microseconds (m_cfg.block_us),
