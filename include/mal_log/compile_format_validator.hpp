@@ -47,9 +47,9 @@ namespace mal {
 
 namespace fmt_error {
 //------------------------------------------------------------------------------
-static const uword pars        = 1 << ((sizeof (uword) * 8) - 1);
-static const uword pchs        = 1 << ((sizeof (uword) * 8) - 2);
-static const uword modif       = 1 << ((sizeof (uword) * 8) - 3);
+static const uword pars        = ((uword) 1) << ((sizeof (uword) * 8) - 1);
+static const uword pchs        = ((uword) 1) << ((sizeof (uword) * 8) - 2);
+static const uword modif       = ((uword) 1) << ((sizeof (uword) * 8) - 3);
 static const uword error_mask  = modif - 1;
 //------------------------------------------------------------------------------
 constexpr bool get_arity (uword val)
