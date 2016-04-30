@@ -33,21 +33,29 @@ After having maintained a slightly modified fork of google log (glog) and given 
 
 It just borrows ideas from many of the loggers out there.
 
-When the user is to write a log message, the size of an internal storage format is precomputed, then the required memory is reclaimed either from the fixed size pool or the heap (configurable) and then message is encoded and passed to the log queue in an internal format.
+As with any half-decent asynchronous logger its main objetive is to be as fast and to have as low latency as possible for the caller thread.
 
-Most of the time the user thread doesn't format strings, just encodes built-in type values (integers are variable-length encoded) and whole program duration C strings. Deep copies can be done if required too.
+When the user is to write a log message, the logging frontend task is to encode the passed data to a memory chunk which the backend can then decode, format and write. No string formatting occurs on the caller thread.
 
-The messages are formatted by using printf-style strings, where the formatting string is required to be a literal (not a const char*, this is a limitation of C++11 constexpr), e.g:
+The format string is required to be a literal (compile time constant), so when encoding something like the entry below...
 
-log_error ("the value of i is {} and the value of j is {}", i, j);
+> log_error ("File:a.cpp line:8 This is a string that just displays the next number {}, int32_val);
 
-The function is type-safe, when the compiler has "constexpr" and "variadic template parameters" available. In such case the format string is matched with the parameters at compile time and the compiler "complains" if the types don't match. Otherwise the errors are caught at run time on the logging output file.
+...the memory requirements are just a pointer to the format string and a deep copy of the integer value. The job of the caller is just to encode some bytes to a memory chunk and to insert the chunk into a queue.
+
+The queue is a custom modification of two famous lockfree queues of Dmitry Djukov (kudos to this genious) for this particular MPSC case. The queue is a blend of a fixed capacity and fixed element size array based preallocated queue and an intrusive node based dynamically allocated queue which can contain elemnts of heterogenous sizes (which can be disabled). The resulting queue is still linearizable.
+
+The worker thread pops from the queue, decodes the message and writes the data. Any time consuming operation is masked with the slow file IO.
+
+The format string is type-safe and validated at compile time for compilers that support "constexpr" and "variadic template parameters" available. Otherwise the errors are caught at run time on the logged output.
+
+There are other features, as to block the caller thread until some message has been written (as in an asynchronous logger) or as to do C++ stream formatting on the caller thread. Both of these are features should be better avoided if possible, as they defeat the purpose of this desing and are hacks on top of this design.
 
 > see this [example](https://github.com/RafaGago/mini-async-log/blob/master/example/overview.cpp) that more or less shows all available features.
 
 ## Benchmarks ##
 
-I used to have some benchmarks here showing that "my new thing (TM)" is the best invention since sliced-bread, but as the benchmarks were mostly an apples-to-oranges comparison (e.g. comparing with glog which is half-synchronous) I just removed them.
+I used to have some benchmarks here, but as the benchmarks were mostly an apples-to-oranges comparison (e.g. comparing with glog which is half-synchronous) I just removed them.
 
 With the actual performance and if the logger is configured to generate the timestamps at the client/producer side it takes longer for a client thread to retrieve the timestamp with std::chrono/boost::chrono than to build and enqueue a simple message composed of e.g. a format string and three integers.
 
@@ -89,18 +97,14 @@ The only possible failures are either to be unable to allocate memory for a log 
 
 The functions never throw.
 
-## Weaknesses ##
+## Restrictions ##
 
  1. Just ASCII.
- 2. No C++ ostream support. (not sure if it's a good or a bad thing...). Swapping logger in an existing codebase may not be worth the effort in some cases.
+ 2. Partial C++ ostream support. (not sure if it's a good or a bad thing...). Swapping logger in an existing codebase may not be worth the effort in some cases.
  3. Limited formatting abilities (it can be improved with more parser complexity).
- 4. No way to output runtime strings/memory regions without deep-copying them (could be easily fixed, but I won't for now).
+ 4. No way to output runtime strings/memory regions without deep-copying them. This is inherent to the fact that the logger is asynchronous and that I prefer to avoid hacking the reference count on "shared_ptr" using placement new. I avoid this because I think that ouputting memory regions to a log file through a deferreded (asynchronous) logger is wrong by design in most if not all cases.
  5. Some ugly macros, but unfortunately the same syntax can't be achieved in any other way AFAIK.
  6. Format strings need to be literals. A const char* isn't enough (constexpr can't iterate them at compile time).
- 
-The fourth point is the most restrictive for my liking, it's just inherent to the asynchronous/non-blocking design, there is no guarantee about the passed data lifetime. This happens on every asynchronous logger.
-
-The point above would be solved by good-old reference counting. It's possible to artificially increment the refcount of a shared_ptr by copying it to an instance created using "placement_new" and to decrement it in the worker using the same trick. I keep this idea on hold for now, it's not a matter of uglyness (I don't have so much C++ "ethics") just practical considerations: on regular uses cases most of the time the deep copies will be small enough (under 128 bytes?) to don't bother.
 
 ## Compiler macros ##
 
