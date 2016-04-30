@@ -102,7 +102,7 @@ The functions never throw.
  1. Just ASCII.
  2. Partial C++ ostream support. (not sure if it's a good or a bad thing...). Swapping logger in an existing codebase may not be worth the effort in some cases.
  3. Limited formatting abilities (it can be improved with more parser complexity).
- 4. No way to output runtime strings/memory regions without deep-copying them. This is inherent to the fact that the logger is asynchronous and that I prefer to avoid hacking the reference count on "shared_ptr" using placement new. I avoid this because I think that ouputting memory regions to a log file through a deferreded (asynchronous) logger is wrong by design in most if not all cases.
+ 4. No way to output runtime strings/memory regions without deep-copying them. This is inherent to the fact that the logger is asynchronous and that I prefer to avoid hacking the reference count on "shared_ptr" using placement new. I avoid this because I think that ouputting memory regions to a log file through a deferred (asynchronous) logger is wrong by design in most if not all cases.
  5. Some ugly macros, but unfortunately the same syntax can't be achieved in any other way AFAIK.
  6. Format strings need to be literals. A const char* isn't enough (constexpr can't iterate them at compile time).
 
