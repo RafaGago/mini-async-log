@@ -100,8 +100,8 @@ private:
 };
 //------------------------------------------------------------------------------
 // Roughly explained this is the Dmytry MPMC queue converted to MPSC, and broken
-// in prepare/commit blocks that allow the use of a parallel heap based queue to
-// be optionally used when the main fixed sized queue can allocate entries
+// into prepare/commit blocks that allow the use of a parallel heap based queue
+// to be optionally used when the main fixed sized queue can't allocate entries
 // (either because the queue is full or because a given entry exceeds the fixed
 // entry size).
 //
