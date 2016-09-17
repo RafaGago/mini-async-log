@@ -1,7 +1,7 @@
 
 Minimal Asynchronous Logger (MAL)
 -----------
-A non feature-bloated asynchronous data logger. Sponsored by my employer **Diadrom AB.**
+A non feature-bloated asynchronous data logger. Sponsored by my former employer **Diadrom AB.**
 
 We just wanted an asynchronous logger that can be used from many dynamically loaded libraries without doing link-time hacks like linking static and hiding symbols and some other "niceties".
 
