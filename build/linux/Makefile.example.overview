@@ -1,0 +1,17 @@
+#Intermediate temporary variables
+THIS_FILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
+# Mandatory variables items
+ARTIFACT := bin/mal-example-overview
+
+# Standard directory layout overrides
+TOP       := $(THIS_FILE_DIR)/../..
+BUILD_DIR := $(THIS_FILE_DIR)/build
+SRC_DIRS  := $(TOP)/src $(TOP)/example/overview
+
+# Compiler setup
+CXXFLAGS += -std=c++0x -fmessage-length=0
+LDLIBS   += -lpthread -lrt
+LD       := $(CXX)
+
+include build.mk

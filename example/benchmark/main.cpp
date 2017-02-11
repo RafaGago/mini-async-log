@@ -7,7 +7,7 @@
 
 #include <type_traits>
 
-#include <mal_log/frontend_def.hpp>                                                //compiled in place, but it could be in a separate library
+#include <mal_log/frontend.hpp>                                                 //compiled in place, but it could be in a separate library
 #include <mal_log/mal_log.hpp>
 
 #include <mal_log/util/atomic.hpp>
@@ -314,7 +314,7 @@ private:
                     file_size_bytes,
                     1000
                     );
-        
+
     }
     //--------------------------------------------------------------------------
     void destroy()   { m_logger.reset(); }
@@ -349,7 +349,7 @@ private:
                     file_size_bytes,
                     1000
                     );
-        
+
     }
     //--------------------------------------------------------------------------
     void destroy()   { m_logger.reset(); }
@@ -466,7 +466,7 @@ void spdlog_tests (mal::uword msgs)
 
     spd_async_tester.run (msgs, 8);
     do_a_pause();
-    
+
     std::printf ("spdlog sync -------------------------------------------\n");
     spd_log_sync_tester spd_sync_tester;
 
