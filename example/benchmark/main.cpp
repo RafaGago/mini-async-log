@@ -1,4 +1,4 @@
-/*
+    /*
  * benchmark.cpp
  *
  *  Created on: Nov 24, 2014
@@ -16,6 +16,7 @@
 #include <mal_log/util/on_stack_dynamic.hpp>
 
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 
 #include <glog/logging.h>
@@ -24,7 +25,11 @@
 
 #define TEST_LITERAL "message saying that something happened and an integer: "
 #define OUT_FOLDER   "./log_out"
-static const unsigned file_size_bytes = 50 * 1024 * 1024;
+static const unsigned file_size_bytes  = 50 * 1024 * 1024;
+
+static const unsigned big_queue_bytes   =  1 * 1024 * 1024; /*1MB*/
+static const unsigned queue_entry_size  =  32;
+static const unsigned big_queue_entries =  big_queue_bytes / queue_entry_size;
 
 class mal_tester;
 class spd_log_tester;
@@ -35,7 +40,7 @@ class perftest
 {
 public:
     //--------------------------------------------------------------------------
-    bool run (mal::uword msgs, mal::uword thread_count)
+    bool run (unsigned msgs, unsigned thread_count)
     {
         using namespace mal;
         m_cummulative_enqueue_ns = 0;
@@ -83,14 +88,14 @@ public:
     //--------------------------------------------------------------------------
 protected:
     //--------------------------------------------------------------------------
-    void add_alloc_fault()
+    void add_alloc_faults(unsigned count)
     {
-        m_alloc_faults.fetch_add (1, mal::mo_relaxed);
+        m_alloc_faults.fetch_add (count, mal::mo_relaxed);
     }
     //--------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------
-    void thread (mal::uword msg_count)
+    void thread (unsigned msg_count)
     {
         using namespace mal;
         auto init = ch::steady_clock::now();
@@ -126,7 +131,7 @@ private:
     typename std::enable_if<
                 std::is_same<derived_, spd_log_tester>::value
                 >::type
-    print_disk_times (mal::uword msgs, mal::u64 total_ns)
+    print_disk_times (unsigned msgs, mal::u64 total_ns)
     {
 
     }
@@ -135,7 +140,7 @@ private:
     typename std::enable_if<
                 !std::is_same<derived_, spd_log_tester>::value
                 >::type
-    print_disk_times (mal::uword msgs, mal::u64 total_ns)
+    print_disk_times (unsigned msgs, mal::u64 total_ns)
     {
         double sec_ns  = 1000000000.;
         std::printf(
@@ -146,10 +151,10 @@ private:
     }
     //--------------------------------------------------------------------------
     void print_results(
-            mal::uword msgs,
-            mal::uword thread_count,
-            mal::u64   total_ns,
-            mal::u64   join_ns
+            unsigned msgs,
+            unsigned thread_count,
+            mal::u64 total_ns,
+            mal::u64 join_ns
             )
     {
         using namespace mal;
@@ -187,27 +192,33 @@ private:
 
     }
     //--------------------------------------------------------------------------
-    mal::u64                    m_total_ns;
+    mal::u64 m_total_ns;
 
     char pad1[256];
 
-    mal::at::atomic<mal::u64>   m_cummulative_enqueue_ns;
-    mal::at::atomic<mal::uword> m_data_visible;
+    mal::at::atomic<mal::u64> m_cummulative_enqueue_ns;
+    mal::at::atomic<unsigned> m_data_visible;
 
     char pad2[256];
 
-    mal::at::atomic<mal::uword> m_alloc_faults;
+    mal::at::atomic<unsigned> m_alloc_faults;
 };
 //------------------------------------------------------------------------------
 class mal_tester : public perftest<mal_tester>
 {
 public:
     //--------------------------------------------------------------------------
-    void set_params (mal::uword total_bsz, mal::uword entry_size, bool heap)
+    void set_params(
+        unsigned total_bsz,
+        unsigned entry_size,
+        bool     heap,
+        bool     block_on_full_queue = false
+        )
     {
-        m_total_bsz  = total_bsz;
-        m_entry_size = entry_size;
-        m_heap       = heap;
+        m_total_bsz   = total_bsz;
+        m_entry_size  = entry_size;
+        m_heap        = heap;
+        m_block_on_full_queue = block_on_full_queue;
     }
     //--------------------------------------------------------------------------
 private:
@@ -231,19 +242,22 @@ private:
         be_cfg.alloc.use_heap_if_required       = m_heap;
 
         m_fe->producer_timestamp (false);                                       //timestamping on producers slows the whole thing down 2.5, 3x, so we timestamp in the file worker for now. todo: for fairness the other libraries should have it disabled too
+        m_fe->block_on_full_queue (m_block_on_full_queue);
 
         return m_fe->init_backend (be_cfg) == frontend::init_ok;
     }
     //--------------------------------------------------------------------------
-    void thread (mal::uword msg_count)
+    void thread (unsigned msg_count)
     {
+        unsigned allocfaults = 0;
         for (mal::u64 i = 0; i < msg_count; ++i) {
             bool res =
                 log_error_i (m_fe.get(), log_fileline TEST_LITERAL "{}", i);
             if (!res) {
-                add_alloc_fault();
+                ++allocfaults;
             }
         }
+        add_alloc_faults(allocfaults);
     }
     //--------------------------------------------------------------------------
     void wait_until_work_completion() { m_fe->on_termination(); }
@@ -251,7 +265,9 @@ private:
     const char* get_name() { return "mal log"; }
     //--------------------------------------------------------------------------
     mal::on_stack_dynamic<mal::frontend> m_fe;
-    mal::uword m_total_bsz, m_entry_size, m_heap;
+    mal::th::mutex m_mutex;
+    unsigned m_total_bsz, m_entry_size, m_heap;
+    bool m_block_on_full_queue;
 };
 //------------------------------------------------------------------------------
 class google_tester: public perftest<google_tester>
@@ -284,7 +300,7 @@ private:
         return true;
     }
     //--------------------------------------------------------------------------
-    void thread (mal::uword msg_count)
+    void thread (unsigned msg_count)
     {
         for (mal::u64 i = 0; i < msg_count; ++i) {
             LOG (ERROR) << TEST_LITERAL << i;
@@ -307,7 +323,10 @@ private:
     //--------------------------------------------------------------------------
     void create()
     {
-        spdlog::set_async_mode (250000);
+        spdlog::set_async_mode (big_queue_entries);
+        if (m_logger) {
+            return;
+        }
         m_logger = spdlog::rotating_logger_mt(
                     "rotating_mt_async",
                     OUT_FOLDER "/" "spdlog_async",
@@ -317,11 +336,11 @@ private:
 
     }
     //--------------------------------------------------------------------------
-    void destroy()   { m_logger.reset(); }
+    void destroy()   { /*m_logger.reset();*/ }
     //--------------------------------------------------------------------------
     bool configure() { return true; }
     //--------------------------------------------------------------------------
-    void thread (mal::uword msg_count)
+    void thread (unsigned msg_count)
     {
         for (mal::u64 i = 0; i < msg_count; ++i) {
             m_logger->info (log_fileline TEST_LITERAL, i);
@@ -343,6 +362,9 @@ private:
     void create()
     {
         spdlog::set_sync_mode ();
+        if (m_logger) {
+            return;
+        }
         m_logger = spdlog::rotating_logger_mt(
                     "rotating_mt_sync",
                     OUT_FOLDER "/" "spdlog_sync",
@@ -352,11 +374,11 @@ private:
 
     }
     //--------------------------------------------------------------------------
-    void destroy()   { m_logger.reset(); }
+    void destroy()   { /*m_logger.reset();*/ }
     //--------------------------------------------------------------------------
     bool configure() { return true; }
     //--------------------------------------------------------------------------
-    void thread (mal::uword msg_count)
+    void thread (unsigned msg_count)
     {
         for (unsigned i = 0; i < msg_count; ++i) {
             m_logger->info (log_fileline TEST_LITERAL, i);
@@ -370,124 +392,76 @@ private:
     std::shared_ptr<spdlog::logger> m_logger;
 };
 //------------------------------------------------------------------------------
-void mal_tests (mal::uword msgs)
+void mal_tests (unsigned msgs)
 {
     mal_tester mal_test;
-
-    std::printf ("pure heap----------------------------------------\n");
-
-    mal_test.set_params (0, 0, true);
-    mal_test.run (msgs, 1);
-
-    mal_test.set_params (0, 0, true);
-    mal_test.run (msgs, 2);
-
-    mal_test.set_params (0, 0, true);
-    mal_test.run (msgs, 4);
-
-    mal_test.set_params (0, 0, true);
-    mal_test.run (msgs, 8);
-
-    mal_test.set_params (0, 0, true);
-    mal_test.run (msgs, 16);
-
-    std::printf ("hybrid-------------------------------------------\n");
-
-    mal_test.set_params (1024 * 128, 32, true);
-    mal_test.run (msgs, 1);
-
-    mal_test.set_params (1024 * 128, 32, true);
-    mal_test.run (msgs, 2);
-
-    mal_test.set_params (1024 * 128, 32, true);
-    mal_test.run (msgs, 4);
-
-    mal_test.set_params (1024 * 128, 32, true);
-    mal_test.run (msgs, 8);
-
-    mal_test.set_params (1024 * 128, 32, true);
-    mal_test.run (msgs, 16);
-
-    std::printf ("no heap------------------------------------------\n");
-
-    mal_test.set_params (64 * 1024 * 1024, 32, false);
-    mal_test.run (msgs, 1);
-
-    mal_test.set_params (64 * 1024 * 1024, 32, false);
-    mal_test.run (msgs, 2);
-
-    mal_test.set_params (64 * 1024 * 1024, 32, false);
-    mal_test.run (msgs, 4);
-
-    mal_test.set_params (64 * 1024 * 1024, 32, false);
-    mal_test.run (msgs, 8);
-
-    mal_test.set_params (64 * 1024 * 1024, 32, false);
-    mal_test.run (msgs, 16);
+    std::puts ("pure heap (unbounded)");
+    std::puts ("---------------------------------------------------------");
+    for (unsigned i = 0; i < 5; ++i) {
+        mal_test.set_params (0, 0, true);
+        mal_test.run (msgs, 1 << i);
+    }
+    std::puts ("hybrid (unbounded)");
+    std::puts ("---------------------------------------------------------");
+    for (unsigned i = 0; i < 5; ++i) {
+        mal_test.set_params (big_queue_bytes / 16, queue_entry_size, true);
+        mal_test.run (msgs, 1 << i);
+    }
+    std::puts ("no heap (blocking on full queue)");
+    std::puts ("---------------------------------------------------------");
+    for (unsigned i = 0; i < 5; ++i) {
+        mal_test.set_params (big_queue_bytes, queue_entry_size, false, true);
+        mal_test.run (msgs, 1 << i);
+    }
+    std::puts ("no heap (not blocking on full queue: lots of alloc faults)");
+    std::puts ("---------------------------------------------------------");
+    for (unsigned i = 0; i < 5; ++i) {
+        mal_test.set_params (big_queue_bytes, queue_entry_size, false);
+        mal_test.run (msgs, 1 << i);
+    }
 }
 
 //------------------------------------------------------------------------------
-void do_a_pause()                                                               //time for the OS to finish some file io, otherwise some results were weird.
+void long_pause()                                                               //time for the OS to finish some file io, otherwise some results were weird.
 {
     using namespace mal;
     th::this_thread::sleep_for (ch::seconds (2));
 }
 //------------------------------------------------------------------------------
-void google_tests (mal::uword msgs)
+void google_tests (unsigned msgs)
 {
     google_tester google_test;
 
-    google_test.run (msgs, 1);
-    do_a_pause();
-
-    google_test.run (msgs, 2);
-    do_a_pause();
-
-    google_test.run (msgs, 4);
-    do_a_pause();
-
-    google_test.run (msgs, 8);
-    do_a_pause();
+    for (unsigned i = 0; i < 5; ++i) {
+        google_test.run (msgs, 1 << i);
+        long_pause();
+    }
 }
 //------------------------------------------------------------------------------
-void spdlog_tests (mal::uword msgs)
+void spdlog_tests (unsigned msgs)
 {
-    std::printf ("spdlog async ------------------------------------------\n");
-    spd_log_async_tester spd_async_tester;                                                  //this one has no way to flush, so I place it the last to avoid affecting the next library measurements
+    std::puts ("spdlog async");
+    std::puts ("---------------------------------------------------------");
+    spd_log_async_tester spd_async_tester;                                      //this one has no way to flush, so I place it the last to avoid affecting the next library measurements
 
-    spd_async_tester.run (msgs, 1);
-    do_a_pause();
-
-    spd_async_tester.run (msgs, 2);
-    do_a_pause();
-
-    spd_async_tester.run (msgs, 4);
-    do_a_pause();
-
-    spd_async_tester.run (msgs, 8);
-    do_a_pause();
-
-    std::printf ("spdlog sync -------------------------------------------\n");
+    for (unsigned i = 0; i < 5; ++i) {
+        spd_async_tester.run (msgs, 1 << i);
+        long_pause();
+    }
+    std::puts ("spdlog sync");
+    std::puts ("---------------------------------------------------------");
     spd_log_sync_tester spd_sync_tester;
 
-    spd_sync_tester.run (msgs, 1);
-    do_a_pause();
-
-    spd_sync_tester.run (msgs, 2);
-    do_a_pause();
-
-    spd_sync_tester.run (msgs, 4);
-    do_a_pause();
-
-    spd_sync_tester.run (msgs, 8);
-    do_a_pause();
-
-    spdlog::stop();
+    for (unsigned i = 0; i < 5; ++i) {
+        spd_sync_tester.run (msgs, 1 << i);
+        long_pause();
+    }
+    //spdlog::stop();
 }
 //------------------------------------------------------------------------------
 int main (int argc, const char* argv[])
 {
-    const mal::uword msgs = 1600000;
+    const unsigned msgs = 2000000;
 
     if (argc < 2) {
         std::printf ("no parameter specified (mal, spdlog, glog)\n");

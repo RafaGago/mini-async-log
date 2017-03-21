@@ -55,11 +55,28 @@ There are other features, as to block the caller thread until some message has b
 
 ## Benchmarks ##
 
-I used to have some benchmarks here, but as the benchmarks were mostly an apples-to-oranges comparison (e.g. comparing with glog which is half-synchronous) I just removed them.
+> [There is a benchmark mostly against glog and spdlog.](https://github.com/RafaGago/mini-async-log/blob/master/example/benchmark/main.cpp).
 
-With the actual performance and if the logger is configured to generate the timestamps at the client/producer side it takes longer for a client thread to retrieve the timestamp with std::chrono/boost::chrono than to build and enqueue a simple message composed of e.g. a format string and three integers.
+The benchmark is _very_ synthetic and very far from a real case, it's just about enqueuing 2 million messages as fast as possible. This is very unlikely to happen on real life.
 
-> [These were the benchmarks that I had](https://github.com/RafaGago/mini-async-log/blob/master/example/benchmark/main.cpp).
+I'm commenting what I see on my machine:
+
+Against Google log:
+
+Google log loses, as it's half synchronous. Unfair comparison.
+
+Against spdlog:
+
+This library is tested in bounded and unbounded variants. The bounded queue is set to a generous 1MB size divided in 32byte entries for "mal" and to 1MB/32 entries on "spdlog".
+
+Of course 1M entries are going to overflow spdlog's (and mal) fixed-size queues, so when comparing spdlog against this library with the unbounded (heap-based) fallback queue enabled spdlog loses with a _very_large_ margin (_20-30x_ or more). Unfair comparison because in this configuratin "mal" is using the heap and causing a temporary memory spike.
+
+Then comparing bounded to bounded can be done by enabling the "block_on_full_queue". This is mostly fair from the benchmark point of view (but comparing with this library in crippled mode). In such case this library is still _20%_ to _30%_ faster.
+
+But these are benchmark configurations, I myself would use "mal" in the next two configurations:
+
+* In a generic way: With a small (64-128KB) fixed-size queue for small entries and then fall back to heap.
+* Calculating the max spike and average rate I want to support and setting the fixed size queue to such value and disallowing the heap.
 
 ## File rotation ##
 
