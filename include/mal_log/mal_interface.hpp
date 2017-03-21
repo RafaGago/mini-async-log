@@ -61,7 +61,8 @@ inline bool prebuild_data (T& v, field& f, uword& total_length)
 }
 //------------------------------------------------------------------------------
 // todo: this function has to be beautified, but I don't want to add compile
-// time vectors or more complexity right now.
+// time vectors or more complexity right now. This is written for compilers
+// without variadic template args.
 //------------------------------------------------------------------------------
 template<
     bool is_async,

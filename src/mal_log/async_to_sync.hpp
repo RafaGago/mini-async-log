@@ -43,6 +43,8 @@ either expressed or implied, of Rafael Gago Castano.
 
 namespace mal {
 
+// NOTE: if this needs to be optimized on Linux, "wait" and "notify" can be done
+// using a futex directly over the state variable.
 //------------------------------------------------------------------------------
 class async_to_sync
 {

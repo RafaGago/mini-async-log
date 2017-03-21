@@ -192,8 +192,10 @@ public:
     //--------------------------------------------------------------------------
     void on_termination()
     {
-        m_status.store (terminating, mo_relaxed);
-        m_log_thread.join();
+        uword exp = running;
+        if (m_status.compare_exchange_strong (exp, terminating, mo_relaxed)) {
+            m_log_thread.join();
+        }
     }
     //--------------------------------------------------------------------------
     bool prints_timestamp()
