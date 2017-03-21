@@ -74,10 +74,10 @@ struct backend_file_config {
     backend_rotation_cfg rotation;
 };
 //------------------------------------------------------------------------------
-struct backend_log_entry_alloc_config {                                          //the allocator for log entries, the backend still uses the heap for some std::strings when rotating files. I found excessive to use fixed size static strings at this point.
+struct backend_log_entry_alloc_config {                                         //the allocator for log entries, the backend still uses the heap for some std::strings when rotating files. I found excessive to use fixed size static strings at this point.
     bool  use_heap_if_required;
-    uword fixed_block_size;
-    uword fixed_entry_size;
+    uword fixed_block_size;                                                     //total queue byte size
+    uword fixed_entry_size;                                                     //size for each log entry. (number of log entries = fixed_block_size / fixed_entry_size)
 };
 //------------------------------------------------------------------------------
 struct backend_visualization_config {

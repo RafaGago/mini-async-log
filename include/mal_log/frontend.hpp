@@ -40,6 +40,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <mal_log/util/system.hpp>
 #include <mal_log/serialization/exporter.hpp>
 #include <mal_log/backend_cfg.hpp>
+#include <mal_log/util/thread.hpp>
 
 namespace mal {
 
@@ -83,6 +84,10 @@ public:
     bool set_console_severity(
             sev::severity std_err, sev::severity std_out = sev::off
             );
+    //--------------------------------------------------------------------------
+    void block_on_full_queue (bool on);                                         //blocks when the queue is full, only useful when the heap queue is disabled.
+    //--------------------------------------------------------------------------
+    bool block_on_full_queue() const;
     //--------------------------------------------------------------------------
     ser::exporter get_encoder (uword required_bytes);
     //--------------------------------------------------------------------------

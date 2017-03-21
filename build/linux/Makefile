@@ -4,7 +4,7 @@ THIS_FILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 # Mandatory variables items
 VERSION_MAJOR := 1
 VERSION_MINOR := 0
-VERSION_REV   := 0
+VERSION_REV   := 1
 ARTIFACT      ?= lib/libmal-log
 
 # Standard directory layout overrides

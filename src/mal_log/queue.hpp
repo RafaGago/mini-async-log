@@ -87,12 +87,22 @@ namespace mal {
 class queue_prepared
 {
 public:
+    enum error {
+        success,
+        queue_full,
+        entry_size,
+    };
+
     queue_prepared()
     {
         mem = nullptr;
         pos = 0;
     }
     u8* get_mem() const { return mem; }
+    error get_error() const
+    {
+        return mem ? success : (error) pos;
+    }
 private:
     friend class queue;
     u8*    mem;
@@ -279,6 +289,9 @@ public:
                     if (m_use_heap) {
                         alloc_from_heap (pp, size, pos);
                     }
+                    else {
+                        pp.pos = queue_prepared::queue_full;
+                    }
                     return pp;
                 }
                 else {
@@ -295,6 +308,7 @@ public:
         }
         else {
             //no alloc, size > fixed_entry_size()
+            pp.pos = queue_prepared::entry_size;
         }
         return pp;
     }

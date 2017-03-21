@@ -55,29 +55,44 @@ public:
     //--------------------------------------------------------------------------
     frontend_impl()
     {
-        m_state              = no_init;
-        m_min_severity       = sev::notice;
-        m_prints_timestamp   = true;
-        m_producer_timestamp = true;
-        m_timestamp_base     = 0;
+        m_state               = no_init;
+        m_min_severity        = sev::notice;
+        m_prints_timestamp    = true;
+        m_producer_timestamp  = true;
+        m_timestamp_base      = 0;
+        m_block_on_full_queue = false;
     }
     //--------------------------------------------------------------------------
     ~frontend_impl() {}
     //--------------------------------------------------------------------------
     ser::exporter get_encoder (uword required_bytes)
     {
-        assert (m_state.load (mo_relaxed) == init);
-        ser::exporter e;        
-        auto commit_data = m_back.allocate_entry (required_bytes);
-        if (commit_data.get_mem()) {
-            e.init (commit_data.get_mem(), required_bytes);
-            e.opaque_data.write (commit_data);
-        }
+        ser::exporter e;
         typedef decltype (e.opaque_data) od;                                    //visual studio 2010 doesn't like this inside the static assertion
         static_assert(
-            od::bytes >= sizeof commit_data,
-            "not enough opaque storage"
+            od::bytes >= sizeof (queue_prepared), "not enough opaque storage"
             );
+        assert(
+            m_state.load (mo_relaxed) == init &&
+            "using the logger in a non-initialized state"
+            );
+        queue_prepared commit_data = m_back.allocate_entry (required_bytes);
+        u8*                   mem  = commit_data.get_mem();
+        queue_prepared::error err  = commit_data.get_error();
+
+        if (!mem && m_block_on_full_queue && err == queue_prepared::queue_full){
+            th::lock_guard<th::mutex> lockg (m_contention_mutex);
+            do {
+                commit_data = m_back.allocate_entry (required_bytes);
+                mem         = commit_data.get_mem();
+                err         = commit_data.get_error();
+            }
+            while (!mem && err == queue_prepared::queue_full);
+        }
+        if (mem) {
+            e.init (mem, required_bytes);
+            e.opaque_data.write (commit_data);
+        }
         return e;
     }
     //--------------------------------------------------------------------------
@@ -211,6 +226,16 @@ public:
         return producer_timestamp();
     }
     //--------------------------------------------------------------------------
+    void block_on_full_queue (bool on)
+    {
+        m_block_on_full_queue = on;
+    }
+    //--------------------------------------------------------------------------
+    bool block_on_full_queue() const
+    {
+        return m_block_on_full_queue;
+    }
+    //--------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------
     void severity_updated_event()
@@ -226,13 +251,15 @@ private:
         terminated
     };
     //--------------------------------------------------------------------------
-    bool                     m_prints_timestamp;
-    bool                     m_producer_timestamp;
     u64                      m_timestamp_base;
     mo_relaxed_atomic<uword> m_min_severity;
     mo_relaxed_atomic<uword> m_state;
     backend_impl             m_back;
     async_to_sync            m_sync;
+    th::mutex                m_contention_mutex;
+    bool                     m_prints_timestamp;
+    bool                     m_producer_timestamp;
+    bool                     m_block_on_full_queue;
 };
 //------------------------------------------------------------------------------
 MAL_LIB_EXPORTED_CLASS frontend::frontend()
@@ -254,7 +281,7 @@ bool MAL_LIB_EXPORTED_CLASS frontend::is_constructed() const
     return m != nullptr;
 }
 //------------------------------------------------------------------------------
-ser::exporter MAL_LIB_EXPORTED_CLASS 
+ser::exporter MAL_LIB_EXPORTED_CLASS
     frontend::get_encoder (uword required_bytes)
 {
     assert (is_constructed());
@@ -284,7 +311,7 @@ backend_cfg MAL_LIB_EXPORTED_CLASS frontend::get_backend_cfg()
     return m->get_backend_cfg();
 }
 //------------------------------------------------------------------------------
-frontend::init_status MAL_LIB_EXPORTED_CLASS 
+frontend::init_status MAL_LIB_EXPORTED_CLASS
     frontend::init_backend (const backend_cfg& cfg)
 {
     assert (is_constructed());
@@ -335,6 +362,18 @@ void MAL_LIB_EXPORTED_CLASS frontend::on_termination()
 {
     assert (is_constructed());
     return m->on_termination();
+}
+//------------------------------------------------------------------------------
+void MAL_LIB_EXPORTED_CLASS frontend::block_on_full_queue(bool on)
+{
+    assert (is_constructed());
+    m->block_on_full_queue(on);
+}
+//------------------------------------------------------------------------------
+bool MAL_LIB_EXPORTED_CLASS frontend::block_on_full_queue() const
+{
+    assert (is_constructed());
+    return m->block_on_full_queue();
 }
 //------------------------------------------------------------------------------
 } //namespace

@@ -23,9 +23,9 @@ void general_features()
     be_cfg.file.name_prefix           = "test-data.";
     be_cfg.file.name_suffix           = ".log.txt";
 #ifndef MAL_WINDOWS
-    be_cfg.file.out_folder            = "./log_out/";                             //this folder has to exist before running
+    be_cfg.file.out_folder            = "./log_out/";                           //this folder has to exist before running
 #else
-    be_cfg.file.out_folder            = ".\\log_out\\";                           //this folder has to exist before running
+    be_cfg.file.out_folder            = ".\\log_out\\";                         //this folder has to exist before running
 #endif
     be_cfg.file.aprox_size            = 512 * 1024;
     be_cfg.file.rotation.file_count   = 0;
@@ -37,8 +37,10 @@ void general_features()
     be_cfg.alloc.fixed_block_size     = be_cfg.alloc.fixed_entry_size * 16;
     be_cfg.alloc.use_heap_if_required = true;
 
+
     if (fe.init_backend (be_cfg) != frontend::init_ok) { return; }
 
+    fe.block_on_full_queue (false);                                             //if this is on and "alloc.use_heap_if_required" is off the caller thread blocks when the fixed-size queue is full (latency perf killer)
     fe.set_file_severity (sev::notice);
     fe.set_console_severity (sev::notice);
     int i = 0;
