@@ -14,5 +14,6 @@ BUILD_DIR := $(THIS_FILE_DIR)/build
 # Compiler setup
 CPPFLAGS += -DMAL_DYNLIB_COMPILE
 CXXFLAGS += -std=c++0x -fmessage-length=0
+LD       := $(CXX)
 
 include build.mk

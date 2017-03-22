@@ -13,5 +13,4 @@ SRC_DIRS  := $(TOP)/src $(TOP)/example/rotation
 CXXFLAGS += -std=c++0x -fmessage-length=0
 LDLIBS   += -lpthread -lrt
 LD       := $(CXX)
-
 include build.mk

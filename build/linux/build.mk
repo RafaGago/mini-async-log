@@ -14,9 +14,16 @@
 # -SRC_DIRS: Space delimited source directories that will be recursively built.
 #    They have to be under $(TOP). Defaults to $(TOP)/src
 #
+# -INCLUDE_DIRS: Space delimited include directories that will be recursively
+#    added to the compiler flats. They have to be under $(TOP). Defaults to
+#    $(TOP)/include
+#
 # -GIT_SUBMODULES_DIR: If this folder exists the modules will be automatically
 #    updated before building. This is defaulted to $(TOP)/git-submodules
 #
+# -EXTRA_TARGET_DEPS: Extra dependencies to the binary targets.
+#
+# -LD: Has to be set to CXX for C++.
 #
 # Input variables meant to be overriden from the "make" command call or the
 # environment.
@@ -38,9 +45,9 @@
 ################################################################################
 
 ## Folders ---------------------------------------------------------------------
-TOP      ?= $$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-SRC_DIRS ?= $(TOP)/src
-INCLUDE  ?= $(TOP)/include
+TOP          ?= $$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+SRC_DIRS     ?= $(TOP)/src
+INCLUDE_DIRS ?= $(TOP)/include
 
 ## Debug/Release setup ---------------------------------------------------------
 DEBUG ?= 0
@@ -88,6 +95,7 @@ TARGET_MACH := $(shell $(CC) -dumpmachine)
 OBJ  := $(BUILD_DIR)/obj/$(TARGET_MACH)$(BUILDTYPE)
 STAGE:= $(BUILD_DIR)/stage/$(TARGET_MACH)$(BUILDTYPE)
 
+LD ?= $(CC)
 ## Other variables -------------------------------------------------------------
 VERSION_MINOR ?= 0
 VERSION_REV   ?= 0
@@ -105,7 +113,7 @@ INSTALLCMD    ?= install -m 755
 
 ## Default fixed compiler + linker flags ---------------------------------------
 CCCXXFLAGS += $(foreach SRC_DIR,$(SRC_DIRS),-I$(SRC_DIR))
-CCCXXFLAGS += -I$(INCLUDE)
+CCCXXFLAGS += $(foreach INCLUDE_DIR,$(INCLUDE_DIRS),-I$(INCLUDE_DIR))
 LDFLAGS    += -L$(STAGE)/lib
 
 CFLAGS     += $(CCCXXFLAGS)
@@ -187,12 +195,12 @@ update-gitmodules:
 	@echo "GIT Syncing submodules"
 	$(CMDPRINT)git submodule update --init --recursive
 
-$(MAIN_TARGET): $(OBJFILES)
+$(MAIN_TARGET): $(EXTRA_TARGET_DEPS) $(OBJFILES)
 	@echo "LD $(OBJFILES:$(OBJ)/%=%)"
 	$(CMDPRINT)mkdir -p $(STAGE)/$(ARTIFACT_DIR)
-	$(CMDPRINT)$(CC) -o $(MAIN_TARGET) $(OBJFILES) $(LDLIBS) $(LDFLAGS)
+	$(CMDPRINT)$(LD) -o $(MAIN_TARGET) $(OBJFILES) $(LDLIBS) $(LDFLAGS)
 
-$(STATLIB_TARGET): $(OBJFILES)
+$(STATLIB_TARGET): $(EXTRA_TARGET_DEPS) $(OBJFILES)
 	@echo "AR $(OBJFILES:$(OBJ)/%=%)"
 	$(CMDPRINT)mkdir -p $(STAGE)/lib
 	$(CMDPRINT)$(AR) rcs $(STATLIB_TARGET) $(OBJFILES)
@@ -225,7 +233,7 @@ $(foreach EXT, $(CXX_EXT), $(eval $(call cpp_recipe,$(EXT))))
 .PHONY: clean install
 
 clean:
-	rm -rf $(OBJ) $(STAGE)
+	rm -rf $(OBJ) $(STAGE) $(EXTRA_CLEAN_DIRS)
 
 install:
 # Main artifact  ---------------------------------------------------------------

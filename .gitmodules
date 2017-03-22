@@ -1,0 +1,8 @@
+[submodule "example/benchmark-submodules/spdlog"]
+	path = example/benchmark-submodules/spdlog
+	url = https://github.com/gabime/spdlog.git
+	branch = master
+[submodule "example/benchmark-submodules/glog"]
+	path = example/benchmark-submodules/glog
+	url = https://github.com/google/glog.git
+	branch = master

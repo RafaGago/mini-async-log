@@ -5,13 +5,44 @@ THIS_FILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ARTIFACT := bin/mal-example-benchmark
 
 # Standard directory layout overrides
-TOP       := $(THIS_FILE_DIR)/../..
-BUILD_DIR := $(THIS_FILE_DIR)/build
-SRC_DIRS  := $(TOP)/src $(TOP)/example/benchmark
+TOP          := $(THIS_FILE_DIR)/../..
+BUILD_DIR    := $(THIS_FILE_DIR)/build
+SRC_DIRS     := $(TOP)/src $(TOP)/example/benchmark
+GIT_SUBMODULES_DIR := $(TOP)/example/benchmark-submodules
+
+# Dependant projects+
+SPDLOG_INCLUDE    := $(GIT_SUBMODULES_DIR)/spdlog/include
+
+GLOG_INSTALL      := $(GIT_SUBMODULES_DIR)/glog/install
+GLOG_STATLIB_FILE := libglog.a
+GLOG_INCLUDE      := $(GLOG_INSTALL)/include/
+GLOG_LIB_DIR      := $(GLOG_INSTALL)/lib/
+
+# Updated vars
+INCLUDE_DIRS := $(TOP)/include $(SPDLOG_INCLUDE) $(GLOG_INCLUDE)
+EXTRA_TARGET_DEPS := $(GLOG_LIB_DIR)/$(GLOG_STATLIB_FILE)
+EXTRA_CLEAN_DIRS  := $(GLOG_INSTALL)
+
+# Verbose fix
+ifeq ($(VERBOSE), 1)
+	CMDPRINT :=
+	SILENT_REDIRECTION :=
+else
+	CMDPRINT := @
+	SILENT_REDIRECTION := >/dev/null
+endif
 
 # Compiler setup
 CXXFLAGS += -std=c++0x -fmessage-length=0
-LDLIBS   += -lpthread -lrt -lglog
+LDLIBS   += -lglog -lpthread -lrt
+LDFLAGS  += -L$(GLOG_LIB_DIR)
 LD       := $(CXX)
+
+# Extra rules
+newdefaultrule: all
+
+$(GLOG_LIB_DIR)/$(GLOG_STATLIB_FILE):
+	@echo "CMake Build glog"
+	$(CMDPRINT)$(THIS_FILE_DIR)/build_glog.sh $(SILENT_REDIRECTION)
 
 include build.mk
