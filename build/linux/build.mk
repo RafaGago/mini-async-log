@@ -190,7 +190,7 @@ update-gitmodules:
 $(MAIN_TARGET): $(OBJFILES)
 	@echo "LD $(OBJFILES:$(OBJ)/%=%)"
 	$(CMDPRINT)mkdir -p $(STAGE)/$(ARTIFACT_DIR)
-	$(CMDPRINT)$(LD) -o $(MAIN_TARGET) $(OBJFILES) $(LDLIBS) $(LDFLAGS)
+	$(CMDPRINT)$(CC) -o $(MAIN_TARGET) $(OBJFILES) $(LDLIBS) $(LDFLAGS)
 
 $(STATLIB_TARGET): $(OBJFILES)
 	@echo "AR $(OBJFILES:$(OBJ)/%=%)"
