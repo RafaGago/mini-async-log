@@ -5,6 +5,14 @@
  *      Author: rafgag
  */
 
+#define NOMINMAX
+
+#include <limits>
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <memory>
+#include <math.h>
 #include <type_traits>
 
 #include <mal_log/frontend.hpp>                                                 //compiled in place, but it could be in a separate library
@@ -15,12 +23,11 @@
 #include <mal_log/util/chrono.hpp>
 #include <mal_log/util/on_stack_dynamic.hpp>
 
-#include <cstdio>
-#include <cstdlib>
-#include <memory>
+#ifdef __linux__
+    #include <pthread.h>
+#endif
 
 #include <glog/logging.h>
-
 #include <spdlog/spdlog.h>
 
 #define TEST_LITERAL "message saying that something happened and an integer: "
@@ -31,23 +38,121 @@ static const unsigned big_queue_bytes   =  1 * 1024 * 1024; /*1MB*/
 static const unsigned queue_entry_size  =  32;
 static const unsigned big_queue_entries =  big_queue_bytes / queue_entry_size;
 
-class mal_tester;
-class spd_log_tester;
-
+class spd_log_async_perf_test;
+//------------------------------------------------------------------------------
+struct statistical_data {
+    statistical_data()
+    {
+        mean = variance = stddev = min = max = 0.;
+    }
+    double mean;
+    double variance;
+    double stddev;
+    double min;
+    double max;
+};
+//------------------------------------------------------------------------------
+struct timestamp_data {
+    double start;
+    double end;
+};
+//------------------------------------------------------------------------------
+class statistical_accummulative_data {
+public:
+    //--------------------------------------------------------------------------
+    statistical_accummulative_data()
+    {
+        m_mean_prev = 0.;
+        m_n = 0;
+    }
+    //--------------------------------------------------------------------------
+    void add_value (double x)
+    {
+        /*https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance*/
+        ++m_n;
+        double delta = x - sd.mean;
+        sd.mean     += delta / (double) m_n;
+        sd.variance += delta * (x - sd.mean);
+        sd.min      = std::min (x, sd.min);
+        sd.max      = std::max (x, sd.max);
+    }
+    //--------------------------------------------------------------------------
+    void compute()
+    {
+        sd.variance = (m_n > 1) ? sd.variance / (double) (m_n - 1) : 0.;
+        sd.stddev   = sqrt (sd.variance);
+    }
+    //--------------------------------------------------------------------------
+    statistical_data sd;
+private:
+    double   m_mean_prev;
+    unsigned m_n;
+};
 //------------------------------------------------------------------------------
 template <class derived>
-class perftest
+class perf_test
 {
 public:
     //--------------------------------------------------------------------------
-    bool run (unsigned msgs, unsigned thread_count)
+    void print_throughput_header()
     {
-        using namespace mal;
-        m_cummulative_enqueue_ns = 0;
-        m_total_ns               = 0;
-        m_alloc_faults           = 0;
-        m_data_visible           = 0;
+        std::puts ("|threads|enqueue(s)|rate(Kmsgs/s)|total(s)|disk(Kmsgs/s)|all threads(s)|alloc faults|");
+        std::puts ("|:-:|:-:|:-:|:-:|:-:|:-:|:-:|");
+    }
+    //--------------------------------------------------------------------------
+    void print_latency_header()
+    {
+        std::puts ("|threads|clock|mean(us)|standard deviation|min(us)|max(us)|");
+        std::puts ("|:-:|:-:|:-:|:-:|:-:|:-:|");
+    }
+    //--------------------------------------------------------------------------
+    bool run_throughput (unsigned msgs, unsigned thread_count)
+    {
+        return run_throughput_impl (msgs, thread_count);
+    }
+    //--------------------------------------------------------------------------
+    bool run_latency (unsigned msgs, unsigned thread_count)
+    {
+#ifdef __linux__
+        if (!run_latency_impl(
+                msgs,
+                thread_count,
+                &perf_test<derived>::latency_thread_thread_clock,
+                "thread"
+                )) {
+            return false;
+        }
+#endif
+        return run_latency_impl(
+            msgs,
+            thread_count,
+            &perf_test<derived>::latency_thread_wall_clock,
+            "wall"
+            );
+    }
+    //--------------------------------------------------------------------------
+private:
 
+    template<class resultvector>
+    struct thread_fn_signature{
+        typedef typename
+            resultvector::value_type (perf_test<derived>::*type) (unsigned);
+    };
+    //--------------------------------------------------------------------------
+    template <class resultvector>
+    bool execute_test(
+        resultvector&                                    resvector,
+        typename thread_fn_signature<resultvector>::type threadfn,
+        unsigned                                         msgs,
+        unsigned                                         thread_count,
+        double&                                          total_sec
+        )
+    {
+        m_alloc_faults.store (0, mal::mo_relaxed);
+        typedef typename resultvector::value_type resulttype;
+        using namespace mal;
+        resvector.clear();
+        resvector.insert (resvector.end(), thread_count, resulttype());
         static_cast<derived&> (*this).create();
         if (!static_cast<derived&> (*this).configure()) {
             static_cast<derived&> (*this).destroy();
@@ -57,154 +162,186 @@ public:
         if (thread_count > 1) {
             threads.reset (new th::thread [thread_count - 1]);
         }
-        auto init = ch::steady_clock::now();
-
+        auto init = wall_clock_now_us();
         for (unsigned i = 0; i < (thread_count - 1); ++i) {
-            threads[i] = th::thread ([=]()
+            threads[i] = th::thread ([=, &resvector]()
             {
-                this->thread (msgs / thread_count);
+                resvector[i] = (this->*threadfn) (msgs / thread_count);
             });
         }
-        thread (msgs / thread_count);
+        resvector[thread_count - 1] =
+            (this->*threadfn)(msgs / thread_count);
+
         for (unsigned i = 0; i < (thread_count - 1); ++i) {
             threads[i].join();
         }
-        auto join_ns = (ch::duration_cast<ch::nanoseconds>(
-                ch::steady_clock::now() - init
-                ).count());
-
         static_cast<derived&> (*this).wait_until_work_completion();
-
-        auto total_ns = (ch::duration_cast<ch::nanoseconds>(
-                ch::steady_clock::now() - init
-                ).count());
+        total_sec = (wall_clock_now_us() - init) / 1000000.;
 
         static_cast<derived&> (*this).destroy();
-
-        print_results (msgs, thread_count, total_ns, join_ns);
-
         return true;
     }
     //--------------------------------------------------------------------------
-protected:
-    //--------------------------------------------------------------------------
-    void add_alloc_faults(unsigned count)
+    bool run_throughput_impl (unsigned msgs, unsigned thread_count)
     {
-        m_alloc_faults.fetch_add (count, mal::mo_relaxed);
-    }
-    //--------------------------------------------------------------------------
-private:
-    //--------------------------------------------------------------------------
-    void thread (unsigned msg_count)
-    {
-        using namespace mal;
-        auto init = ch::steady_clock::now();
-
-        static_cast<derived&> (*this).thread (msg_count);
-
-        auto elapsed = ch::duration_cast<ch::nanoseconds>(
-                ch::steady_clock::now() - init
-                ).count();
-
-        m_cummulative_enqueue_ns.fetch_add (elapsed, mal::mo_relaxed);
-        m_data_visible.fetch_add (1, mal::mo_release);
-    }
-    //--------------------------------------------------------------------------
-    template <class derived_>
-    typename std::enable_if<!std::is_same<derived_, mal_tester>::value>::type
-    print_alloc_faults()
-    {
-
-    }
-    //--------------------------------------------------------------------------
-    template <class derived_>
-    typename std::enable_if<std::is_same<derived_, mal_tester>::value>::type
-    print_alloc_faults()
-    {
+        double total_sec;
+        bool ret = execute_test(
+            m_throughput_results,
+            &perf_test<derived>::throughput_thread,
+            msgs,
+            thread_count,
+            total_sec
+            );
+        if (!ret) {
+            return ret;
+        }
+        double min_start      = std::numeric_limits<double>::max();
+        double max_end        = 0.;
+        double all_threads_sec = 0.;
+        for (unsigned i = 0; i < thread_count; ++i) {
+            double start = m_throughput_results[i].start;
+            double end   = m_throughput_results[i].end;
+            min_start = std::min (min_start, start);
+            max_end   = std::max (max_end, end);
+            all_threads_sec += (end - start);
+        }
+        double enqueue_sec      = (max_end - min_start) / 1000000.;
+        all_threads_sec /= 1000000.;
+        double throughput = (((double) msgs) / enqueue_sec) / 1000.;
+        double disk       = (((double) msgs) / total_sec) / 1000.;
+        if (std::is_same<derived, spd_log_async_perf_test>::value) {
+            total_sec  = 0.;
+            disk       = 0.;
+        }
         std::printf(
-            "%u fixed size queue alloc faults\n",
+            "|%u|%.3f|%.3f|%.3f|%.3f|%.3f|%u|\n",
+            thread_count,
+            enqueue_sec,
+            throughput ,
+            total_sec,
+            disk,
+            all_threads_sec,
             m_alloc_faults.load (mal::mo_relaxed)
             );
+        std::fflush (stdout);
+        return true;
     }
     //--------------------------------------------------------------------------
-    template <class derived_>
-    typename std::enable_if<
-                std::is_same<derived_, spd_log_tester>::value
-                >::type
-    print_disk_times (unsigned msgs, mal::u64 total_ns)
+    timestamp_data throughput_thread (unsigned msg_count)
     {
-
-    }
-    //--------------------------------------------------------------------------
-    template <class derived_>
-    typename std::enable_if<
-                !std::is_same<derived_, spd_log_tester>::value
-                >::type
-    print_disk_times (unsigned msgs, mal::u64 total_ns)
-    {
-        double sec_ns  = 1000000000.;
-        std::printf(
-            "%f seconds spent writting to disk. msg/sec: %f \n",                //this is just reliable in mal and
-            ((double) total_ns) / sec_ns,
-            ((double) msgs / (double) total_ns) * sec_ns
-            );
-    }
-    //--------------------------------------------------------------------------
-    void print_results(
-            unsigned msgs,
-            unsigned thread_count,
-            mal::u64 total_ns,
-            mal::u64 join_ns
-            )
-    {
-        using namespace mal;
-        while (m_data_visible.load (mal::mo_acquire) != thread_count)
-        {
-            th::this_thread::yield();
+        timestamp_data r;
+        unsigned allocfaults = 0;
+        r.start = wall_clock_now_us();
+        for (mal::u64 i = 0; i < msg_count; ++i) {
+            allocfaults += (unsigned) static_cast<derived&> (*this).log_one (i);
         }
-
-        double sec_ns  = 1000000000.;
-        double cumm_ns = (double)
-                (m_cummulative_enqueue_ns.load (mal::mo_relaxed));
-
-        std::printf(
-            "%s using %u threads for a total of %u msgs\n",
-            static_cast<derived&> (*this).get_name(),
+        r.end = wall_clock_now_us();
+        m_alloc_faults.fetch_add (allocfaults, mal::mo_relaxed);
+        return r;
+    }
+    //--------------------------------------------------------------------------
+    bool run_latency_impl(
+        unsigned msgs,
+        unsigned thread_count,
+        statistical_data (perf_test<derived>::*threadfn) (unsigned),
+        char const* clock_name
+        )
+    {
+        double total_sec;
+        bool ret = execute_test(
+            m_latency_results,
+            threadfn,
+            msgs,
             thread_count,
-            msgs
+            total_sec
             );
-        print_alloc_faults<derived>();
-        print_disk_times<derived> (msgs, total_ns);
-
+        if (!ret) {
+            return ret;
+        }
+        statistical_data result;
+        for (unsigned i = 0; i < thread_count; ++i) {
+            statistical_data& c = m_latency_results[i];
+            result.mean     += c.mean;
+            result.variance += c.variance;
+            result.min       = std::min (result.min, c.min);
+            result.max       = std::max (result.max, c.max);
+        }
+        result.mean     /= (double) thread_count;
+        result.variance /= (double) thread_count;
+        result.stddev    = sqrt (result.variance);
         std::printf(
-            "avg thread duration: %f .cummulative seconds spent between"
-            " all threads. %f\n",
-            (cumm_ns / sec_ns) / (double) thread_count,
-            cumm_ns / sec_ns
-            );
-        std::printf(
-            "%f seconds spent before all threads joined. enqueued msg/sec: "
-            "%f\n\n",
-            ((double) join_ns) / sec_ns,
-            ((double) msgs / (double) join_ns) * sec_ns
+            "|%u|%s|%.3f|%.3f|%.3f|%.3f|\n",
+            thread_count,
+            clock_name,
+            result.mean,
+            result.stddev,
+            result.min,
+            result.max
             );
         std::fflush (stdout);
-
+        return true;
     }
     //--------------------------------------------------------------------------
-    mal::u64 m_total_ns;
-
-    char pad1[256];
-
-    mal::at::atomic<mal::u64> m_cummulative_enqueue_ns;
-    mal::at::atomic<unsigned> m_data_visible;
-
-    char pad2[256];
-
-    mal::at::atomic<unsigned> m_alloc_faults;
+#ifdef __linux__
+    struct thread_clock_id {
+        thread_clock_id()
+        {
+            pthread_getcpuclockid (pthread_self(), &value);
+        }
+        clockid_t value;
+    };
+    //--------------------------------------------------------------------------
+    double thread_clock_now_us (thread_clock_id& clock)
+    {
+        struct timespec ts;
+        clock_gettime (clock.value, &ts);
+        return (((double) ts.tv_sec) * 1000000) +
+               (((double) ts.tv_nsec) * 0.001);
+    }
+    //--------------------------------------------------------------------------
+    statistical_data latency_thread_thread_clock (unsigned msg_count)
+    {
+        thread_clock_id                clock;
+        statistical_accummulative_data sad;
+        for (mal::u64 i = 0; i < msg_count; ++i) {
+            double start = thread_clock_now_us (clock);
+            (void) static_cast<derived&> (*this).log_one (i);
+            sad.add_value (thread_clock_now_us (clock) - start);
+        }
+        sad.compute();
+        return sad.sd;
+    }
+#endif
+    //--------------------------------------------------------------------------
+    double wall_clock_now_us()
+    {
+        using namespace mal;
+        auto v = ch::duration_cast<ch::nanoseconds>(
+            ch::system_clock::now().time_since_epoch()
+                ).count();
+        return ((double) v) / 1000.;
+    }
+    //--------------------------------------------------------------------------
+    statistical_data latency_thread_wall_clock (unsigned msg_count)
+    {
+        thread_clock_id                clock;
+        statistical_accummulative_data sad;
+        for (mal::u64 i = 0; i < msg_count; ++i) {
+            double start = wall_clock_now_us();
+            (void) static_cast<derived&> (*this).log_one (i);
+            sad.add_value (wall_clock_now_us() - start);
+        }
+        sad.compute();
+        return sad.sd;
+    }
+    //--------------------------------------------------------------------------
+    mal::u64                      m_total_ns;
+    mal::at::atomic<unsigned>     m_alloc_faults;
+    std::vector<statistical_data> m_latency_results;
+    std::vector<timestamp_data>   m_throughput_results;
 };
 //------------------------------------------------------------------------------
-class mal_tester : public perftest<mal_tester>
+class mal_perf_test : public perf_test<mal_perf_test>
 {
 public:
     //--------------------------------------------------------------------------
@@ -222,7 +359,7 @@ public:
     }
     //--------------------------------------------------------------------------
 private:
-    friend class perftest<mal_tester>;
+    friend class perf_test<mal_perf_test>;
     //--------------------------------------------------------------------------
     void create()  { m_fe.construct(); }
     //--------------------------------------------------------------------------
@@ -247,20 +384,17 @@ private:
         return m_fe->init_backend (be_cfg) == frontend::init_ok;
     }
     //--------------------------------------------------------------------------
-    void thread (unsigned msg_count)
+    int log_one (unsigned i)
     {
-        unsigned allocfaults = 0;
-        for (mal::u64 i = 0; i < msg_count; ++i) {
-            bool res =
-                log_error_i (m_fe.get(), log_fileline TEST_LITERAL "{}", i);
-            if (!res) {
-                ++allocfaults;
-            }
-        }
-        add_alloc_faults(allocfaults);
+        return (int) !log_error_i(
+            m_fe.get(), log_fileline TEST_LITERAL "{}", i
+            );
     }
     //--------------------------------------------------------------------------
-    void wait_until_work_completion() { m_fe->on_termination(); }
+    void wait_until_work_completion()
+    {
+        m_fe->on_termination();
+    }
     //--------------------------------------------------------------------------
     const char* get_name() { return "mal log"; }
     //--------------------------------------------------------------------------
@@ -270,10 +404,10 @@ private:
     bool m_block_on_full_queue;
 };
 //------------------------------------------------------------------------------
-class google_tester: public perftest<google_tester>
+class google_perf_test: public perf_test<google_perf_test>
 {
 private:
-    friend class perftest<google_tester>;
+    friend class perf_test<google_perf_test>;
     //--------------------------------------------------------------------------
     void create()  {  }
     //--------------------------------------------------------------------------
@@ -288,7 +422,7 @@ private:
             FLAGS_logtostderr     = false;
             FLAGS_alsologtostderr = false;
             FLAGS_stderrthreshold = 3;
-            FLAGS_max_log_size    = file_size_bytes / (1024 * 1024);
+            FLAGS_max_log_size    = file_size_bytes ;
             google::SetLogDestination (google::INFO, OUT_FOLDER "/");
             google::SetLogDestination (google::WARNING, "");
             google::SetLogDestination (google::ERROR, "");
@@ -300,11 +434,10 @@ private:
         return true;
     }
     //--------------------------------------------------------------------------
-    void thread (unsigned msg_count)
+    int log_one (unsigned i)
     {
-        for (mal::u64 i = 0; i < msg_count; ++i) {
-            LOG (ERROR) << TEST_LITERAL << i;
-        }
+        LOG (ERROR) << log_fileline TEST_LITERAL << i;
+        return 0;
     }
     //--------------------------------------------------------------------------
     void wait_until_work_completion()
@@ -316,10 +449,10 @@ private:
     //--------------------------------------------------------------------------
 };
 //------------------------------------------------------------------------------
-class spd_log_async_tester: public perftest<spd_log_async_tester>
+class spd_log_async_perf_test: public perf_test<spd_log_async_perf_test>
 {
 private:
-    friend class perftest<spd_log_async_tester>;
+    friend class perf_test<spd_log_async_perf_test>;
     //--------------------------------------------------------------------------
     void create()
     {
@@ -340,24 +473,26 @@ private:
     //--------------------------------------------------------------------------
     bool configure() { return true; }
     //--------------------------------------------------------------------------
-    void thread (unsigned msg_count)
+    int log_one (unsigned i)
     {
-        for (mal::u64 i = 0; i < msg_count; ++i) {
-            m_logger->info (log_fileline TEST_LITERAL, i);
-        }
+        m_logger->info (log_fileline TEST_LITERAL, i);
+        return 0;
     }
     //--------------------------------------------------------------------------
-    void wait_until_work_completion() {} //no way to know
+    void wait_until_work_completion()
+    {
+        //is there a way to know when all logs have been written?
+    }
     //--------------------------------------------------------------------------
     const char* get_name() { return "spdlog"; }
     //--------------------------------------------------------------------------
     std::shared_ptr<spdlog::logger> m_logger;
 };
 //------------------------------------------------------------------------------
-class spd_log_sync_tester: public perftest<spd_log_sync_tester>
+class spd_log_sync_perf_test: public perf_test<spd_log_sync_perf_test>
 {
 private:
-    friend class perftest<spd_log_sync_tester>;
+    friend class perf_test<spd_log_sync_perf_test>;
     //--------------------------------------------------------------------------
     void create()
     {
@@ -378,11 +513,10 @@ private:
     //--------------------------------------------------------------------------
     bool configure() { return true; }
     //--------------------------------------------------------------------------
-    void thread (unsigned msg_count)
+    int log_one (unsigned i)
     {
-        for (unsigned i = 0; i < msg_count; ++i) {
-            m_logger->info (log_fileline TEST_LITERAL, i);
-        }
+        m_logger->info (log_fileline TEST_LITERAL, i);
+        return 0;
     }
     //--------------------------------------------------------------------------
     void wait_until_work_completion() {}
@@ -392,35 +526,57 @@ private:
     std::shared_ptr<spdlog::logger> m_logger;
 };
 //------------------------------------------------------------------------------
+struct mal_params {
+    unsigned queue_size;
+    unsigned entry_size;
+    bool     dynalloc;
+    bool     blocking;
+};
+//------------------------------------------------------------------------------
 void mal_tests (unsigned msgs)
 {
-    mal_tester mal_test;
-    std::puts ("pure heap (unbounded)");
-    std::puts ("---------------------------------------------------------");
-    for (unsigned i = 0; i < 5; ++i) {
-        mal_test.set_params (0, 0, true);
-        mal_test.run (msgs, 1 << i);
-    }
-    std::puts ("hybrid (unbounded)");
-    std::puts ("---------------------------------------------------------");
-    for (unsigned i = 0; i < 5; ++i) {
-        mal_test.set_params (big_queue_bytes / 16, queue_entry_size, true);
-        mal_test.run (msgs, 1 << i);
-    }
-    std::puts ("no heap (blocking on full queue)");
-    std::puts ("---------------------------------------------------------");
-    for (unsigned i = 0; i < 5; ++i) {
-        mal_test.set_params (big_queue_bytes, queue_entry_size, false, true);
-        mal_test.run (msgs, 1 << i);
-    }
-    std::puts ("no heap (not blocking on full queue: lots of alloc faults)");
-    std::puts ("---------------------------------------------------------");
-    for (unsigned i = 0; i < 5; ++i) {
-        mal_test.set_params (big_queue_bytes, queue_entry_size, false);
-        mal_test.run (msgs, 1 << i);
+    mal_perf_test mal_test;
+
+    const mal_params params[] = {
+        {0, 0, true, false},
+        {big_queue_bytes / 16, queue_entry_size, true, false},
+        {big_queue_bytes, queue_entry_size, false, true},
+        {big_queue_bytes, queue_entry_size, false, false},
+    };
+    const char* headers[] = {
+        "##pure heap (unbounded)",
+        "##pure hybrid (unbounded)",
+        "##no heap (blocking on full queue -> sync logger)",
+        "##no heap (not blocking on full queue: lots of alloc faults)",
+    };
+    static const unsigned modecount = sizeof params / sizeof params[0];
+
+    for (unsigned mode = 0; mode < modecount; ++mode) {
+        std::printf ("%s\n\n", headers[mode]);
+        mal_test.print_throughput_header();
+        for (unsigned i = 0; i < 5; ++i) {
+            mal_test.set_params(
+                params[mode].queue_size,
+                params[mode].entry_size,
+                params[mode].dynalloc,
+                params[mode].blocking
+                );
+            mal_test.run_throughput (msgs, 1 << i);
+        }
+        std::puts("");
+        mal_test.print_latency_header();
+        for (unsigned i = 0; i < 5; ++i) {
+            mal_test.set_params(
+                params[mode].queue_size,
+                params[mode].entry_size,
+                params[mode].dynalloc,
+                params[mode].blocking
+                );
+            mal_test.run_latency (msgs, 1 << i);
+        }
+        std::puts("");
     }
 }
-
 //------------------------------------------------------------------------------
 void long_pause()                                                               //time for the OS to finish some file io, otherwise some results were weird.
 {
@@ -430,33 +586,51 @@ void long_pause()                                                               
 //------------------------------------------------------------------------------
 void google_tests (unsigned msgs)
 {
-    google_tester google_test;
+    google_perf_test google_test;
 
+    std::puts("##glog\n");
+    google_test.print_throughput_header();
     for (unsigned i = 0; i < 5; ++i) {
-        google_test.run (msgs, 1 << i);
+        google_test.run_throughput (msgs, 1 << i);
+        long_pause();
+    }
+    std::puts("");
+    google_test.print_latency_header();
+    for (unsigned i = 0; i < 5; ++i) {
+        google_test.run_latency (msgs, 1 << i);
         long_pause();
     }
 }
 //------------------------------------------------------------------------------
 void spdlog_tests (unsigned msgs)
 {
-    std::puts ("spdlog async");
-    std::puts ("---------------------------------------------------------");
-    spd_log_async_tester spd_async_tester;                                      //this one has no way to flush, so I place it the last to avoid affecting the next library measurements
+    spd_log_async_perf_test spd_async_perf_test;                                //this one has no way to flush, so I place it the last to avoid affecting the next library measurements
+    spd_log_sync_perf_test  spd_sync_perf_test;
 
+    std::puts("##spdlog async\n");
+    spd_async_perf_test.print_throughput_header();
     for (unsigned i = 0; i < 5; ++i) {
-        spd_async_tester.run (msgs, 1 << i);
+        spd_async_perf_test.run_throughput (msgs, 1 << i);
         long_pause();
     }
-    std::puts ("spdlog sync");
-    std::puts ("---------------------------------------------------------");
-    spd_log_sync_tester spd_sync_tester;
-
+    std::puts("");
+    spd_async_perf_test.print_latency_header();
     for (unsigned i = 0; i < 5; ++i) {
-        spd_sync_tester.run (msgs, 1 << i);
+        spd_async_perf_test.run_latency (msgs, 1 << i);
         long_pause();
     }
-    //spdlog::stop();
+    std::puts("\n##spdlog sync\n");
+    spd_async_perf_test.print_throughput_header();
+    for (unsigned i = 0; i < 5; ++i) {
+        spd_async_perf_test.run_throughput (msgs, 1 << i);
+        long_pause();
+    }
+    std::puts("");
+    spd_async_perf_test.print_latency_header();
+    for (unsigned i = 0; i < 5; ++i) {
+        spd_async_perf_test.run_latency (msgs, 1 << i);
+        long_pause();
+    }
 }
 //------------------------------------------------------------------------------
 int main (int argc, const char* argv[])
