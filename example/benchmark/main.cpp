@@ -195,6 +195,7 @@ private:
         if (!ret) {
             return ret;
         }
+        auto allocfaults      = m_alloc_faults.load (mal::mo_relaxed);
         double min_start      = std::numeric_limits<double>::max();
         double max_end        = 0.;
         double all_threads_sec = 0.;
@@ -205,10 +206,11 @@ private:
             max_end   = std::max (max_end, end);
             all_threads_sec += (end - start);
         }
-        double enqueue_sec      = (max_end - min_start) / 1000000.;
+        double enqueue_sec = (max_end - min_start) / 1000000.;
         all_threads_sec /= 1000000.;
-        double throughput = (((double) msgs) / enqueue_sec) / 1000.;
-        double disk       = (((double) msgs) / total_sec) / 1000.;
+        double throughput =
+            (((double) msgs - allocfaults) / enqueue_sec) / 1000.;
+        double disk       = (((double) msgs - allocfaults) / total_sec) / 1000.;
         if (std::is_same<derived, spd_log_async_perf_test>::value) {
             total_sec  = 0.;
             disk       = 0.;
@@ -221,7 +223,7 @@ private:
             total_sec,
             disk,
             all_threads_sec,
-            m_alloc_faults.load (mal::mo_relaxed)
+            allocfaults
             );
         std::fflush (stdout);
         return true;
