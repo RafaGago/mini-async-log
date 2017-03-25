@@ -761,6 +761,7 @@ void run_tests(
                     thr,
                     msgs
                     );
+                fflush (stdout);
                 switch (logger) {
                 case log_mal_heap:
                     mal_test.set_params (0, 0, true, false);
