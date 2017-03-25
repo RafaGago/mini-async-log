@@ -57,7 +57,7 @@ either expressed or implied, of Diadrom AB.
     //saves a div and can't overflow.
 #define UNSIGNED_AVERAGE(x, y) (((x) & (y)) + (((x) ^ (y)) >> 1))
 
-#define SET_BIT_TO (variable, bit_idx, boolean)\
+#define SET_BIT_TO(variable, bit_idx, boolean)\
     ((variable) = ((variable) & (~(1 << (bit_idx)))) |\
                   (((boolean) & 1) << (bit_idx)))
 
