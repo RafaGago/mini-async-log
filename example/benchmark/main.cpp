@@ -855,6 +855,18 @@ void run_tests(
     }
 }
 //------------------------------------------------------------------------------
+void print_usage()
+{
+    std::puts(
+"usage: [argument]\n"
+"       full-test: Runs a long test involving many runs with all loggers.\n"
+"                  Them all run results are averaged.\n"
+"       mal:       Single run of \"mini-async-log\".\n"
+"       glog:      Single run of \"Google log\".\n"
+"       spdlog:    Single run of \"spdlog\".\n"
+    );
+}
+//------------------------------------------------------------------------------
 int main (int argc, const char* argv[])
 {
     const unsigned msgs = 2000000;
@@ -864,7 +876,8 @@ int main (int argc, const char* argv[])
         return 3;
     }
     if (argc < 2) {
-        std::printf ("no parameter specified (mal, spdlog, glog)\n");
+        std::printf ("no parameter specified\n");
+        print_usage();
         return 1;
     }
     std::string choice = argv[1];
@@ -894,8 +907,14 @@ int main (int argc, const char* argv[])
         loggers[log_spdlog_sync] = true;
         run_tests (1, msgs, loggers);
     }
+    else if (choice.compare ("help") == 0
+        || choice.compare ("--help") == 0
+        || choice.compare ("-h") == 0
+        ) {
+        print_usage();
+    }
     else {
-        std::printf ("invalid choice\n");
+        std::printf ("invalid argument\n");
         return 2;
     }
     return 0;
