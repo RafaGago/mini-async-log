@@ -41,6 +41,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <mal_log/util/atomic.hpp>
 #include <mal_log/util/chrono.hpp>
 #include <mal_log/util/thread.hpp>
+#include <mal_log/util/processor_pause.hpp>
 #include <mal_log/util/mpsc_hybrid_wait_cfg.hpp>
 
 namespace mal {
@@ -87,6 +88,7 @@ public:
     {
         if (m_spins < m_cfg.spin_max) {
             ++m_spins;
+            processor_pause();
             return false;
         }
         else if (m_yields < m_cfg.yield_max) {
@@ -104,7 +106,7 @@ public:
                 return state == unblocked;
             };
             m_state.store (blocked, mo_relaxed);
-            th::unique_lock<decltype (m_dummy_mutex)> lock (m_dummy_mutex);       
+            th::unique_lock<decltype (m_dummy_mutex)> lock (m_dummy_mutex);
             //The condition is never called on this library, as losing some milliseconds when writing to slow io (files, console) isn't going to make a difference, but for this type of usage a semaphore can be more suitable.
             bool is_unblocked = m_cond.wait_for(                                 //note that it's possible that the worker misses a notification and waits the whole timeout, this is by design and preferable to mutex locking the callers. if you can't tolerate this latency in the worker you can throw CPU at it by setting cfg never_block
                                     lock,

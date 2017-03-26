@@ -41,6 +41,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <cassert>
 #include <mal_log/util/atomic.hpp>
 #include <mal_log/util/thread.hpp>
+#include <mal_log/util/processor_pause.hpp>
 #include <mal_log/frontend.hpp>
 #include <mal_log/backend.hpp>
 #include <mal_log/async_to_sync.hpp>
@@ -82,10 +83,22 @@ public:
 
         if (!mem && m_block_on_full_queue && err == queue_prepared::queue_full){
             th::lock_guard<th::mutex> lockg (m_contention_mutex);
+            uword attempts = 0;
             do {
+                ++attempts;
                 commit_data = m_back.allocate_entry (required_bytes);
                 mem         = commit_data.get_mem();
                 err         = commit_data.get_error();
+                if (attempts > 256) {
+                    th::this_thread::yield();
+                }
+                else if (attempts > 16) {
+                    /*greedy with CPU.*/
+                    for (uword i = 0; i < 16; ++i) {
+                        processor_pause();
+                    }
+                }
+
             }
             while (!mem && err == queue_prepared::queue_full);
         }
