@@ -1053,7 +1053,7 @@ void print_usage()
 //------------------------------------------------------------------------------
 int main (int argc, const char* argv[])
 {
-    const unsigned msgs = 2000000;
+    const unsigned msgs = 2000;
 
     if (system (MKDIR_OUT_FOLDER) == -1) {
         std::puts ("unable to create " OUT_FOLDER);
@@ -1088,7 +1088,7 @@ int main (int argc, const char* argv[])
                 loggers,
                 is_mal_stress ? 3 : 0,
                 !is_mal_stress,
-                is_mal_stress
+                !is_mal_stress
                 );
         }
         while (is_mal_stress);
