@@ -1060,7 +1060,7 @@ void print_usage()
 //------------------------------------------------------------------------------
 int main (int argc, const char* argv[])
 {
-    const unsigned msgs = 2000000;
+    const unsigned msgs = 1000000;
 
     if (system (MKDIR_OUT_FOLDER) == -1) {
         std::puts ("unable to create " OUT_FOLDER);
@@ -1081,7 +1081,7 @@ int main (int argc, const char* argv[])
         for (auto it = loggers.begin(); it < loggers.end(); ++it) {
             *it = true;
         }
-        run_tests (20, msgs, loggers);
+        run_tests (50, msgs, loggers);
     }
     else if(is_mal_stress || choice.compare ("mal-perf") == 0) {
         loggers[log_mal_heap] = true;
