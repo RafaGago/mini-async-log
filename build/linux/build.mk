@@ -159,14 +159,14 @@ ARTIFACT_STATLIB_NAME_NOVER := $(ARTIFACT_NAME).a$(STATLIB_DEBUG_SUFFIX)
 
 ## Object files ----------------------------------------------------------------
 # C
-CC_SRCS     := $(shell find $(SRC_DIRS) -type f -name '*.c')
+CC_SRCS     += $(shell find $(SRC_DIRS) -type f -name '*.c')
 CC_OBJS     := $(patsubst $(TOP)/%.c, $(OBJ)/%.c.o, $(CC_SRCS))
 CC_HDR_DEPS := $(CC_OBJS:%.o=%.d)
 
 # C++
-CXX_EXT      := cpp cxx cc C c++ CPP cp
+CXX_EXT      += cpp cxx cc C c++ CPP cp
 GREP_ARGS    := $(foreach EXT, $(CXX_EXT), -e .${EXT}$$)
-CXX_SRCS     := $(shell find $(SRC_DIRS) -type f | grep  ${GREP_ARGS})
+CXX_SRCS     += $(shell find $(SRC_DIRS) -type f | grep  ${GREP_ARGS})
 CXX_OBJS     := $(patsubst $(TOP)/%, $(OBJ)/%.o, $(CXX_SRCS))
 CXX_HDR_DEPS := $(CXX_OBJS:%.o=%.d)
 
