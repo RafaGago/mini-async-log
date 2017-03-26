@@ -273,7 +273,7 @@ public:
     void print_values()
     {
         result_row::print_values();
-        std::printf("%.3f|%.3f|%.3f|%.3f|\n", mean, stddev, min, max);
+        std::printf ("%.3f|%.3f|%.3f|%.3f|\n", mean, stddev, min, max);
     }
 };
 //------------------------------------------------------------------------------
@@ -421,8 +421,10 @@ private:
         }
         r.enqueue_sec  = (max_end - min_start) / 1000000.;
         r.threads_sec /= 1000000.;
-        r.disk_rate =
-            (((double) msgs) - r.alloc_faults) / (r.total_sec * 1000.);
+        if (r.total_sec != 0.) {
+            r.disk_rate =
+                (((double) msgs) - r.alloc_faults) / (r.total_sec * 1000.);
+        }
         r.msg_rate =
             (((double) msgs) - r.alloc_faults) / (r.enqueue_sec * 1000.);
         return true;
@@ -743,6 +745,11 @@ private:
 #undef CHECK
 #undef LOG
 #undef LOG_IF
+#ifdef DEBUG
+    // BAD(TM), if you use yourself DEBUG (as opposite of NDEBUG) g3log clashes
+    // (gracefully at least)
+    #undef DEBUG
+#endif
 
 #include <g3log/g3log.hpp>
 #include <g3log/logworker.hpp>
@@ -1053,7 +1060,7 @@ void print_usage()
 //------------------------------------------------------------------------------
 int main (int argc, const char* argv[])
 {
-    const unsigned msgs = 2000;
+    const unsigned msgs = 2000000;
 
     if (system (MKDIR_OUT_FOLDER) == -1) {
         std::puts ("unable to create " OUT_FOLDER);
