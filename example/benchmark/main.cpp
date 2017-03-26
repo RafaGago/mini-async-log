@@ -1005,7 +1005,7 @@ int main (int argc, const char* argv[])
         loggers[log_mal_hybrid] = true;
         loggers[log_mal_sync] = true;
         loggers[log_mal_bounded] = true;
-        while (is_mal_stress) {
+        do {
             run_tests(
                 1,
                 msgs / (is_mal_stress ? 5 : 1),
@@ -1014,6 +1014,7 @@ int main (int argc, const char* argv[])
                 !is_mal_stress
                 );
         }
+        while (is_mal_stress);
     }
     else if (choice.compare ("nanolog-perf") == 0) {
         loggers[log_nanolog] = true;
