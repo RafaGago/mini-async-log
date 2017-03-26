@@ -718,22 +718,32 @@ void run_all_tests(
     latency_data&    wall,
     latency_data&    cpu,
     unsigned         threads,
-    unsigned         msgs
+    unsigned         msgs,
+    bool             delete_logs
     )
 {
     tester.run_throughput (rate, msgs, threads);
-    rm_log_files();
+    if (delete_logs) {
+        rm_log_files();
+    }
     tester.run_latency (wall, msgs, threads, true);
-    rm_log_files();
+    if (delete_logs) {
+        rm_log_files();
+    }
     tester.run_latency (cpu, msgs, threads, false);
-    rm_log_files();
+    if (delete_logs) {
+        rm_log_files();
+    }
 }
 //------------------------------------------------------------------------------
 void run_tests(
-    unsigned iterations, unsigned msgs, std::vector<bool> active_loggers
+    unsigned          iterations,
+    unsigned          msgs,
+    std::vector<bool> active_loggers,
+    unsigned          threads_log2_start = 0,
+    bool              delete_logs = true
     )
 {
-    /*TODO: single thread table*/
     const unsigned threads_log2_max = 5;
 
     std::vector<throughput_data> rate[threads_log2_max][log_count];
@@ -752,7 +762,7 @@ void run_tests(
     mal_perf_test     mal_test;
 
     for (unsigned it = 0; it < iterations; ++it) {
-        for (unsigned t = 0; t <  threads_log2_max; ++t) {
+        for (unsigned t = threads_log2_start; t <  threads_log2_max; ++t) {
             unsigned thr = 1 << t;
             for (unsigned logger = 0; logger < log_count; ++logger) {
                 if (!active_loggers[logger]) {
@@ -773,40 +783,62 @@ void run_tests(
                 switch (logger) {
                 case log_mal_heap:
                     mal_test.set_params (0, 0, true, false);
-                    run_all_tests (mal_test, c_rate, c_wall, c_cpu, thr, msgs);
+                    run_all_tests(
+                        mal_test, c_rate, c_wall, c_cpu, thr, msgs, delete_logs
+                        );
                     break;
                 case log_mal_hybrid:
                     mal_test.set_params(
                         big_queue_bytes / 16, queue_entry_size, true, false
                         );
-                    run_all_tests (mal_test, c_rate, c_wall, c_cpu, thr, msgs);
+                    run_all_tests(
+                        mal_test, c_rate, c_wall, c_cpu, thr, msgs, delete_logs
+                        );
                     break;
                 case log_spdlog_async:
                     spdlog_test.set_params (true);
                     run_all_tests(
-                        spdlog_test, c_rate, c_wall, c_cpu, thr, msgs
+                        spdlog_test,
+                        c_rate,
+                        c_wall,
+                        c_cpu,
+                        thr,
+                        msgs,
+                        delete_logs
                         );
                     break;
                 case log_glog:
-                    run_all_tests (glog_test, c_rate, c_wall, c_cpu, thr, msgs);
+                    run_all_tests(
+                        glog_test, c_rate, c_wall, c_cpu, thr, msgs, delete_logs
+                        );
                     break;
                 case log_mal_sync:
                     mal_test.set_params(
                         big_queue_bytes, queue_entry_size, false, true
                         );
-                    run_all_tests (mal_test, c_rate, c_wall, c_cpu, thr, msgs);
+                    run_all_tests(
+                        mal_test, c_rate, c_wall, c_cpu, thr, msgs, delete_logs
+                        );
                     break;
                 case log_spdlog_sync:
                     spdlog_test.set_params (false);
                     run_all_tests(
-                        spdlog_test, c_rate, c_wall, c_cpu, thr, msgs
+                        spdlog_test,
+                        c_rate,
+                        c_wall,
+                        c_cpu,
+                        thr,
+                        msgs,
+                        delete_logs
                         );
                     break;
                 case log_mal_bounded:
                     mal_test.set_params(
                         big_queue_bytes, queue_entry_size, false, false
                         );
-                    run_all_tests (mal_test, c_rate, c_wall, c_cpu, thr, msgs);
+                    run_all_tests(
+                        mal_test, c_rate, c_wall, c_cpu, thr, msgs, delete_logs
+                        );
                     break;
                 default:
                     break;
@@ -822,7 +854,7 @@ void run_tests(
 
     puts ("Finished. Results:\n");
 
-    for (unsigned t = 0; t < threads_log2_max; ++t) {
+    for (unsigned t = threads_log2_start; t < threads_log2_max; ++t) {
         unsigned threads = 1 << t;
         printf ("###threads: %u\n\n", threads);
         printf ("#### Throughput (threads=%u)\n\n", threads);
@@ -867,11 +899,13 @@ void print_usage()
 {
     std::puts(
 "usage: [argument]\n"
-"       full-test: Runs a long test involving many runs with all loggers.\n"
-"                  Them all run results are averaged.\n"
-"       mal:       Single run of \"mini-async-log\".\n"
-"       glog:      Single run of \"Google log\".\n"
-"       spdlog:    Single run of \"spdlog\".\n"
+"       full-perf:   Runs a long test involving many runs with all loggers,\n"
+"                    then all run results are averaged.\n"
+"       mal-perf:    Single run of \"mini-async-log\".\n"
+"       glog-perf:   Single run of \"Google log\".\n"
+"       spdlog-perf: Single run of \"spdlog\".\n"
+"       mal-stress:  Running \"mini-async-log\" forever. Useful to do long\n"
+"                    tests and catch bugs\n"
     );
 }
 //------------------------------------------------------------------------------
@@ -893,24 +927,33 @@ int main (int argc, const char* argv[])
     std::vector<bool> loggers;
     loggers.insert (loggers.end(), log_count, false);
 
-    if (choice.compare ("full-test") == 0) {
+    bool is_mal_stress = choice.compare ("mal-stress") == 0;
+    if (choice.compare ("full-perf") == 0) {
         for (auto it = loggers.begin(); it < loggers.end(); ++it) {
             *it = true;
         }
         run_tests (20, msgs, loggers);
     }
-    else if (choice.compare ("mal") == 0) {
+    else if(is_mal_stress || choice.compare ("mal-perf") == 0) {
         loggers[log_mal_heap] = true;
         loggers[log_mal_hybrid] = true;
         loggers[log_mal_sync] = true;
         loggers[log_mal_bounded] = true;
-        run_tests (1, msgs, loggers);
+        while (is_mal_stress) {
+            run_tests(
+                1,
+                msgs / (is_mal_stress ? 5 : 1),
+                loggers,
+                is_mal_stress ? 3 : 0,
+                !is_mal_stress
+                );
+        }
     }
-    else if (choice.compare ("glog") == 0) {
+    else if (choice.compare ("glog-perf") == 0) {
         loggers[log_glog] = true;
         run_tests (1, msgs, loggers);
     }
-    else if (choice.compare ("spdlog") == 0) {
+    else if (choice.compare ("spdlog-perf") == 0) {
         loggers[log_spdlog_async] = true;
         loggers[log_spdlog_sync] = true;
         run_tests (1, msgs, loggers);
