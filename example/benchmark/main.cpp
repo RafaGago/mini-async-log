@@ -734,8 +734,6 @@ private:
         return false; /*No known way to flush the queue. No disk speed stats.*/
     }
     //--------------------------------------------------------------------------
-    bool                            m_async;
-    std::shared_ptr<spdlog::logger> m_logger;
 };
 //------------------------------------------------------------------------------
 enum {
@@ -1057,5 +1055,3 @@ int main (int argc, const char* argv[])
     return 0;
 }
 //------------------------------------------------------------------------------
-
-
