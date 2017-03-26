@@ -18,9 +18,12 @@ GLOG_STATLIB_FILE := libglog.a
 GLOG_INCLUDE      := $(GLOG_INSTALL)/include/
 GLOG_LIB_DIR      := $(GLOG_INSTALL)/lib/
 
+NANOLOG_DIR       := $(GIT_SUBMODULES_DIR)/nanolog
+CXX_SRCS          += $(NANOLOG_DIR)/NanoLog.cpp
+
 # Updated vars
-INCLUDE_DIRS := $(TOP)/include $(SPDLOG_INCLUDE) $(GLOG_INCLUDE)
-EXTRA_TARGET_DEPS := $(GLOG_LIB_DIR)/$(GLOG_STATLIB_FILE)
+INCLUDE_DIRS := $(TOP)/include $(SPDLOG_INCLUDE) $(GLOG_INCLUDE) $(NANOLOG_DIR)
+EXTRA_TARGET_DEPS += $(GLOG_LIB_DIR)/$(GLOG_STATLIB_FILE)
 EXTRA_CLEAN_DIRS  := $(GLOG_INSTALL)
 
 # Verbose fix
@@ -44,5 +47,7 @@ newdefaultrule: all
 $(GLOG_LIB_DIR)/$(GLOG_STATLIB_FILE):
 	@echo "CMake Build glog"
 	$(CMDPRINT)$(THIS_FILE_DIR)/build_glog.sh $(SILENT_REDIRECTION)
+
+$(TOP)/example/benchmark/main.cpp.o : $(GLOG_LIB_DIR)/$(GLOG_STATLIB_FILE)
 
 include build.mk

@@ -35,6 +35,7 @@
 
 #include <glog/logging.h>
 #include <spdlog/spdlog.h>
+#include <NanoLog.hpp>
 
 #ifdef _WIN32
     #define DIR_SEP "\\"
@@ -49,7 +50,7 @@
 #endif
 #define TEST_LITERAL "message saying that something happened and an integer: "
 static const unsigned file_size_bytes   = 50 * 1024 * 1024;
-static const unsigned big_queue_bytes   = 1 * 1024 * 1024; /*1MB*/
+static const unsigned big_queue_bytes   = 8 * 1024 * 1024; /*8MB*/
 static const unsigned queue_entry_size  = 32;
 static const unsigned big_queue_entries = big_queue_bytes / queue_entry_size;
 
@@ -167,7 +168,7 @@ public:
     {
         result_row::print_header();
         std::puts(
-            "enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|threads(s)|faults|"
+            "enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|"
             );
         result_row::print_separator();
         std::puts (":-:|:-:|:-:|:-:|:-:|:-:|");
@@ -589,26 +590,30 @@ private:
     //--------------------------------------------------------------------------
     void create()  {  }
     //--------------------------------------------------------------------------
-    void destroy() {  }
+    void destroy()
+    {
+        /*other loggers have to cope with this thread being active and having
+          background activity*/
+    }
     //--------------------------------------------------------------------------
     bool configure()
     {
         static bool configured = false;
-
-        if (!configured) {
-            FLAGS_log_dir         = OUT_FOLDER "/";
-            FLAGS_logtostderr     = false;
-            FLAGS_alsologtostderr = false;
-            FLAGS_stderrthreshold = 3;
-            FLAGS_max_log_size    = file_size_bytes ;
-            google::SetLogDestination (google::INFO, OUT_FOLDER "/");
-            google::SetLogDestination (google::WARNING, "");
-            google::SetLogDestination (google::ERROR, "");
-            google::SetLogDestination (google::FATAL, "");
-            google::SetLogFilenameExtension ("");
-            google::InitGoogleLogging ("");
-            configured = true;
+        if (configured) {
+            return true;
         }
+        FLAGS_log_dir         = OUT_FOLDER "/";
+        FLAGS_logtostderr     = false;
+        FLAGS_alsologtostderr = false;
+        FLAGS_stderrthreshold = 3;
+        FLAGS_max_log_size    = file_size_bytes ;
+        google::SetLogDestination (google::INFO, OUT_FOLDER "/");
+        google::SetLogDestination (google::WARNING, "");
+        google::SetLogDestination (google::ERROR, "");
+        google::SetLogDestination (google::FATAL, "");
+        google::SetLogFilenameExtension ("");
+        google::InitGoogleLogging ("");
+        configured = true;
         return true;
     }
     //--------------------------------------------------------------------------
@@ -685,10 +690,58 @@ private:
     std::shared_ptr<spdlog::logger> m_logger;
 };
 //------------------------------------------------------------------------------
+class nanolog_perf_test: public perf_test<nanolog_perf_test>
+{
+public:
+private:
+    friend class perf_test<nanolog_perf_test>;
+    //--------------------------------------------------------------------------
+    bool configure()
+    {
+        static bool configured = false;
+        if (configured) {
+            return true;
+        }
+        nanolog::initialize(
+            nanolog::GuaranteedLogger(),
+            OUT_FOLDER DIR_SEP,
+            "nanolog",
+            file_size_bytes / (1024 * 1024)
+            );
+        configured = true;
+        return true;
+    }
+    //--------------------------------------------------------------------------
+    void create() {}
+    //--------------------------------------------------------------------------
+    void destroy()
+    {
+        /*other loggers have to cope with this thread being active and having
+          background activity. Giving 2 sec for the log entries to be written*/
+        using namespace mal;
+        th::this_thread::sleep_for (ch::seconds (2));
+    }
+    //--------------------------------------------------------------------------
+    int log_one (unsigned i)
+    {
+        LOG_INFO << log_fileline TEST_LITERAL << i;
+        return 0;
+    }
+    //--------------------------------------------------------------------------
+    bool wait_until_work_completion()
+    {
+        return false; /*No known way to flush the queue. No disk speed stats.*/
+    }
+    //--------------------------------------------------------------------------
+    bool                            m_async;
+    std::shared_ptr<spdlog::logger> m_logger;
+};
+//------------------------------------------------------------------------------
 enum {
     log_mal_heap,
     log_mal_hybrid,
     log_spdlog_async,
+    log_nanolog,
     log_glog,
     log_mal_sync,
     log_spdlog_sync,
@@ -700,6 +753,7 @@ static char const* logger_names[] {
     "mal heap",
     "mal hybrid",
     "spdlog async",
+    "nanolog",
     "glog",
     "mal sync",
     "spdlog sync",
@@ -760,6 +814,7 @@ void run_tests(
     spd_log_perf_test spdlog_test;
     google_perf_test  glog_test;
     mal_perf_test     mal_test;
+    nanolog_perf_test nanolog_test;
 
     for (unsigned it = 0; it < iterations; ++it) {
         for (unsigned t = threads_log2_start; t <  threads_log2_max; ++t) {
@@ -807,6 +862,16 @@ void run_tests(
                         delete_logs
                         );
                     break;
+                case log_nanolog:
+                    run_all_tests(
+                        nanolog_test,
+                        c_rate,
+                        c_wall,
+                        c_cpu,
+                        thr,
+                        msgs,
+                        delete_logs
+                        );
                 case log_glog:
                     run_all_tests(
                         glog_test, c_rate, c_wall, c_cpu, thr, msgs, delete_logs
@@ -899,13 +964,14 @@ void print_usage()
 {
     std::puts(
 "usage: [argument]\n"
-"       full-perf:   Runs a long test involving many runs with all loggers,\n"
-"                    then all run results are averaged.\n"
-"       mal-perf:    Single run of \"mini-async-log\".\n"
-"       glog-perf:   Single run of \"Google log\".\n"
-"       spdlog-perf: Single run of \"spdlog\".\n"
-"       mal-stress:  Running \"mini-async-log\" forever. Useful to do long\n"
-"                    tests and catch bugs\n"
+"       full-perf:    Runs a long test involving many runs with all loggers,\n"
+"                     then all run results are averaged.\n"
+"       mal-perf:     Single run of \"mini-async-log\".\n"
+"       glog-perf:    Single run of \"Google log\".\n"
+"       nanolog-perf: Single run of \"nanolog\".\n"
+"       spdlog-perf:  Single run of \"spdlog\".\n"
+"       mal-stress:   Running \"mini-async-log\" forever. Useful to do long\n"
+"                     tests and to catch hypotetical bugs\n"
     );
 }
 //------------------------------------------------------------------------------
@@ -949,6 +1015,10 @@ int main (int argc, const char* argv[])
                 );
         }
     }
+    else if (choice.compare ("nanolog-perf") == 0) {
+        loggers[log_nanolog] = true;
+        run_tests (1, msgs, loggers);
+    }
     else if (choice.compare ("glog-perf") == 0) {
         loggers[log_glog] = true;
         run_tests (1, msgs, loggers);
@@ -966,6 +1036,7 @@ int main (int argc, const char* argv[])
     }
     else {
         std::printf ("invalid argument\n");
+        print_usage();
         return 2;
     }
     return 0;

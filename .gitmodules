@@ -6,3 +6,7 @@
 	path = example/benchmark-submodules/glog
 	url = https://github.com/google/glog.git
 	branch = master
+[submodule "example/benchmark-submodules/nanolog"]
+	path = example/benchmark-submodules/nanolog
+	url = https://github.com/Iyengar111/NanoLog.git
+	branch = master
