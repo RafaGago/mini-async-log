@@ -398,6 +398,7 @@ private:
         throughput_data& r, unsigned msgs, unsigned thread_count
         )
     {
+        r.zero();
         bool ret = execute_test(
             m_throughput_results,
             &perf_test<derived>::throughput_thread,
@@ -408,7 +409,6 @@ private:
         if (!ret) {
             return ret;
         }
-        r.zero();
         r.alloc_faults   = (double) m_alloc_faults.load (mal::mo_relaxed);
         double min_start = std::numeric_limits<double>::max();
         double max_end   = 0.;
