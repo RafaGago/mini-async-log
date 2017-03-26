@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef MAL_LOG_LOG_FILES_HPP_
-#define MAL_LOG_LOG_FILES_HPP_
+#ifndef MAL_LOG_LOG_FILE_REGISTER_HPP_
+#define MAL_LOG_LOG_FILE_REGISTER_HPP_
 
 #include <cstring>
 
@@ -58,7 +58,7 @@ either expressed or implied, of Rafael Gago Castano.
 namespace mal {
 
 //------------------------------------------------------------------------------
-class log_files
+class log_file_register
 {
 public:
     //--------------------------------------------------------------------------
@@ -81,10 +81,10 @@ public:
                 max_name = (previous[i].size() > max_name) ?
                                 previous[i].size() : max_name;
             }
-            ++max_name;                                                             //trailing null
+            ++max_name;                                                         //trailing null
             std::deque<std::string> prev;
 
-            m_buffer.resize (max_name, 0);
+            m_current_fname.resize (max_name, 0);
 
             prev = previous;
             while (file_count && ((prev.size() > file_count))) {
@@ -96,13 +96,13 @@ public:
             m_suffix = suffix;
 
             if (file_count) {
-                m_name_strings.free();
-                if (!m_name_strings.init (max_name, file_count)) {
+                m_rotation_list.free();
+                if (!m_rotation_list.init (max_name, file_count)) {
                     return false;
                 }
                 for (auto it = prev.begin(); it != prev.end(); ++it) {
-                    m_name_strings.push_tail();
-                    std::memcpy (m_name_strings.tail(), &(*it)[0], it->size());
+                    m_rotation_list.push_tail();
+                    std::memcpy (m_rotation_list.tail(), &(*it)[0], it->size());
                 }
             }
             return true;
@@ -118,15 +118,19 @@ public:
     {
         try {
             append_separator_if (folder);
-            if (m_buffer.size() < (folder.size() + fixed_chars_in_name + 1)) {
-                m_buffer.resize (folder.size() + fixed_chars_in_name + 1, -1);
+            if (m_current_fname.size() < (folder.size()
+                + fixed_chars_in_name + 1)
+                ) {
+                m_current_fname.resize(
+                    folder.size() + fixed_chars_in_name + 1, -1
+                    );
             }
             for (uword i = 0; ; ++i) {
                 std::string empty;
                 new_file_name_c_str_in_buffer (folder, empty, empty, i ,i + 1);
-                const char* fn = filename_in_buffer();
+                const char* fn = current_filename();
                 std::ofstream file (fn);
-                file.write ((const char*) &fn, m_buffer.size());
+                file.write ((const char*) &fn, m_current_fname.size());
                 if (file.good()) {
                     file.close();
                     erase_file (fn);
@@ -154,34 +158,36 @@ public:
         return true;
     }
     //--------------------------------------------------------------------------
-    const char* new_filename_in_buffer (u64 cpu, u64 calendar_us)
+    const char* change_current_filename (u64 cpu, u64 calendar_us)
     {
         new_file_name_c_str_in_buffer(
                 m_folder, m_prefix, m_suffix, cpu, calendar_us
                 );
-        return filename_in_buffer();
+        return current_filename();
     }
     //--------------------------------------------------------------------------
-    const char* filename_in_buffer()
+    const char* current_filename()
     {
-        return &m_buffer[0];
+        return &m_current_fname[0];
     }
     //--------------------------------------------------------------------------
-    void push_filename_in_buffer()
+    void push_current_filename_to_rotation_list()
     {
-        assert (!m_name_strings.is_full());
-        m_name_strings.push_tail();
-        std::memcpy (m_name_strings.tail(), &m_buffer[0], m_buffer.size());
+        assert (!m_rotation_list.is_full());
+        m_rotation_list.push_tail();
+        std::memcpy(
+            m_rotation_list.tail(), &m_current_fname[0], m_current_fname.size()
+            );
     }
     //--------------------------------------------------------------------------
-    bool rotates() const { return m_name_strings.is_initialized(); }
+    bool rotates() const { return m_rotation_list.is_initialized(); }
     //--------------------------------------------------------------------------
-    void keep_newer_files (uword keep_count)
+    void rotation_list_keep_newer (uword keep_count)
     {
         assert (rotates());
-        while (m_name_strings.size() > keep_count) {
-            erase_file ((const char*) m_name_strings.head());
-            m_name_strings.pop_head();
+        while (m_rotation_list.size() > keep_count) {
+            erase_file ((const char*) m_rotation_list.head());
+            m_rotation_list.pop_head();
         }
     }
     //--------------------------------------------------------------------------
@@ -212,7 +218,7 @@ private:
             u64                calendar_us
             )
     {
-        assert (m_buffer.size() >=
+        assert (m_current_fname.size() >=
                 (folder.size() +
                  prefix.size() +
                  suffix.size() +
@@ -220,38 +226,35 @@ private:
                  1
                  )
                 );
-        char* str = &m_buffer[0];
+        char* str = &m_current_fname[0];
         auto sz   = folder.size();
         std::memcpy (str, &folder[0], sz);
-        str      += sz;
+        str += sz;
 
-        sz        = prefix.size();
+        sz = prefix.size();
         std::memcpy (str, &prefix[0], sz);
-        str      += sz;
+        str += sz;
 
-        sz        = cpu_clock_chars_in_name + 1;
+        sz  = cpu_clock_chars_in_name + 1;
 #if defined (MAL_32)
         const char* fmt = "[%016llx][%016llx][";
 #elif defined (MAL_64)
-        const char* fmt = "[c%016lx_b][%016lx][";
+        const char* fmt = "[%016lx][%016lx][";
 #else
     #error "fix util/system.hpp for your platform (if possible)"
 #endif
         mem_printf (str, sz + 1, fmt, cpu, m_cpu_time_base);
-        str      += sz;
-
+        str += sz;
         mal_side_effect_assert(
             calendar_str::write (str, calendar_str::c_str_size, calendar_us) > 0
             );
-        str      += calendar_str::str_size;
-
-        *str++    = ']';
-
-        sz        = suffix.size();
+        str += calendar_str::str_size;
+        *str = ']';
+        ++str;
+        sz = suffix.size();
         std::memcpy (str, &suffix[0], sz);
-        str      += sz;
-
-        *str      = 0;
+        str += sz;
+        *str = 0;
     }
     //--------------------------------------------------------------------------
     static const uword cpu_clock_chars_in_name = 1 + 16 + 2 + 16 + 1;
@@ -265,12 +268,12 @@ private:
 
     //--------------------------------------------------------------------------
     std::string         m_folder, m_prefix, m_suffix;
-    std::vector<char>   m_buffer;
-    raw_circular_buffer m_name_strings;
+    std::vector<char>   m_current_fname;
+    raw_circular_buffer m_rotation_list;
     u64                 m_cpu_time_base;
     //--------------------------------------------------------------------------
 };
 //------------------------------------------------------------------------------
 } //namespaces
 
-#endif /* MAL_LOG_LOG_FILES_HPP_ */
+#endif /* MAL_LOG_LOG_FILE_REGISTER_HPP_ */

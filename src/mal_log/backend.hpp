@@ -39,6 +39,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <cstring>
 #include <cassert>
+#include <cstdio>
 #include <functional>
 #include <new>
 #include <ostream>
@@ -55,7 +56,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <mal_log/log_writer.hpp>
 #include <mal_log/queue.hpp>
 #include <mal_log/backend_cfg.hpp>
-#include <mal_log/log_files.hpp>
+#include <mal_log/log_file_register.hpp>
 #include <mal_log/timestamp.hpp>
 
 namespace mal {
@@ -70,22 +71,24 @@ public:
     //--------------------------------------------------------------------------
     backend_impl()
     {
-        m_cfg.alloc.use_heap_if_required       = true;
-        m_cfg.alloc.fixed_entry_size           = 64;
-        m_cfg.alloc.fixed_block_size           = 64 * 1024;
+        m_cfg.alloc.use_heap_if_required = true;
+        m_cfg.alloc.fixed_entry_size     = 64;
+        m_cfg.alloc.fixed_block_size     = 64 * 1024;
 
-        m_cfg.display.show_severity            = m_writer.prints_severity;
-        m_cfg.display.show_timestamp           = m_writer.prints_timestamp;
+        m_cfg.display.show_severity  = m_writer.prints_severity;
+        m_cfg.display.show_timestamp = m_writer.prints_timestamp;
 
         m_cfg.file.aprox_size                  = 1024;
         m_cfg.file.name_suffix                 = ".log";
         m_cfg.file.rotation.file_count         = 0;
         m_cfg.file.rotation.delayed_file_count = 0;
+        m_cfg.file.erase_and_retry_on_fatal_errors = false;
 
-        m_cfg.blocking                         = m_wait.get_cfg();
+        m_cfg.blocking = m_wait.get_cfg();
 
-        m_status                               = constructed;
-        m_alloc_fault                          = 0;
+        m_status             = constructed;
+        m_alloc_fault        = 0;
+        m_on_error_avoidance = false;
     }
     //--------------------------------------------------------------------------
     ~backend_impl()
@@ -156,7 +159,7 @@ public:
             assert (false && "queue initialization failed");
             return false;
         }
-        if (!m_files.init(
+        if (!m_files_register.init(
                 c.file.rotation.file_count + c.file.rotation.delayed_file_count,
                 c.file.out_folder,
                 c.file.name_prefix,
@@ -172,7 +175,7 @@ public:
 
         m_writer.set_synchronizer (sync);
         m_writer.set_timestamp_base (timestamp_base);
-        m_files.set_timestamp_base (timestamp_base);
+        m_files_register.set_timestamp_base (timestamp_base);
 
         m_status.store (initialized, mo_release);                               // I guess that all Kernels do this for me when launching a thread, just being on the safe side in case is not true
         m_sev_evt    = su;
@@ -248,7 +251,7 @@ private:
             assert (false && "log folder can't be empty");
             return false;
         }
-        if (!m_files.can_write_in_folder (c.file.out_folder)) {
+        if (!m_files_register.can_write_in_folder (c.file.out_folder)) {
             return false;
         }
         return true;
@@ -264,15 +267,14 @@ private:
         uword alloc_fault = m_alloc_fault.load (mo_relaxed);
         auto  next_flush  = ch::steady_clock::now() + ch::milliseconds (1000);
         auto  sev_check   = ch::steady_clock::now() + ch::milliseconds (1000);
-        new_file_name_to_buffer();
+        change_current_filename();
         severity_check();
 
         while (true) {
             auto res = m_fifo.sc_pop_prepare();
             if (res.get_mem()) {
-                while (!non_idle_newfile_if()) {
-                    th::this_thread::sleep_for (ch::milliseconds (1));
-                    //how to and when to notify this???
+                if (file_error_avoidance()) { /*will print errors on stdout-stderr*/
+                    non_idle_slice_and_rotate_if();
                 }
                 m_wait.reset();
                 m_writer.decode_and_write (m_out, res.get_mem());
@@ -306,14 +308,14 @@ private:
         m_status.store (thread_stopped, mo_relaxed);
     }
     //--------------------------------------------------------------------------
-    const char* new_file_name_to_buffer()
+    const char* change_current_filename()
     {
         using namespace ch;
         u64 cpu         = get_timestamp();
         u64 calendar_us = duration_cast<microseconds>(
                         system_clock::now().time_since_epoch()
                         ).count();
-        return m_files.new_filename_in_buffer (cpu, calendar_us);
+        return m_files_register.change_current_filename (cpu, calendar_us);
     }
     //--------------------------------------------------------------------------
     void write_alloc_fault (uword count)
@@ -336,56 +338,106 @@ private:
     //--------------------------------------------------------------------------
     bool has_to_slice_now()
     {
-        return (m_out.file_bytes_written() >= m_cfg.file.aprox_size);
+        return slices_files()
+            && (m_out.file_bytes_written() >= m_cfg.file.aprox_size);
     }
     //--------------------------------------------------------------------------
     bool rotates() const
     {
-        return (slices_files() && m_files.rotates());
-    }
-    //--------------------------------------------------------------------------
-    bool slice_file()
-    {
-        assert (slices_files());
-        m_out.file_close();
-        return m_out.file_open (new_file_name_to_buffer());
+        return (slices_files() && m_files_register.rotates());
     }
     //--------------------------------------------------------------------------
     bool reopen_file()
     {
-        assert (!slices_files());
-        m_out.file_close();
-        return m_out.file_open (m_files.filename_in_buffer());
+        if (m_out.file_is_open()) {
+            m_out.file_close();
+        }
+        return m_out.file_open (m_files_register.current_filename());
     }
+#define FILE_ERROR_AVOIDANCE_FMT_STR \
+    "[%020llu] [logger_err] fatal filesystem error. entering error avoidance"
+#define FILE_ERROR_AVOIDANCE_STR_MAX (sizeof FILE_ERROR_AVOIDANCE_FMT_STR + 20)
     //--------------------------------------------------------------------------
-    bool non_idle_newfile_if()
+    bool file_error_avoidance()
     {
-        bool error = !m_out.file_is_open() || !m_out.file_no_error();
-        if (slices_files()) {
-            if (has_to_slice_now() || error) {
-                auto success = slice_file();
-                if (success) {
-                    if (rotates()) {
-                        m_files.keep_newer_files(
-                            m_cfg.file.rotation.file_count +
-                            m_cfg.file.rotation.delayed_file_count - 1
-                            );
-                        m_files.push_filename_in_buffer();
-                    }
-                }
-                return success;
+        bool success = m_out.file_is_open() && m_out.file_no_error();
+        if (success) {
+            m_on_error_avoidance = false;
+            return true;
+        }
+        uword count = m_on_error_avoidance ? 16 : 1;
+        for (uword i = 0; i < count; ++i) {
+            success = reopen_file();
+            if (success) {
+                m_on_error_avoidance = false;
+                return true;
+            }
+            if (m_on_error_avoidance) {
+                th::this_thread::sleep_for (ch::milliseconds (100));
             }
         }
-        else if (error) {
-            return reopen_file();
+        if (m_on_error_avoidance == false) {
+            char str[FILE_ERROR_AVOIDANCE_STR_MAX];
+            mem_printf(
+                str, sizeof str, FILE_ERROR_AVOIDANCE_FMT_STR, get_timestamp()
+                );
+            m_out.raw_write (sev::error, str);
+            m_on_error_avoidance = true;
         }
-        return true;
+        if (!m_cfg.file.erase_and_retry_on_fatal_errors) {
+            return false;
+        }
+        if (m_out.file_is_open()) {
+            m_out.file_close();
+        }
+        if (rotates()) {
+            auto keep_count = m_cfg.file.rotation.file_count +
+                m_cfg.file.rotation.delayed_file_count;
+            while (keep_count-- != 0) {
+                m_files_register.rotation_list_keep_newer (keep_count);
+                success = m_out.file_open (change_current_filename());
+                if (success) {
+                    m_files_register.push_current_filename_to_rotation_list();
+                    break;
+                }
+            }
+        }
+        else if (slices_files()) {
+            success = non_idle_slice_and_rotate_if (true);
+        }
+        else {
+            std::remove (m_files_register.current_filename());
+            success = m_out.file_open (change_current_filename());
+        }
+        m_on_error_avoidance = !success;
+        return success;
+    }
+    //--------------------------------------------------------------------------
+    bool non_idle_slice_and_rotate_if(bool force = false)
+    {
+        bool success = true;
+        if (force || has_to_slice_now()) {
+            if (m_out.file_is_open()) {
+                m_out.file_close();
+            }
+            success = m_out.file_open (change_current_filename());
+            if (success && rotates()) {
+                m_files_register.rotation_list_keep_newer(
+                    m_cfg.file.rotation.file_count +
+                    m_cfg.file.rotation.delayed_file_count - 1
+                    );
+                m_files_register.push_current_filename_to_rotation_list();
+            }
+        }
+        return success;
     }
     //--------------------------------------------------------------------------
     void idle_rotate_if()
     {
         if (rotates()) {
-            m_files.keep_newer_files (m_cfg.file.rotation.file_count);
+            m_files_register.rotation_list_keep_newer(
+                m_cfg.file.rotation.file_count
+                );
         }
     }
     //--------------------------------------------------------------------------
@@ -452,12 +504,13 @@ private:
     log_writer        m_writer;
     sev_update_evt    m_sev_evt;
     backend_cfg       m_cfg;
-    log_files         m_files;
+    log_file_register m_files_register;
     th::thread        m_log_thread;
     at::atomic<uword> m_status;
     queue             m_fifo;
     mpsc_hybrid_wait  m_wait;
     atomic_uword      m_alloc_fault;
+    bool              m_on_error_avoidance;
  };
 //------------------------------------------------------------------------------
 } //namespaces

@@ -72,6 +72,7 @@ struct backend_file_config {
     std::string          out_folder;                                            //Existing out folder ended in slash/backslash depending on the platform. Can't be zero sized
     uword                aprox_size;                                            //0 = infinite
     backend_rotation_cfg rotation;
+    bool                 erase_and_retry_on_fatal_errors;                       //The current file is tried to be erased when in a filesystem fatal error (e.g. disk full).
 };
 //------------------------------------------------------------------------------
 struct backend_log_entry_alloc_config {                                         //the allocator for log entries, the backend still uses the heap for some std::strings when rotating files. I found excessive to use fixed size static strings at this point.

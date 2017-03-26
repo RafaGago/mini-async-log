@@ -29,6 +29,7 @@ void general_features()
 #endif
     be_cfg.file.aprox_size            = 512 * 1024;
     be_cfg.file.rotation.file_count   = 0;
+    be_cfg.file.erase_and_retry_on_fatal_errors = true;                         //gives permission to the logger to delete log files in case of filesystem errors, e.g. disk full. Default is false
 
     be_cfg.display.show_severity      = true;
     be_cfg.display.show_timestamp     = true;
