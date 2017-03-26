@@ -706,6 +706,11 @@ static char const* logger_names[] {
     "mal bounded",
 };
 //------------------------------------------------------------------------------
+int rm_log_files()
+{
+    return system (RM_OUT_FOLDER_ALL);
+}
+//------------------------------------------------------------------------------
 template <class T>
 void run_all_tests(
     T&               tester,
@@ -717,8 +722,11 @@ void run_all_tests(
     )
 {
     tester.run_throughput (rate, msgs, threads);
+    rm_log_files();
     tester.run_latency (wall, msgs, threads, true);
+    rm_log_files();
     tester.run_latency (cpu, msgs, threads, false);
+    rm_log_files();
 }
 //------------------------------------------------------------------------------
 void run_tests(
@@ -803,7 +811,6 @@ void run_tests(
                 default:
                     break;
                 }
-                (void) system (RM_OUT_FOLDER_ALL); /*gcc crap: return deliberately ignored. I refuse to write bogus conditionals to shut up a compiler. The void cast should be enough.*/
             }
         }
     }
