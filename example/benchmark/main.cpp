@@ -736,10 +736,61 @@ private:
     //--------------------------------------------------------------------------
 };
 //------------------------------------------------------------------------------
+// HACK. I don't feel like refactoring all this big file .But gelog has macro
+// clashes with glog (Who uses two loggers in one program?). Bruteforcing the
+// warnings.
+
+#undef CHECK
+#undef LOG
+#undef LOG_IF
+
+#include <g3log/g3log.hpp>
+#include <g3log/logworker.hpp>
+
+class g3log_perf_test: public perf_test<g3log_perf_test>
+{
+public:
+private:
+    friend class perf_test<g3log_perf_test>;
+    //--------------------------------------------------------------------------
+    void create()
+    {
+        m_worker = g3::LogWorker::createLogWorker();
+        m_sink   = m_worker->addDefaultLogger ("g3_", OUT_FOLDER DIR_SEP);
+        g3::initializeLogging (m_worker.get());
+    }
+    //--------------------------------------------------------------------------
+    bool configure()
+    {
+        return true;
+    }
+    //--------------------------------------------------------------------------
+    void destroy()
+    {
+        m_worker.reset();
+        m_sink.reset();
+    }
+    //--------------------------------------------------------------------------
+    int log_one (unsigned i)
+    {
+        LOGF (INFO, log_fileline TEST_LITERAL " %u", i);
+        return 0;
+    }
+    //--------------------------------------------------------------------------
+    bool wait_until_work_completion()
+    {
+        return false; /*No known way to flush the queue. No disk speed stats.*/
+    }
+    //--------------------------------------------------------------------------
+    std::unique_ptr<g3::LogWorker>      m_worker;
+    std::unique_ptr<g3::FileSinkHandle> m_sink;
+};
+//------------------------------------------------------------------------------
 enum {
     log_mal_heap,
     log_mal_hybrid,
     log_spdlog_async,
+    log_g3log,
     log_nanolog,
     log_glog,
     log_mal_sync,
@@ -752,6 +803,7 @@ static char const* logger_names[] {
     "mal heap",
     "mal hybrid",
     "spdlog async",
+    "g3log",
     "nanolog",
     "glog",
     "mal sync",
@@ -870,6 +922,7 @@ void run_tests(
     google_perf_test  glog_test;
     mal_perf_test     mal_test;
     nanolog_perf_test nanolog_test;
+    g3log_perf_test   g3log_test;
 
     for (unsigned it = 0; it < iterations; ++it) {
         for (unsigned t = threads_log2_start; t <  max_threads_log2; ++t) {
@@ -909,6 +962,17 @@ void run_tests(
                     spdlog_test.set_params (true);
                     run_all_tests(
                         spdlog_test,
+                        c_rate,
+                        c_wall,
+                        c_cpu,
+                        thr,
+                        msgs,
+                        delete_logs
+                        );
+                    break;
+                case log_g3log:
+                    run_all_tests(
+                        g3log_test,
                         c_rate,
                         c_wall,
                         c_cpu,
@@ -978,9 +1042,10 @@ void print_usage()
 "       full-perf:    Runs a long test involving many runs with all loggers,\n"
 "                     then all run results are averaged.\n"
 "       mal-perf:     Single run of \"mini-async-log\".\n"
+"       spdlog-perf:  Single run of \"spdlog\".\n"
+"       g3log-perf:   Single run of \"g3log\".\n"
 "       glog-perf:    Single run of \"Google log\".\n"
 "       nanolog-perf: Single run of \"nanolog\".\n"
-"       spdlog-perf:  Single run of \"spdlog\".\n"
 "       mal-stress:   Running \"mini-async-log\" forever. Useful to do long\n"
 "                     tests and to catch hypotetical bugs\n"
     );
@@ -1030,6 +1095,10 @@ int main (int argc, const char* argv[])
     }
     else if (choice.compare ("nanolog-perf") == 0) {
         loggers[log_nanolog] = true;
+        run_tests (1, msgs, loggers);
+    }
+    else if (choice.compare ("g3log-perf") == 0) {
+        loggers[log_g3log] = true;
         run_tests (1, msgs, loggers);
     }
     else if (choice.compare ("glog-perf") == 0) {

@@ -10,3 +10,7 @@
 	path = example/benchmark-submodules/nanolog
 	url = https://github.com/Iyengar111/NanoLog.git
 	branch = master
+[submodule "example/benchmark-submodules/g3log"]
+	path = example/benchmark-submodules/g3log
+	url = https://github.com/KjellKod/g3log.git
+	branch = master
