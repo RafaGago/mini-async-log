@@ -292,6 +292,33 @@ latency_data average (std::vector<latency_data>& in)
     r.stddev    = sqrt (r.variance);
     return r;
 }
+//--------------------------------------------------------------------------
+#ifdef __linux__
+struct thread_clock_id {
+    thread_clock_id()
+    {
+        pthread_getcpuclockid (pthread_self(), &value);
+    }
+    clockid_t value;
+};
+//--------------------------------------------------------------------------
+double thread_clock_now_us (thread_clock_id& clock)
+{
+    struct timespec ts;
+    clock_gettime (clock.value, &ts);
+    return (((double) ts.tv_sec) * 1000000) +
+           (((double) ts.tv_nsec) * 0.001);
+}
+#endif
+    //--------------------------------------------------------------------------
+    double wall_clock_now_us()
+    {
+        using namespace mal;
+        auto v = ch::duration_cast<ch::nanoseconds>(
+            ch::system_clock::now().time_since_epoch()
+                ).count();
+        return ((double) v) / 1000.;
+    }
 //------------------------------------------------------------------------------
 template <class derived>
 class perf_test
@@ -465,23 +492,6 @@ private:
         return true;
     }
     //--------------------------------------------------------------------------
-#ifdef __linux__
-    struct thread_clock_id {
-        thread_clock_id()
-        {
-            pthread_getcpuclockid (pthread_self(), &value);
-        }
-        clockid_t value;
-    };
-    //--------------------------------------------------------------------------
-    double thread_clock_now_us (thread_clock_id& clock)
-    {
-        struct timespec ts;
-        clock_gettime (clock.value, &ts);
-        return (((double) ts.tv_sec) * 1000000) +
-               (((double) ts.tv_nsec) * 0.001);
-    }
-    //--------------------------------------------------------------------------
     latency_data latency_thread_thread_clock (unsigned msg_count)
     {
         thread_clock_id     clock;
@@ -493,16 +503,6 @@ private:
         }
         la.compute();
         return la.ld;
-    }
-#endif
-    //--------------------------------------------------------------------------
-    double wall_clock_now_us()
-    {
-        using namespace mal;
-        auto v = ch::duration_cast<ch::nanoseconds>(
-            ch::system_clock::now().time_since_epoch()
-                ).count();
-        return ((double) v) / 1000.;
     }
     //--------------------------------------------------------------------------
     latency_data latency_thread_wall_clock (unsigned msg_count)
@@ -1046,7 +1046,7 @@ void print_usage()
 {
     std::puts(
 "usage: [argument]\n"
-"       full-perf:    Runs a long test involving many runs with all loggers,\n"
+"       all-perf:     Runs a long test involving many runs with all loggers,\n"
 "                     then all run results are averaged.\n"
 "       mal-perf:     Single run of \"mini-async-log\".\n"
 "       spdlog-perf:  Single run of \"spdlog\".\n"
@@ -1077,11 +1077,18 @@ int main (int argc, const char* argv[])
     loggers.insert (loggers.end(), log_count, false);
 
     bool is_mal_stress = choice.compare ("mal-stress") == 0;
-    if (choice.compare ("full-perf") == 0) {
+    if (choice.compare ("all-perf") == 0) {
         for (auto it = loggers.begin(); it < loggers.end(); ++it) {
             *it = true;
         }
+        double start = wall_clock_now_us();
         run_tests (50, msgs, loggers);
+        double sec   = (wall_clock_now_us() - start) / 1000000.;
+        double hours = floor (sec / 3600.);
+        sec         -= hours * 3600.;
+        double min   = floor (sec / 60.);
+        sec         -= min * 60.;
+        std::printf("\nTest completed in %f:%f:%f", hours, min, sec);
     }
     else if(is_mal_stress || choice.compare ("mal-perf") == 0) {
         loggers[log_mal_heap] = true;
