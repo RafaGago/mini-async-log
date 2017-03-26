@@ -50,9 +50,10 @@
 #endif
 #define TEST_LITERAL "message saying that something happened and an integer: "
 static const unsigned file_size_bytes   = 50 * 1024 * 1024;
-static const unsigned big_queue_bytes   = 8 * 1024 * 1024; /*8MB*/
+static const unsigned big_queue_bytes   = 8 * 1024 * 1024; //8MB
 static const unsigned queue_entry_size  = 32;
 static const unsigned big_queue_entries = big_queue_bytes / queue_entry_size;
+static const unsigned max_threads_log2  = 5; // (2 pow 5 = 32 threads)
 
 class spd_log_async_perf_test;
 //------------------------------------------------------------------------------
@@ -790,21 +791,77 @@ void run_all_tests(
     }
 }
 //------------------------------------------------------------------------------
+void display_results(
+    std::vector<bool>             active_loggers,
+    unsigned                      threads_log2_start,
+    std::vector<throughput_data> (&rate)[max_threads_log2][log_count],
+    std::vector<latency_data>    (&wall)[max_threads_log2][log_count],
+    std::vector<latency_data>    (&cpu)[max_threads_log2][log_count]
+    )
+{
+    throughput_row rate_row;
+    latency_row    latency_row;
+
+    rate_row.prints_logger_name (true);
+    latency_row.prints_logger_name (true);
+
+    puts ("Results:\n");
+
+    for (unsigned t = threads_log2_start; t < max_threads_log2; ++t) {
+        unsigned threads = 1 << t;
+        printf ("###threads: %u\n\n", threads);
+        printf ("#### Throughput (threads=%u)\n\n", threads);
+        rate_row.print_header();
+        for (unsigned l = 0; l < log_count; ++l) {
+            if (!active_loggers[l]) {
+                    continue;
+            }
+            rate_row.logger_name = logger_names[l];
+            ((throughput_data&) rate_row) = average (rate[t][l]);
+            rate_row.print_values();
+        }
+        puts ("");
+#ifdef HAS_THREAD_CLOCK
+        printf ("#### Latency with thread clock (threads=%u)\n\n", threads);
+        latency_row.print_header();
+        for (unsigned l = 0; l < log_count; ++l) {
+            if (!active_loggers[l]) {
+               continue;
+            }
+            latency_row.logger_name = logger_names[l];
+            ((latency_data&) latency_row) = average (cpu[t][l]);
+            latency_row.print_values();
+        }
+        puts ("");
+#endif
+        printf ("#### Latency with wall clock (threads=%u)\n\n", threads);
+        latency_row.print_header();
+        for (unsigned l = 0; l < log_count; ++l) {
+            if (!active_loggers[l]) {
+               continue;
+            }
+            latency_row.logger_name = logger_names[l];
+            ((latency_data&) latency_row) = average (wall[t][l]);
+            latency_row.print_values();
+        }
+        puts ("");
+    }
+}
+//------------------------------------------------------------------------------
 void run_tests(
     unsigned          iterations,
     unsigned          msgs,
     std::vector<bool> active_loggers,
     unsigned          threads_log2_start = 0,
-    bool              delete_logs = true
+    bool              delete_logs = true,
+    bool              show_results = true
     )
 {
-    const unsigned threads_log2_max = 5;
+    std::vector<throughput_data> rate[max_threads_log2][log_count];
+    std::vector<latency_data>    wall[max_threads_log2][log_count];
+    std::vector<latency_data>    cpu[max_threads_log2][log_count];
 
-    std::vector<throughput_data> rate[threads_log2_max][log_count];
-    std::vector<latency_data>    wall[threads_log2_max][log_count];
-    std::vector<latency_data>    cpu[threads_log2_max][log_count];
-
-    for (unsigned t = 0; t < threads_log2_max; ++t) {
+    for (unsigned t = 0; t < max_threads_log2; ++t) {
         for (unsigned i = 0; i < log_count; ++i) {
             rate[t][i].insert (rate[t][i].end(), iterations, throughput_data());
             wall[t][i].insert (wall[t][i].end(), iterations, latency_data());
@@ -817,7 +874,7 @@ void run_tests(
     nanolog_perf_test nanolog_test;
 
     for (unsigned it = 0; it < iterations; ++it) {
-        for (unsigned t = threads_log2_start; t <  threads_log2_max; ++t) {
+        for (unsigned t = threads_log2_start; t <  max_threads_log2; ++t) {
             unsigned thr = 1 << t;
             for (unsigned logger = 0; logger < log_count; ++logger) {
                 if (!active_loggers[logger]) {
@@ -911,52 +968,8 @@ void run_tests(
             }
         }
     }
-    throughput_row rate_row;
-    latency_row    latency_row;
-
-    rate_row.prints_logger_name (true);
-    latency_row.prints_logger_name (true);
-
-    puts ("Finished. Results:\n");
-
-    for (unsigned t = threads_log2_start; t < threads_log2_max; ++t) {
-        unsigned threads = 1 << t;
-        printf ("###threads: %u\n\n", threads);
-        printf ("#### Throughput (threads=%u)\n\n", threads);
-        rate_row.print_header();
-        for (unsigned l = 0; l < log_count; ++l) {
-            if (!active_loggers[l]) {
-                    continue;
-            }
-            rate_row.logger_name = logger_names[l];
-            ((throughput_data&) rate_row) = average (rate[t][l]);
-            rate_row.print_values();
-        }
-        puts ("");
-#ifdef HAS_THREAD_CLOCK
-        printf ("#### Latency with thread clock (threads=%u)\n\n", threads);
-        latency_row.print_header();
-        for (unsigned l = 0; l < log_count; ++l) {
-            if (!active_loggers[l]) {
-               continue;
-            }
-            latency_row.logger_name = logger_names[l];
-            ((latency_data&) latency_row) = average (cpu[t][l]);
-            latency_row.print_values();
-        }
-        puts ("");
-#endif
-        printf ("#### Latency with wall clock (threads=%u)\n\n", threads);
-        latency_row.print_header();
-        for (unsigned l = 0; l < log_count; ++l) {
-            if (!active_loggers[l]) {
-               continue;
-            }
-            latency_row.logger_name = logger_names[l];
-            ((latency_data&) latency_row) = average (wall[t][l]);
-            latency_row.print_values();
-        }
-        puts ("");
+    if (show_results) {
+        display_results (active_loggers, threads_log2_start, rate, wall, cpu);
     }
 }
 //------------------------------------------------------------------------------
@@ -1011,7 +1024,8 @@ int main (int argc, const char* argv[])
                 msgs / (is_mal_stress ? 5 : 1),
                 loggers,
                 is_mal_stress ? 3 : 0,
-                !is_mal_stress
+                !is_mal_stress,
+                is_mal_stress
                 );
         }
         while (is_mal_stress);
