@@ -40,14 +40,10 @@
 
 #ifdef _WIN32
     #define DIR_SEP "\\"
-    #define OUT_FOLDER ".\\mal_log_benchmarks"
-    #define RM_OUT_FOLDER_ALL "del " OUT_FOLDER "\\*.*"
-    #define MKDIR_OUT_FOLDER "md " OUT_FOLDER
+    #define OUT_FOLDER ".\\mal_benchmark_logs"
 #else
     #define DIR_SEP "/"
-    #define OUT_FOLDER "./mal_log_benchmarks"
-    #define RM_OUT_FOLDER_ALL "rm -rf " OUT_FOLDER "/*"
-    #define MKDIR_OUT_FOLDER "mkdir -p " OUT_FOLDER
+    #define OUT_FOLDER "./mal_benchmarks_logs"
 #endif
 #define TEST_LITERAL "message saying that something happened and an integer: "
 static const unsigned file_size_bytes   = 50 * 1024 * 1024;
@@ -56,6 +52,53 @@ static const unsigned queue_entry_size  = 32;
 static const unsigned big_queue_entries = big_queue_bytes / queue_entry_size;
 static const unsigned max_threads_log2  = 5; // (2 pow 5 = 32 threads)
 
+#define MAL_PATH     OUT_FOLDER DIR_SEP "mal"
+#define SPDLOG_PATH  OUT_FOLDER DIR_SEP "spdlog"
+#define G3_PATH      OUT_FOLDER DIR_SEP "g3"
+#define NANOLOG_PATH OUT_FOLDER DIR_SEP "nanolog"
+#define GLOG_PATH    OUT_FOLDER DIR_SEP "glog"
+
+namespace loggers {
+//------------------------------------------------------------------------------
+enum {
+    mal_heap,
+    mal_hybrid,
+    spdlog_async,
+    g3log,
+    nanolog,
+    glog,
+    mal_sync,
+    spdlog_sync,
+    mal_bounded,
+    count,
+};
+//------------------------------------------------------------------------------
+static char const* names[] {
+    "mal heap",
+    "mal hybrid",
+    "spdlog async",
+    "g3log",
+    "nanolog",
+    "glog",
+    "mal sync",
+    "spdlog sync",
+    "mal bounded",
+};
+//------------------------------------------------------------------------------
+static char const* paths[] {
+    MAL_PATH,
+    MAL_PATH,
+    SPDLOG_PATH,
+    G3_PATH,
+    NANOLOG_PATH,
+    GLOG_PATH,
+    MAL_PATH,
+    SPDLOG_PATH,
+    MAL_PATH,
+};
+//------------------------------------------------------------------------------
+} //namespace loggers
+//------------------------------------------------------------------------------
 class spd_log_async_perf_test;
 //------------------------------------------------------------------------------
 class result_row {
@@ -553,7 +596,7 @@ private:
     {
         using namespace mal;
         auto be_cfg                     = m_fe->get_backend_cfg();
-        be_cfg.file.out_folder          = OUT_FOLDER "/";               //this folder has to exist before running
+        be_cfg.file.out_folder          = MAL_PATH DIR_SEP;                 //this folder has to exist before running
         be_cfg.file.aprox_size          = file_size_bytes;
         be_cfg.file.rotation.file_count = 0;
         be_cfg.file.rotation.delayed_file_count = 0;                            //we let the logger to have an extra file when there is a lot of workload
@@ -606,12 +649,12 @@ private:
         if (configured) {
             return true;
         }
-        FLAGS_log_dir         = OUT_FOLDER "/";
+        FLAGS_log_dir         = GLOG_PATH;
         FLAGS_logtostderr     = false;
         FLAGS_alsologtostderr = false;
         FLAGS_stderrthreshold = 3;
         FLAGS_max_log_size    = file_size_bytes ;
-        google::SetLogDestination (google::INFO, OUT_FOLDER "/");
+        google::SetLogDestination (google::INFO, GLOG_PATH DIR_SEP);
         google::SetLogDestination (google::WARNING, "");
         google::SetLogDestination (google::ERROR, "");
         google::SetLogDestination (google::FATAL, "");
@@ -656,26 +699,20 @@ private:
         if (m_async) {
             spdlog::set_async_mode (big_queue_entries);
             m_logger = spdlog::rotating_logger_mt(
-                "spdlog_logger",
-                OUT_FOLDER DIR_SEP "spdlog_async",
-                file_size_bytes,
-                1000
+                "spdlog", SPDLOG_PATH DIR_SEP "spd" , file_size_bytes, 1000
                 );
         }
         else {
             spdlog::set_sync_mode();
             m_logger = spdlog::rotating_logger_mt(
-                "spdlog_logger",
-                OUT_FOLDER DIR_SEP "spdlog_sync",
-                file_size_bytes,
-                1000
+                "spdlog", SPDLOG_PATH DIR_SEP "spd" , file_size_bytes, 1000
                 );
         }
     }
     //--------------------------------------------------------------------------
     void destroy()
     {
-        spdlog::drop ("spdlog_logger");
+        spdlog::drop ("spdlog");
         m_logger.reset();
     }
     //--------------------------------------------------------------------------
@@ -708,7 +745,7 @@ private:
         }
         nanolog::initialize(
             nanolog::GuaranteedLogger(),
-            OUT_FOLDER DIR_SEP,
+            NANOLOG_PATH DIR_SEP,
             "nanolog",
             file_size_bytes / (1024 * 1024)
             );
@@ -764,7 +801,7 @@ private:
     void create()
     {
         m_worker = g3::LogWorker::createLogWorker();
-        m_sink   = m_worker->addDefaultLogger ("g3_", OUT_FOLDER DIR_SEP);
+        m_sink   = m_worker->addDefaultLogger ("g3_", G3_PATH);
         g3::initializeLogging (m_worker.get());
     }
     //--------------------------------------------------------------------------
@@ -794,35 +831,52 @@ private:
     std::unique_ptr<g3::FileSinkHandle> m_sink;
 };
 //------------------------------------------------------------------------------
-enum {
-    log_mal_heap,
-    log_mal_hybrid,
-    log_spdlog_async,
-    log_g3log,
-    log_nanolog,
-    log_glog,
-    log_mal_sync,
-    log_spdlog_sync,
-    log_mal_bounded,
-    log_count,
-};
+#ifdef _WIN32
+/*TODO: untested*/
 //------------------------------------------------------------------------------
-static char const* logger_names[] {
-    "mal heap",
-    "mal hybrid",
-    "spdlog async",
-    "g3log",
-    "nanolog",
-    "glog",
-    "mal sync",
-    "spdlog sync",
-    "mal bounded",
-};
-//------------------------------------------------------------------------------
-int rm_log_files()
+int rm_log_files(unsigned logger)
 {
-    return system (RM_OUT_FOLDER_ALL);
+    std::ostringstream cmd;
+    cmd << "del " << loggers::path[logger] << "\\*.*";
+    return system (cmd.str().c_str());
 }
+//------------------------------------------------------------------------------
+int create_log_subfolders()
+{
+    std::ostringstream cmd;
+    cmd << "mkdir " OUT_FOLDER;
+    for (unsigned l = 0; l < loggers::count; ++l) {
+        cmd << " && mkdir " << loggers::paths[l];
+    }
+    return system (cmd.str().c_str());
+}
+//------------------------------------------------------------------------------
+#else /*_WIN32*/
+//------------------------------------------------------------------------------
+int rm_log_files(unsigned logger)
+{
+    std::ostringstream cmd;
+    cmd << "cd "
+        << loggers::paths[logger]
+        << " && FILES=$(find . -type f | grep -vF $(ls -Art | tail -n 1))"
+           " && [ ! -z  \"$FILES\" ]"
+           " && rm $FILES"
+           ;
+    return system (cmd.str().c_str());
+}
+//------------------------------------------------------------------------------
+int create_log_subfolders()
+{
+    std::ostringstream cmd;
+    cmd << "mkdir -p " << loggers::paths[0];
+    for (unsigned l = 1; l < loggers::count; ++l) {
+        cmd << " && mkdir -p " << loggers::paths[l];
+    }
+    cmd << " > /dev/null";
+    return system (cmd.str().c_str());
+}
+//------------------------------------------------------------------------------
+#endif /* else _WIN32 */
 //------------------------------------------------------------------------------
 template <class T>
 void run_all_tests(
@@ -832,34 +886,58 @@ void run_all_tests(
     latency_data&    cpu,
     unsigned         threads,
     unsigned         msgs,
+    unsigned         logger,
     bool             delete_logs
     )
 {
     tester.run_throughput (rate, msgs, threads);
+    if (delete_logs) {
+        rm_log_files (logger);
+    }
     tester.run_latency (wall, msgs, threads, true);
+    if (delete_logs) {
+        rm_log_files (logger);
+    }
     tester.run_latency (cpu, msgs, threads, false);
     if (delete_logs) {
-        rm_log_files();
+        rm_log_files (logger);
     }
-#ifdef __linux__
-    /* Some loggers (e.g. nanolog) don't release the file descriptors. Leading
-       to a full disk. In such case "du -h" doesn't seem to match with "df -h"
-       and lsof | grep deleted" shows a lot of entries. This is a bruteforce
-       hack.
-    */
-    int max = sysconf (_SC_OPEN_MAX);
-    for (int fd = 0; fd < max; ++fd) {
-        close (fd);
-    }
-#endif
 }
 //------------------------------------------------------------------------------
+struct result_list {
+    result_list (unsigned iterations)
+    {
+        for (unsigned t = 0; t < max_threads_log2; ++t) {
+            for (unsigned i = 0; i < loggers::count; ++i) {
+                rate[t][i].insert(
+                    rate[t][i].end(), iterations, throughput_data()
+                    );
+                wall[t][i].insert(
+                    wall[t][i].end(), iterations, latency_data()
+                    );
+                cpu[t][i].insert(
+                    cpu[t][i].end(), iterations, latency_data()
+                    );
+            }
+    }
+    }
+    std::vector<throughput_data> rate[max_threads_log2][loggers::count];
+    std::vector<latency_data>    wall[max_threads_log2][loggers::count];
+    std::vector<latency_data>    cpu [max_threads_log2][loggers::count];
+};
+//------------------------------------------------------------------------------
+struct test_suites {
+    spd_log_perf_test spdlog;
+    google_perf_test  glog;
+    mal_perf_test     mal;
+    nanolog_perf_test nanolog;
+    g3log_perf_test   g3log;
+};
+//------------------------------------------------------------------------------
 void display_results(
-    std::vector<bool>             active_loggers,
-    unsigned                      threads_log2_start,
-    std::vector<throughput_data> (&rate)[max_threads_log2][log_count],
-    std::vector<latency_data>    (&wall)[max_threads_log2][log_count],
-    std::vector<latency_data>    (&cpu)[max_threads_log2][log_count]
+    std::vector<bool> active_loggers,
+    unsigned          threads_log2_start,
+    result_list&      reslist
     )
 {
     throughput_row rate_row;
@@ -875,39 +953,122 @@ void display_results(
         printf ("###threads: %u\n\n", threads);
         printf ("#### Throughput (threads=%u)\n\n", threads);
         rate_row.print_header();
-        for (unsigned l = 0; l < log_count; ++l) {
+        for (unsigned l = 0; l < loggers::count; ++l) {
             if (!active_loggers[l]) {
                     continue;
             }
-            rate_row.logger_name = logger_names[l];
-            ((throughput_data&) rate_row) = average (rate[t][l]);
+            rate_row.logger_name = loggers::names[l];
+            ((throughput_data&) rate_row) = average (reslist.rate[t][l]);
             rate_row.print_values();
         }
         puts ("");
 #ifdef HAS_THREAD_CLOCK
         printf ("#### Latency with thread clock (threads=%u)\n\n", threads);
         latency_row.print_header();
-        for (unsigned l = 0; l < log_count; ++l) {
+        for (unsigned l = 0; l < loggers::count; ++l) {
             if (!active_loggers[l]) {
                continue;
             }
-            latency_row.logger_name = logger_names[l];
-            ((latency_data&) latency_row) = average (cpu[t][l]);
+            latency_row.logger_name = loggers::names[l];
+            ((latency_data&) latency_row) = average (reslist.cpu[t][l]);
             latency_row.print_values();
         }
         puts ("");
 #endif
         printf ("#### Latency with wall clock (threads=%u)\n\n", threads);
         latency_row.print_header();
-        for (unsigned l = 0; l < log_count; ++l) {
+        for (unsigned l = 0; l < loggers::count; ++l) {
             if (!active_loggers[l]) {
                continue;
             }
-            latency_row.logger_name = logger_names[l];
-            ((latency_data&) latency_row) = average (wall[t][l]);
+            latency_row.logger_name = loggers::names[l];
+            ((latency_data&) latency_row) = average (reslist.wall[t][l]);
             latency_row.print_values();
         }
         puts ("");
+    }
+}
+//------------------------------------------------------------------------------
+void run_test_dispatch(
+    test_suites& ts,
+    result_list& rl,
+    unsigned     it,
+    unsigned     thr_log2,
+    unsigned     logger,
+    unsigned     msgs,
+    unsigned     iterations,
+    bool         delete_logs
+    )
+{
+    auto&    c_rate = rl.rate[thr_log2][logger][it];
+    auto&    c_wall = rl.wall[thr_log2][logger][it];
+    auto&    c_cpu  = rl.cpu[thr_log2][logger][it];
+    unsigned thr    = 1 << thr_log2;
+    printf(
+        "Run %u of %u. Processing %s with %u threads. %u msgs\n",
+        it + 1,
+        iterations,
+        loggers::names[logger],
+        thr,
+        msgs
+        );
+    fflush (stdout);
+    switch (logger) {
+    case loggers::mal_heap:
+        ts.mal.set_params (0, 0, true, false);
+        run_all_tests(
+            ts.mal, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
+    case loggers::mal_hybrid:
+        ts.mal.set_params(
+            big_queue_bytes / 16, queue_entry_size, true, false
+            );
+        run_all_tests(
+            ts.mal, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
+    case loggers::spdlog_async:
+        ts.spdlog.set_params (true);
+        run_all_tests(
+            ts.spdlog, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
+    case loggers::g3log:
+        run_all_tests(
+            ts.g3log, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
+    case loggers::nanolog:
+        run_all_tests(
+            ts.nanolog, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
+    case loggers::glog:
+        run_all_tests(
+            ts.glog, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
+    case loggers::mal_sync:
+        ts.mal.set_params (big_queue_bytes, queue_entry_size, false, true);
+        run_all_tests(
+            ts.mal, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
+    case loggers::spdlog_sync:
+    ts.spdlog.set_params (false);
+        run_all_tests(
+            ts.spdlog, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
+    case loggers::mal_bounded:
+        ts.mal.set_params (big_queue_bytes, queue_entry_size, false, false);
+        run_all_tests(
+            ts.mal, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
+    default:
+        break;
     }
 }
 //------------------------------------------------------------------------------
@@ -920,131 +1081,22 @@ void run_tests(
     bool              show_results = true
     )
 {
-    std::vector<throughput_data> rate[max_threads_log2][log_count];
-    std::vector<latency_data>    wall[max_threads_log2][log_count];
-    std::vector<latency_data>    cpu[max_threads_log2][log_count];
-
-    for (unsigned t = 0; t < max_threads_log2; ++t) {
-        for (unsigned i = 0; i < log_count; ++i) {
-            rate[t][i].insert (rate[t][i].end(), iterations, throughput_data());
-            wall[t][i].insert (wall[t][i].end(), iterations, latency_data());
-            cpu[t][i].insert (cpu[t][i].end(), iterations, latency_data());
-        }
-    }
-    spd_log_perf_test spdlog_test;
-    google_perf_test  glog_test;
-    mal_perf_test     mal_test;
-    nanolog_perf_test nanolog_test;
-    g3log_perf_test   g3log_test;
-
+    test_suites ts;
+    result_list rl (iterations);
     for (unsigned it = 0; it < iterations; ++it) {
         for (unsigned t = threads_log2_start; t <  max_threads_log2; ++t) {
-            unsigned thr = 1 << t;
-            for (unsigned logger = 0; logger < log_count; ++logger) {
+            for (unsigned logger = 0; logger < loggers::count; ++logger) {
                 if (!active_loggers[logger]) {
                     continue;
                 }
-                auto& c_rate = rate[t][logger][it];
-                auto& c_wall = wall[t][logger][it];
-                auto& c_cpu  = cpu[t][logger][it];
-                printf(
-                    "Run %u of %u. Processing %s with %u threads. %u msgs\n",
-                    it + 1,
-                    iterations,
-                    logger_names[logger],
-                    thr,
-                    msgs
+                run_test_dispatch(
+                    ts, rl, it, t, logger, msgs, iterations, delete_logs
                     );
-                fflush (stdout);
-                switch (logger) {
-                case log_mal_heap:
-                    mal_test.set_params (0, 0, true, false);
-                    run_all_tests(
-                        mal_test, c_rate, c_wall, c_cpu, thr, msgs, delete_logs
-                        );
-                    break;
-                case log_mal_hybrid:
-                    mal_test.set_params(
-                        big_queue_bytes / 16, queue_entry_size, true, false
-                        );
-                    run_all_tests(
-                        mal_test, c_rate, c_wall, c_cpu, thr, msgs, delete_logs
-                        );
-                    break;
-                case log_spdlog_async:
-                    spdlog_test.set_params (true);
-                    run_all_tests(
-                        spdlog_test,
-                        c_rate,
-                        c_wall,
-                        c_cpu,
-                        thr,
-                        msgs,
-                        delete_logs
-                        );
-                    break;
-                case log_g3log:
-                    run_all_tests(
-                        g3log_test,
-                        c_rate,
-                        c_wall,
-                        c_cpu,
-                        thr,
-                        msgs,
-                        delete_logs
-                        );
-                    break;
-                case log_nanolog:
-                    run_all_tests(
-                        nanolog_test,
-                        c_rate,
-                        c_wall,
-                        c_cpu,
-                        thr,
-                        msgs,
-                        delete_logs
-                        );
-                case log_glog:
-                    run_all_tests(
-                        glog_test, c_rate, c_wall, c_cpu, thr, msgs, delete_logs
-                        );
-                    break;
-                case log_mal_sync:
-                    mal_test.set_params(
-                        big_queue_bytes, queue_entry_size, false, true
-                        );
-                    run_all_tests(
-                        mal_test, c_rate, c_wall, c_cpu, thr, msgs, delete_logs
-                        );
-                    break;
-                case log_spdlog_sync:
-                    spdlog_test.set_params (false);
-                    run_all_tests(
-                        spdlog_test,
-                        c_rate,
-                        c_wall,
-                        c_cpu,
-                        thr,
-                        msgs,
-                        delete_logs
-                        );
-                    break;
-                case log_mal_bounded:
-                    mal_test.set_params(
-                        big_queue_bytes, queue_entry_size, false, false
-                        );
-                    run_all_tests(
-                        mal_test, c_rate, c_wall, c_cpu, thr, msgs, delete_logs
-                        );
-                    break;
-                default:
-                    break;
-                }
             }
         }
     }
     if (show_results) {
-        display_results (active_loggers, threads_log2_start, rate, wall, cpu);
+        display_results (active_loggers, threads_log2_start, rl);
     }
 }
 //------------------------------------------------------------------------------
@@ -1068,7 +1120,7 @@ int main (int argc, const char* argv[])
 {
     const unsigned msgs = 1000000;
 
-    if (system (MKDIR_OUT_FOLDER) == -1) {
+    if (create_log_subfolders() == -1) {
         std::puts ("unable to create " OUT_FOLDER);
         return 3;
     }
@@ -1079,16 +1131,15 @@ int main (int argc, const char* argv[])
     }
     std::string choice = argv[1];
 
-    std::vector<bool> loggers;
-    loggers.insert (loggers.end(), log_count, false);
+    std::vector<bool> active_loggers;
+    active_loggers.insert (active_loggers.end(), loggers::count, false);
 
     bool is_mal_stress = choice.compare ("mal-stress") == 0;
     if (choice.compare ("all-perf") == 0) {
-        for (auto it = loggers.begin(); it < loggers.end(); ++it) {
-            *it = true;
-        }
+        active_loggers.clear();
+        active_loggers.insert (active_loggers.end(), loggers::count, true);
         double start = wall_clock_now_us();
-        run_tests (50, msgs, loggers);
+        run_tests (50, msgs, active_loggers);
         double sec   = (wall_clock_now_us() - start) / 1000000.;
         double hours = floor (sec / 3600.);
         sec         -= hours * 3600.;
@@ -1097,15 +1148,15 @@ int main (int argc, const char* argv[])
         std::printf("\nTest completed in %f:%f:%f", hours, min, sec);
     }
     else if(is_mal_stress || choice.compare ("mal-perf") == 0) {
-        loggers[log_mal_heap] = true;
-        loggers[log_mal_hybrid] = true;
-        loggers[log_mal_sync] = true;
-        loggers[log_mal_bounded] = true;
+        active_loggers[loggers::mal_heap] = true;
+        active_loggers[loggers::mal_hybrid] = true;
+        active_loggers[loggers::mal_sync] = true;
+        active_loggers[loggers::mal_bounded] = true;
         do {
             run_tests(
                 1,
                 msgs / (is_mal_stress ? 5 : 1),
-                loggers,
+                active_loggers,
                 is_mal_stress ? 3 : 0,
                 !is_mal_stress,
                 !is_mal_stress
@@ -1114,21 +1165,21 @@ int main (int argc, const char* argv[])
         while (is_mal_stress);
     }
     else if (choice.compare ("nanolog-perf") == 0) {
-        loggers[log_nanolog] = true;
-        run_tests (1, msgs, loggers);
+        active_loggers[loggers::nanolog] = true;
+        run_tests (1, msgs, active_loggers);
     }
     else if (choice.compare ("g3log-perf") == 0) {
-        loggers[log_g3log] = true;
-        run_tests (1, msgs, loggers);
+        active_loggers[loggers::g3log] = true;
+        run_tests (1, msgs, active_loggers);
     }
     else if (choice.compare ("glog-perf") == 0) {
-        loggers[log_glog] = true;
-        run_tests (1, msgs, loggers);
+        active_loggers[loggers::glog] = true;
+        run_tests (1, msgs, active_loggers);
     }
     else if (choice.compare ("spdlog-perf") == 0) {
-        loggers[log_spdlog_async] = true;
-        loggers[log_spdlog_sync] = true;
-        run_tests (1, msgs, loggers);
+        active_loggers[loggers::spdlog_async] = true;
+        active_loggers[loggers::spdlog_sync] = true;
+        run_tests (1, msgs, active_loggers);
     }
     else if (choice.compare ("help") == 0
         || choice.compare ("--help") == 0
