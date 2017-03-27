@@ -28,6 +28,7 @@
 
 #ifdef __linux__
     #include <pthread.h>
+    #include <unistd.h>
     #define HAS_THREAD_CLOCK 1
 #else
     #define HAS_THREAD_CLOCK 0
@@ -45,7 +46,7 @@
 #else
     #define DIR_SEP "/"
     #define OUT_FOLDER "./mal_log_benchmarks"
-    #define RM_OUT_FOLDER_ALL "rm -f " OUT_FOLDER "/*"
+    #define RM_OUT_FOLDER_ALL "rm -rf " OUT_FOLDER "/*"
     #define MKDIR_OUT_FOLDER "mkdir -p " OUT_FOLDER
 #endif
 #define TEST_LITERAL "message saying that something happened and an integer: "
@@ -835,17 +836,22 @@ void run_all_tests(
     )
 {
     tester.run_throughput (rate, msgs, threads);
-    if (delete_logs) {
-        rm_log_files();
-    }
     tester.run_latency (wall, msgs, threads, true);
-    if (delete_logs) {
-        rm_log_files();
-    }
     tester.run_latency (cpu, msgs, threads, false);
     if (delete_logs) {
         rm_log_files();
     }
+#ifdef __linux__
+    /* Some loggers (e.g. nanolog) don't release the file descriptors. Leading
+       to a full disk. In such case "du -h" doesn't seem to match with "df -h"
+       and lsof | grep deleted" shows a lot of entries. This is a bruteforce
+       hack.
+    */
+    int max = sysconf (_SC_OPEN_MAX);
+    for (int fd = 0; fd < max; ++fd) {
+        close (fd);
+    }
+#endif
 }
 //------------------------------------------------------------------------------
 void display_results(
