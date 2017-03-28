@@ -305,6 +305,7 @@ private:
             }
         }
         idle_rotate_if();
+        m_out.file_close();
         m_status.store (thread_stopped, mo_relaxed);
     }
     //--------------------------------------------------------------------------
@@ -349,9 +350,7 @@ private:
     //--------------------------------------------------------------------------
     bool reopen_file()
     {
-        if (m_out.file_is_open()) {
-            m_out.file_close();
-        }
+        m_out.file_close();
         return m_out.file_open (m_files_register.current_filename());
     }
 #define FILE_ERROR_AVOIDANCE_FMT_STR \
@@ -387,9 +386,7 @@ private:
         if (!m_cfg.file.erase_and_retry_on_fatal_errors) {
             return false;
         }
-        if (m_out.file_is_open()) {
-            m_out.file_close();
-        }
+        m_out.file_close();
         if (rotates()) {
             auto keep_count = m_cfg.file.rotation.file_count +
                 m_cfg.file.rotation.delayed_file_count;
@@ -417,9 +414,7 @@ private:
     {
         bool success = true;
         if (force || has_to_slice_now()) {
-            if (m_out.file_is_open()) {
-                m_out.file_close();
-            }
+            m_out.file_close();
             success = m_out.file_open (change_current_filename());
             if (success && rotates()) {
                 m_files_register.rotation_list_keep_newer(
