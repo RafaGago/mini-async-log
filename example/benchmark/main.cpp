@@ -43,7 +43,7 @@
     #define OUT_FOLDER ".\\mal_benchmark_logs"
 #else
     #define DIR_SEP "/"
-    #define OUT_FOLDER "./mal_benchmarks_logs"
+    #define OUT_FOLDER "./mal_benchmark_logs"
 #endif
 #define TEST_LITERAL "message saying that something happened and an integer: "
 static const unsigned file_size_bytes   = 50 * 1024 * 1024;
