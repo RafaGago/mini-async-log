@@ -854,16 +854,15 @@ int create_log_subfolders()
 }
 //------------------------------------------------------------------------------
 #else /*_WIN32*/
-//------------------------------------------------------------------------------
+#define REMOVE_CMD \
+    "FILES=$(find . -type f | grep -vF \"^\"$(ls -Art | tail -n 1)\"$\")" \
+    " && [ ! -z  \"$FILES\" ]" \
+    " && rm $FILES"
+
 int rm_log_files(unsigned logger)
 {
     std::ostringstream cmd;
-    cmd << "cd "
-        << loggers::paths[logger]
-        << " && FILES=$(find . -type f | grep -vF $(ls -Art | tail -n 1))"
-           " && [ ! -z  \"$FILES\" ]"
-           " && rm $FILES"
-           ;
+    cmd << "cd " << loggers::paths[logger] << " && " REMOVE_CMD;
     return system (cmd.str().c_str());
 }
 //------------------------------------------------------------------------------
