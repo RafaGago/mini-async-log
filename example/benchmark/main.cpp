@@ -653,7 +653,9 @@ private:
         FLAGS_logtostderr     = false;
         FLAGS_alsologtostderr = false;
         FLAGS_stderrthreshold = 3;
-        FLAGS_max_log_size    = file_size_bytes ;
+        /*glog log names are minute-based, it needs a file size that isn't
+          filled in a minute, otherwise it compains a lot.*/
+        FLAGS_max_log_size    = (file_size_bytes / (1024 * 1024)) * 40;
         google::SetLogDestination (google::INFO, GLOG_PATH DIR_SEP);
         google::SetLogDestination (google::WARNING, "");
         google::SetLogDestination (google::ERROR, "");
