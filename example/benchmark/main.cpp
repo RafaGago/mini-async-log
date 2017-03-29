@@ -1201,7 +1201,7 @@ int main (int argc, const char* argv[])
         active_loggers.clear();
         active_loggers.insert (active_loggers.end(), loggers::count, true);
         double start = wall_clock_now_us();
-        run_tests (iterations, msgs, active_loggers, true);
+        run_tests (iterations, msgs, active_loggers, 0, true);
         double sec   = (wall_clock_now_us() - start) / 1000000.;
         double hours = floor (sec / 3600.);
         sec         -= hours * 3600.;
@@ -1217,7 +1217,7 @@ int main (int argc, const char* argv[])
         active_loggers[loggers::mal_sync] = true;
         active_loggers[loggers::mal_bounded] = true;
         while (is_mal_stress) {
-            run_tests (1, 50000, active_loggers, true, false);
+            run_tests (1, 50000, active_loggers, 1, true, false);
         }
         if (!is_mal_stress) {
             run_tests (iterations, msgs, active_loggers);
