@@ -1146,7 +1146,9 @@ int main (int argc, const char* argv[])
         sec         -= hours * 3600.;
         double min   = floor (sec / 60.);
         sec         -= min * 60.;
-        std::printf("\nTest completed in %f:%f:%f", hours, min, sec);
+        std::printf(
+            "\nTest completed in %d:%d:%f", (int) hours, (int) min, sec
+            );
     }
     else if(is_mal_stress || choice.compare ("mal-perf") == 0) {
         active_loggers[loggers::mal_heap] = true;
