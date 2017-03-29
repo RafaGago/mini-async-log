@@ -27,6 +27,7 @@
 #include <mal_log/util/integer_bits.h>
 
 #ifdef __linux__
+    #define GNU_SOURCE
     #include <pthread.h>
     #include <unistd.h>
     #define HAS_THREAD_CLOCK 1
@@ -98,6 +99,86 @@ static char const* paths[] {
 };
 //------------------------------------------------------------------------------
 } //namespace loggers
+//------------------------------------------------------------------------------
+#if defined (WIN32)
+/*TODO: untested*/
+//------------------------------------------------------------------------------
+int rm_log_files(unsigned logger)
+{
+    std::ostringstream cmd;
+    cmd << "del " << loggers::path[logger] << "\\*.*";
+    return system (cmd.str().c_str());
+}
+//------------------------------------------------------------------------------
+int create_log_subfolders()
+{
+    std::ostringstream cmd;
+    cmd << "mkdir " OUT_FOLDER;
+    for (unsigned l = 0; l < loggers::count; ++l) {
+        cmd << " && mkdir " << loggers::paths[l];
+    }
+    return system (cmd.str().c_str());
+}
+//------------------------------------------------------------------------------
+void set_thread_cpu (unsigned i) {}
+//------------------------------------------------------------------------------
+#elif defined (__linux__) /*_WIN32*/
+#define REMOVE_CMD \
+    "FILES=$(find . -type f | grep -vF \"^\"$(ls -Art | tail -n 1)\"$\")" \
+    " && [ ! -z  \"$FILES\" ]" \
+    " && rm $FILES"
+//------------------------------------------------------------------------------
+void set_thread_cpu (unsigned i)
+{
+   cpu_set_t cpu;
+   CPU_ZERO (&cpu);
+   CPU_SET (i % sysconf (_SC_NPROCESSORS_ONLN), &cpu);
+   pthread_setaffinity_np (pthread_self(), sizeof cpu, &cpu);
+}
+//------------------------------------------------------------------------------
+int rm_log_files(unsigned logger)
+{
+    std::ostringstream cmd;
+    cmd << "cd " << loggers::paths[logger] << " && " REMOVE_CMD;
+    return system (cmd.str().c_str());
+}
+//------------------------------------------------------------------------------
+int create_log_subfolders()
+{
+    std::ostringstream cmd;
+    cmd << "mkdir -p " << loggers::paths[0];
+    for (unsigned l = 1; l < loggers::count; ++l) {
+        cmd << " && mkdir -p " << loggers::paths[l];
+    }
+    cmd << " > /dev/null";
+    return system (cmd.str().c_str());
+}
+//------------------------------------------------------------------------------
+class thread_clock {
+public:
+    thread_clock()
+    {
+        if (pthread_getcpuclockid (pthread_self(), &value)) {
+            value = -1;
+        }
+    }
+    double now_us()
+    {
+        if (value != -1) {
+            struct timespec ts;
+            clock_gettime (value, &ts);
+            return (((double) ts.tv_sec) * 1000000) +
+                   (((double) ts.tv_nsec) * 0.001);
+        }
+        return 0.;
+    }
+private:
+    clockid_t value;
+};
+//------------------------------------------------------------------------------
+#else /*#elif defined (__linux__) /*_WIN32*/
+    #error "unimplemented platform"
+#endif /* else _WIN32 */
 //------------------------------------------------------------------------------
 class spd_log_async_perf_test;
 //------------------------------------------------------------------------------
@@ -336,33 +417,15 @@ latency_data average (std::vector<latency_data>& in)
     r.stddev    = sqrt (r.variance);
     return r;
 }
-//--------------------------------------------------------------------------
-#ifdef __linux__
-struct thread_clock_id {
-    thread_clock_id()
-    {
-        pthread_getcpuclockid (pthread_self(), &value);
-    }
-    clockid_t value;
-};
-//--------------------------------------------------------------------------
-double thread_clock_now_us (thread_clock_id& clock)
+//------------------------------------------------------------------------------
+double wall_clock_now_us()
 {
-    struct timespec ts;
-    clock_gettime (clock.value, &ts);
-    return (((double) ts.tv_sec) * 1000000) +
-           (((double) ts.tv_nsec) * 0.001);
+    using namespace mal;
+    auto v = ch::duration_cast<ch::nanoseconds>(
+        ch::system_clock::now().time_since_epoch()
+            ).count();
+    return ((double) v) / 1000.;
 }
-#endif
-    //--------------------------------------------------------------------------
-    double wall_clock_now_us()
-    {
-        using namespace mal;
-        auto v = ch::duration_cast<ch::nanoseconds>(
-            ch::system_clock::now().time_since_epoch()
-                ).count();
-        return ((double) v) / 1000.;
-    }
 //------------------------------------------------------------------------------
 template <class derived>
 class perf_test
@@ -447,9 +510,11 @@ private:
         for (unsigned i = 0; i < (thread_count - 1); ++i) {
             threads[i] = th::thread ([=, &resvector]()
             {
+                set_thread_cpu (i);
                 resvector[i] = (this->*threadfn) (msgs / thread_count);
             });
         }
+        set_thread_cpu (thread_count - 1);
         resvector[thread_count - 1] =
             (this->*threadfn)(msgs / thread_count);
 
@@ -536,22 +601,23 @@ private:
         return true;
     }
     //--------------------------------------------------------------------------
+#ifdef HAS_THREAD_CLOCK
     latency_data latency_thread_thread_clock (unsigned msg_count)
     {
-        thread_clock_id     clock;
+        thread_clock clock;
         latency_accumulator la;
         for (mal::u64 i = 0; i < msg_count; ++i) {
-            double start = thread_clock_now_us (clock);
+            double start = clock.now_us();
             (void) static_cast<derived&> (*this).log_one (i);
-            la.add_value (thread_clock_now_us (clock) - start);
+            la.add_value (clock.now_us() - start);
         }
         la.compute();
         return la.ld;
     }
+#endif
     //--------------------------------------------------------------------------
     latency_data latency_thread_wall_clock (unsigned msg_count)
     {
-        thread_clock_id     clock;
         latency_accumulator la;
         for (mal::u64 i = 0; i < msg_count; ++i) {
             double start = wall_clock_now_us();
@@ -832,52 +898,6 @@ private:
     std::unique_ptr<g3::LogWorker>      m_worker;
     std::unique_ptr<g3::FileSinkHandle> m_sink;
 };
-//------------------------------------------------------------------------------
-#ifdef _WIN32
-/*TODO: untested*/
-//------------------------------------------------------------------------------
-int rm_log_files(unsigned logger)
-{
-    std::ostringstream cmd;
-    cmd << "del " << loggers::path[logger] << "\\*.*";
-    return system (cmd.str().c_str());
-}
-//------------------------------------------------------------------------------
-int create_log_subfolders()
-{
-    std::ostringstream cmd;
-    cmd << "mkdir " OUT_FOLDER;
-    for (unsigned l = 0; l < loggers::count; ++l) {
-        cmd << " && mkdir " << loggers::paths[l];
-    }
-    return system (cmd.str().c_str());
-}
-//------------------------------------------------------------------------------
-#else /*_WIN32*/
-#define REMOVE_CMD \
-    "FILES=$(find . -type f | grep -vF \"^\"$(ls -Art | tail -n 1)\"$\")" \
-    " && [ ! -z  \"$FILES\" ]" \
-    " && rm $FILES"
-
-int rm_log_files(unsigned logger)
-{
-    std::ostringstream cmd;
-    cmd << "cd " << loggers::paths[logger] << " && " REMOVE_CMD;
-    return system (cmd.str().c_str());
-}
-//------------------------------------------------------------------------------
-int create_log_subfolders()
-{
-    std::ostringstream cmd;
-    cmd << "mkdir -p " << loggers::paths[0];
-    for (unsigned l = 1; l < loggers::count; ++l) {
-        cmd << " && mkdir -p " << loggers::paths[l];
-    }
-    cmd << " > /dev/null";
-    return system (cmd.str().c_str());
-}
-//------------------------------------------------------------------------------
-#endif /* else _WIN32 */
 //------------------------------------------------------------------------------
 template <class T>
 void run_all_tests(
