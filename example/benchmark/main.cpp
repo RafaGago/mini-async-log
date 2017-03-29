@@ -1100,7 +1100,7 @@ void run_tests(
     unsigned          msgs,
     std::vector<bool> active_loggers,
     unsigned          threads_log2_start = 0,
-    bool              delete_logs = true,
+    bool              delete_logs = false,
     bool              show_results = true
     )
 {
@@ -1126,94 +1126,122 @@ void run_tests(
 void print_usage()
 {
     std::puts(
-"usage: [argument]\n"
-"       all-perf:     Runs a long test involving many runs with all loggers,\n"
-"                     then all run results are averaged.\n"
-"       mal-perf:     Single run of \"mini-async-log\".\n"
-"       spdlog-perf:  Single run of \"spdlog\".\n"
-"       g3log-perf:   Single run of \"g3log\".\n"
-"       glog-perf:    Single run of \"Google log\".\n"
-"       nanolog-perf: Single run of \"nanolog\".\n"
-"       mal-stress:   Running \"mini-async-log\" forever. Useful to do long\n"
-"                     tests and to catch hypotetical bugs\n"
+"usage: <msgs> <iterations> <test_type>\n"
+" where \"test type\" can be:\n"
+"       all:        Runs all the tests together.\n"
+"       mal:        Runs \"mini-async-log\".\n"
+"       spdlog:     Runs \"spdlog\".\n"
+"       g3log:      Runs \"g3log\".\n"
+"       glog:       Runs \"Google log\".\n"
+"       nanolog:    Runs \"nanolog\".\n"
+"       mal-stress: Runs \"mini-async-log\" forever without showing results.\n"
+"                   Useful to do long stress testing.\n"
     );
+}
+//------------------------------------------------------------------------------
+bool handle_help (std::string str)
+{
+    if (str.compare ("help") == 0
+        || str.compare ("--help") == 0
+        || str.compare ("-h") == 0
+        ) {
+        print_usage();
+        return true;
+    }
+    return false;
 }
 //------------------------------------------------------------------------------
 int main (int argc, const char* argv[])
 {
-    const unsigned msgs = 1000000;
-
     if (create_log_subfolders() == -1) {
         std::puts ("unable to create " OUT_FOLDER);
         return 3;
     }
     if (argc < 2) {
-        std::printf ("no parameter specified\n");
+        std::printf ("no message count specified\n");
         print_usage();
         return 1;
     }
-    std::string choice = argv[1];
-
+    if (handle_help (argv[1])) {
+        return 0;
+    }
+    char* end;
+    unsigned msgs = strtol (argv[1], &end, 10);
+    if (argv[1] == end) {
+        std::printf ("non numeric message count: %s\n", argv[1]);
+        return 1;
+    }
+    if (argc < 3) {
+        std::printf ("no iteration count specified\n");
+        print_usage();
+        return 1;
+    }
+    if (handle_help (argv[2])) {
+        return 0;
+    }
+    unsigned iterations = strtol (argv[2], &end, 10);
+    if (argv[2] == end) {
+        std::printf ("non numeric iteration count: %s\n", argv[2]);
+        return 1;
+    }
+    if (argc < 4) {
+        std::printf ("no test type specified\n");
+        print_usage();
+        return 1;
+    }
+    std::string test_type = argv[3];
+    if (handle_help (test_type)) {
+        return 0;
+    }
     std::vector<bool> active_loggers;
     active_loggers.insert (active_loggers.end(), loggers::count, false);
 
-    bool is_mal_stress = choice.compare ("mal-stress") == 0;
-    if (choice.compare ("all-perf") == 0) {
+    bool is_mal_stress = test_type.compare ("mal-stress") == 0;
+    if (test_type.compare ("all") == 0) {
         active_loggers.clear();
         active_loggers.insert (active_loggers.end(), loggers::count, true);
         double start = wall_clock_now_us();
-        run_tests (50, msgs, active_loggers);
+        run_tests (iterations, msgs, active_loggers, true);
         double sec   = (wall_clock_now_us() - start) / 1000000.;
         double hours = floor (sec / 3600.);
         sec         -= hours * 3600.;
         double min   = floor (sec / 60.);
         sec         -= min * 60.;
         std::printf(
-            "\nTest completed in %d:%d:%f", (int) hours, (int) min, sec
+            "\nTest completed in %d:%d:%f\n", (int) hours, (int) min, sec
             );
     }
-    else if(is_mal_stress || choice.compare ("mal-perf") == 0) {
+    else if(is_mal_stress || test_type.compare ("mal-perf") == 0) {
         active_loggers[loggers::mal_heap] = true;
         active_loggers[loggers::mal_hybrid] = true;
         active_loggers[loggers::mal_sync] = true;
         active_loggers[loggers::mal_bounded] = true;
-        do {
-            run_tests(
-                1,
-                msgs / (is_mal_stress ? 5 : 1),
-                active_loggers,
-                is_mal_stress ? 3 : 0,
-                !is_mal_stress,
-                !is_mal_stress
-                );
+        while (is_mal_stress) {
+            run_tests (1, 50000, active_loggers, true, false);
         }
-        while (is_mal_stress);
+        if (!is_mal_stress) {
+            run_tests (iterations, msgs, active_loggers);
+        }
     }
-    else if (choice.compare ("nanolog-perf") == 0) {
+    else if (test_type.compare ("nanolog") == 0) {
         active_loggers[loggers::nanolog] = true;
-        run_tests (1, msgs, active_loggers);
+        run_tests (iterations, msgs, active_loggers);
     }
-    else if (choice.compare ("g3log-perf") == 0) {
+    else if (test_type.compare ("g3log") == 0) {
         active_loggers[loggers::g3log] = true;
-        run_tests (1, msgs, active_loggers);
+        run_tests (iterations, msgs, active_loggers);
     }
-    else if (choice.compare ("glog-perf") == 0) {
+    else if (test_type.compare ("glog") == 0) {
         active_loggers[loggers::glog] = true;
-        run_tests (1, msgs, active_loggers);
+        run_tests (iterations, msgs, active_loggers);
     }
-    else if (choice.compare ("spdlog-perf") == 0) {
+    else if (test_type.compare ("spdlog") == 0) {
         active_loggers[loggers::spdlog_async] = true;
         active_loggers[loggers::spdlog_sync] = true;
-        run_tests (1, msgs, active_loggers);
-    }
-    else if (choice.compare ("help") == 0
-        || choice.compare ("--help") == 0
-        || choice.compare ("-h") == 0
-        ) {
-        print_usage();
+        run_tests (iterations, msgs, active_loggers);
     }
     else {
-        std::printf ("invalid argument\n");
+        std::printf ("invalid test type\n");
         print_usage();
         return 2;
     }
