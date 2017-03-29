@@ -951,8 +951,8 @@ void display_results(
 
     for (unsigned t = threads_log2_start; t < max_threads_log2; ++t) {
         unsigned threads = 1 << t;
-        printf ("###threads: %u\n\n", threads);
-        printf ("#### Throughput (threads=%u)\n\n", threads);
+        printf ("###threads: %u\n\n####", threads);
+        printf ("#### Throughput (threads=%u) ####\n\n", threads);
         rate_row.print_header();
         for (unsigned l = 0; l < loggers::count; ++l) {
             if (!active_loggers[l]) {
@@ -964,7 +964,9 @@ void display_results(
         }
         puts ("");
 #ifdef HAS_THREAD_CLOCK
-        printf ("#### Latency with thread clock (threads=%u)\n\n", threads);
+        printf(
+            "#### Latency with thread clock (threads=%u) ####\n\n", threads
+            );
         latency_row.print_header();
         for (unsigned l = 0; l < loggers::count; ++l) {
             if (!active_loggers[l]) {
@@ -976,7 +978,7 @@ void display_results(
         }
         puts ("");
 #endif
-        printf ("#### Latency with wall clock (threads=%u)\n\n", threads);
+        printf ("#### Latency with wall clock (threads=%u)\n\n ####", threads);
         latency_row.print_header();
         for (unsigned l = 0; l < loggers::count; ++l) {
             if (!active_loggers[l]) {

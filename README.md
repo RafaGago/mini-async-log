@@ -152,9 +152,9 @@ Each logger configuration summary is as follows:
 
 These are done against the master branch of each project on March 2017.
 
-###threads: 1
+###threads: 1 ####
 
-#### Throughput (threads=1)
+#### Throughput (threads=1) ###
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -168,7 +168,7 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|1.368|731.470|0.000|0.000|1.368|0.000|
 |mal bounded|0.046|6318.494|0.342|857.564|0.046|706642.020|
 
-#### Latency with thread clock (threads=1)
+#### Latency with thread clock (threads=1) ###
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
@@ -182,7 +182,7 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|1.564|2.396|0.000|1407.093|
 |mal bounded|0.245|0.093|0.000|65.625|
 
-#### Latency with wall clock (threads=1)
+#### Latency with wall clock (threads=1) ###
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
@@ -196,9 +196,9 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|1.415|2.457|0.000|2413.750|
 |mal bounded|0.117|0.144|0.000|66.000|
 
-###threads: 2
+### threads: 2 ###
 
-#### Throughput (threads=2)
+#### Throughput (threads=2) ####
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -212,7 +212,7 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|1.697|590.626|0.000|0.000|3.383|0.000|
 |mal bounded|0.066|4710.990|0.362|859.156|0.130|689311.280|
 
-#### Latency with thread clock (threads=2)
+#### Latency with thread clock (threads=2) ####
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
@@ -226,7 +226,7 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|3.084|3.479|0.000|4387.442|
 |mal bounded|0.353|0.147|0.000|84.074|
 
-#### Latency with wall clock (threads=2)
+#### Latency with wall clock (threads=2) ####
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
@@ -240,9 +240,9 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|3.288|4.897|0.000|4043.250|
 |mal bounded|0.205|2.413|0.000|12024.000|
 
-###threads: 4
+###threads: 4####
 
-#### Throughput (threads=4)
+#### Throughput (threads=4)####
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -256,7 +256,7 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|1.715|584.309|0.000|0.000|6.846|0.000|
 |mal bounded|0.080|3924.831|0.374|835.601|0.294|687639.620|
 
-#### Latency with thread clock (threads=4)
+#### Latency with thread clock (threads=4)####
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
@@ -270,7 +270,7 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|5.407|4.937|0.000|1781.881|
 |mal bounded|0.341|0.175|0.000|73.406|
 
-#### Latency with wall clock (threads=4)
+#### Latency with wall clock (threads=4)####
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
@@ -284,9 +284,9 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|6.672|61.045|0.000|210836.500|
 |mal bounded|0.292|22.203|0.000|20007.750|
 
-###threads: 8
+###threads: 8###
 
-#### Throughput (threads=8)
+#### Throughput (threads=8)####
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -300,7 +300,7 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|1.735|577.809|0.000|0.000|13.797|0.000|
 |mal bounded|0.081|3836.921|0.376|821.530|0.494|690855.880|
 
-#### Latency with thread clock (threads=8)
+#### Latency with thread clock (threads=8)####
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
@@ -314,7 +314,7 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|5.632|5.035|0.000|1744.719|
 |mal bounded|0.339|0.168|0.000|87.249|
 
-#### Latency with wall clock (threads=8)
+#### Latency with wall clock (threads=8)####
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
@@ -328,9 +328,9 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|13.784|230.688|0.000|407219.500|
 |mal bounded|0.486|57.932|0.000|36007.750|
 
-###threads: 16
+###threads: 16###
 
-#### Throughput (threads=16)
+#### Throughput (threads=16)####
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -344,7 +344,7 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|1.532|658.223|0.000|0.000|24.354|0.000|
 |mal bounded|0.078|3927.956|0.373|819.880|0.741|694552.040|
 
-#### Latency with thread clock (threads=16)
+#### Latency with thread clock (threads=16)####
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
@@ -358,7 +358,7 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|5.397|4.933|0.000|1585.444|
 |mal bounded|0.335|0.170|0.000|92.873|
 
-#### Latency with wall clock (threads=16)
+#### Latency with wall clock (threads=16)####
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
