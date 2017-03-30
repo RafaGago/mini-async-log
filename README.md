@@ -190,9 +190,9 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|1.567|2.430|0.000|1365.975|
 |mal bounded|0.222|0.065|0.000|77.728|
 
-#### Latency with wall clock (threads=1)
+#### Latency with wall clock (threads=1) ####
 
- ####|logger|mean(us)|standard deviation|min(us)|max(us)|
+|logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
 |mal heap|0.347|7.243|0.000|20016.000|
 |mal hybrid|0.356|7.305|0.000|12020.750|
@@ -234,9 +234,9 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|3.086|3.414|0.000|1687.710|
 |mal bounded|0.259|0.117|0.000|74.806|
 
-#### Latency with wall clock (threads=2)
+#### Latency with wall clock (threads=2) ####
 
- ####|logger|mean(us)|standard deviation|min(us)|max(us)|
+|logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
 |mal heap|0.396|39.426|0.000|24018.250|
 |mal hybrid|0.395|38.711|0.000|16027.500|
@@ -278,9 +278,9 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|5.664|5.018|0.000|2005.818|
 |mal bounded|0.314|0.205|0.000|72.929|
 
-#### Latency with wall clock (threads=4)
+#### Latency with wall clock (threads=4) ####
 
- ####|logger|mean(us)|standard deviation|min(us)|max(us)|
+|logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
 |mal heap|0.488|31.253|0.000|20019.500|
 |mal hybrid|0.489|30.215|0.000|16031.000|
@@ -322,9 +322,9 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|3.335|4.561|0.000|5286.152|
 |mal bounded|0.309|0.211|0.000|84.510|
 
-#### Latency with wall clock (threads=8)
+#### Latency with wall clock (threads=8) ####
 
- ####|logger|mean(us)|standard deviation|min(us)|max(us)|
+|logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
 |mal heap|0.876|66.039|0.000|24010.500|
 |mal hybrid|0.882|66.726|0.000|24019.750|
@@ -366,9 +366,9 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|2.890|4.411|0.000|5324.756|
 |mal bounded|0.304|0.214|0.000|81.663|
 
-#### Latency with wall clock (threads=16)
+#### Latency with wall clock (threads=16) ####
 
- ####|logger|mean(us)|standard deviation|min(us)|max(us)|
+|logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
 |mal heap|1.596|126.657|0.000|44007.000|
 |mal hybrid|1.596|126.213|0.000|44007.250|

@@ -998,7 +998,7 @@ void display_results(
         }
         puts ("");
 #endif
-        printf ("#### Latency with wall clock (threads=%u)\n\n ####", threads);
+        printf ("#### Latency with wall clock (threads=%u) ####\n\n", threads);
         latency_row.print_header();
         for (unsigned l = 0; l < loggers::count; ++l) {
             if (!active_loggers[l]) {
