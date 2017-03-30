@@ -64,7 +64,7 @@ public:
     //--------------------------------------------------------------------------
      mpsc_hybrid_wait()
     {
-        m_cfg.spin_max    = 50000;
+        m_cfg.spin_max    = 400;
         m_cfg.yield_max   = 200;
         m_cfg.never_block = false;
         m_cfg.block_us    = 2000;

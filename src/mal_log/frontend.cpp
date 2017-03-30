@@ -39,13 +39,15 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <utility>
 #include <cassert>
+#include <cstdlib>
 #include <mal_log/util/atomic.hpp>
 #include <mal_log/util/thread.hpp>
-#include <mal_log/util/processor_pause.hpp>
+#include <mal_log/util/queue_backoff.hpp>
 #include <mal_log/frontend.hpp>
 #include <mal_log/backend.hpp>
 #include <mal_log/async_to_sync.hpp>
 #include <mal_log/timestamp.hpp>
+
 
 namespace mal {
 
@@ -62,6 +64,7 @@ public:
         m_producer_timestamp  = true;
         m_timestamp_base      = 0;
         m_block_on_full_queue = false;
+        srand ((unsigned int) get_timestamp() >> 2);
     }
     //--------------------------------------------------------------------------
     ~frontend_impl() {}
@@ -82,23 +85,12 @@ public:
         queue_prepared::error err  = commit_data.get_error();
 
         if (!mem && m_block_on_full_queue && err == queue_prepared::queue_full){
-            th::lock_guard<th::mutex> lockg (m_contention_mutex);
-            uword attempts = 0;
+            mutex_queue_backoff backoff (m_contention_mutex);
             do {
-                ++attempts;
+                backoff.wait();
                 commit_data = m_back.allocate_entry (required_bytes);
                 mem         = commit_data.get_mem();
                 err         = commit_data.get_error();
-                if (attempts > 256) {
-                    th::this_thread::yield();
-                }
-                else if (attempts > 16) {
-                    /*greedy with CPU.*/
-                    for (uword i = 0; i < 16; ++i) {
-                        processor_pause();
-                    }
-                }
-
             }
             while (!mem && err == queue_prepared::queue_full);
         }
@@ -269,7 +261,7 @@ private:
     mo_relaxed_atomic<uword> m_state;
     backend_impl             m_back;
     async_to_sync            m_sync;
-    th::mutex                m_contention_mutex;
+    th::timed_mutex          m_contention_mutex;
     bool                     m_prints_timestamp;
     bool                     m_producer_timestamp;
     bool                     m_block_on_full_queue;
