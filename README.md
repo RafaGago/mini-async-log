@@ -101,276 +101,285 @@ are too coarse-grained to measure in the nanosecond range, etc.
 The benchmark is a very though but unrealistic load.
 
 It consists in enqueueing 1 million messages as fast as possible with different
-thread counts. There are throughput and latency tests. This is run 50 times and
-then averaged (except for maximum and minimum latencies).
+thread counts. There are throughput and latency tests. This is run 75 times and
+then averaged (except for maximum and minimum latencies). The test takes 7:35 on
+my machine. The threads are tried to be evenly distributed between the cores
+from the start.
 
 The latency tests are measured with both a CPU clock and a wall clock. The wall
 clock gives an idea of the real behavior of the logger when the OS scheduler
-puts threads to sleep. In this way loggers using OS mutexes worst case.
+puts threads to sleep. In this way loggers using OS mutexes will show its worst
+case in a more realistic way.
 
 In the latency tests the mean, standard deviation, best and worse case of those
-2 million log entries are presented. The standard deviation gives an idea of
+1 million log entries are presented. The standard deviation gives an idea of
 the jitter. The less the better.
 
 It is run in a system with Ubuntu 16.04 server, no X server and disabled network
 interfaces. The machine is a downclocked and undervolted AMD Phenom x4 965 with
 an SSD disk.
 
-The test takes around 4h 15m.
+The test takes many hours to complete.
 
 Each logger configuration summary is as follows:
 
-- spdlog async: spdlog in asynchronous mode. (8MB / 32) queue entries.
+- spdlog (async*1, bounded): (8MB / 32) queue entries.
 
-- spdlog sync: spdlog in synchronous mode.
+- spdlog (sync, bounded?): spdlog in synchronous mode.
 
-- glog: Google log (half synchronous). Stock cfg.
+- glog (half-sync, bounded?): Google log stock cfg.
 
-- g3log: g3log (asynchronous). Stock cfg.
+- g3log (async*1, heap?): g3log stock cfg.
 
-- nanolog: (asynchronous). 8MB hardcoded internal queue size. Using the
-          guaranteed version. What is non-guaranteed logging good for if the
-          user can't know at the calling point if the call succeeded or not?
+- nanolog: (asynchronous, heap). Using the guaranteed version. The
+    non-guaranteed is IMO unusable if the user can't know at the calling
+    point if the call succeeded or not. There is no way to establish a
+    comparison.
 
-- mal heap: mal using only the heap (unbounded). (8MB queue, 32 bytes each
-          element).
+- mal (async, heap): mal using only the heap (unbounded). (8MB queue, 32 bytes
+    each element).
 
-- mal hybrid: mal using a hybrid bounded queue + heap strategy (8MB/16 queue, 32
-           bytes each element).
+- mal (async, heap + bounded): mal using a hybrid bounded queue + heap strategy
+    (8MB/16 queue, 32 bytes each element).
 
-- mal sync: mal using a bounded queue and blocking on full queue (synchronous
-           mode just added for fun on this test). (1MB queue, 32 bytes each
-           element).
+- mal (sync*1, bounded): mal using a bounded queue and blocking on full queue
+      (synchronous mode just added for fun on this test). (1MB queue, 32 bytes
+      each element).
 
-- mal bounded: mal with a bounded queue (8MB queue, 32 bytes each element). will
-               reject _a lot_ of messages. This is _very_ different of nanolog
-               non-guaranteed because the messages not sent are known to fail
-               at the caller point. Faults are substracted from the results and
-               show as a penalties on the benchmark.
+- mal (async, bounded): mal with a bounded queue (8MB queue, 32 bytes each
+      element). will reject _a lot_ of messages. This is _very_ different of
+      nanolog non-guaranteed because the messages not sent are known to fail
+      at the caller point. Faults are substracted from the results and show as a
+      penalties on the benchmark.
+
+*1: All these loggers/configurations are asynchronous but they become blocking
+when the queue is full. This isn't bad per se, as the size should be dimensioned
+for the load to handle. This benchmark is a stress test that overflows the
+queues.
 
 ### Results
 
 These are done against the master branch of each project on March 2017.
 
-### threads: 1 ####
+### threads: 1
 
-#### Throughput (threads=1) ####
+ ######## Throughput (threads=1) ####
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.130|7711.309|1.221|818.898|0.130|0.000|
-|mal hybrid|0.118|8455.209|1.228|814.135|0.118|0.000|
-|spdlog async|1.067|937.981|0.000|0.000|1.067|0.000|
-|g3log|4.614|216.789|0.000|0.000|4.614|0.000|
-|nanolog|0.260|3846.715|0.000|0.000|0.260|0.000|
-|glog|2.877|347.588|2.877|347.587|2.877|0.000|
-|mal sync|0.950|1074.696|1.288|793.948|0.950|0.000|
-|spdlog sync|1.368|731.470|0.000|0.000|1.368|0.000|
-|mal bounded|0.046|6318.494|0.342|857.564|0.046|706642.020|
+|mal heap|0.126|7945.230|1.349|741.506|0.126|0.000|
+|mal hybrid|0.197|5070.545|1.438|695.412|0.197|0.000|
+|spdlog async|1.557|642.433|0.000|0.000|1.557|0.000|
+|g3log|8.825|113.337|0.000|0.000|8.825|0.000|
+|nanolog|0.508|1975.716|0.000|0.000|0.508|0.000|
+|glog|5.174|193.283|5.174|193.282|5.174|0.000|
+|mal sync|2.061|491.328|2.414|418.300|2.061|0.000|
+|spdlog sync|1.412|709.052|0.000|0.000|1.412|0.000|
+|mal bounded|0.084|3495.853|0.420|698.437|0.084|706516.347|
 
 #### Latency with thread clock (threads=1) ####
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.361|0.147|0.000|71.419|
-|mal hybrid|0.356|0.144|0.000|64.668|
-|spdlog async|1.400|0.674|0.000|80.159|
-|g3log|4.879|1.792|0.000|77.168|
-|nanolog|0.413|2.528|0.000|6803.896|
-|glog|3.015|4.577|0.000|4015.253|
-|mal sync|0.712|0.972|0.000|85.270|
-|spdlog sync|1.564|2.396|0.000|1407.093|
-|mal bounded|0.245|0.093|0.000|65.625|
+|mal heap|0.270|0.078|0.000|77.447|
+|mal hybrid|0.268|0.084|0.000|75.310|
+|spdlog async|0.850|0.199|0.000|85.209|
+|g3log|3.503|0.537|0.000|641.111|
+|nanolog|0.403|6.766|0.000|22161.255|
+|glog|2.882|4.671|0.000|15048.301|
+|mal sync|0.804|154.365|0.000|978844.613|
+|spdlog sync|1.567|2.430|0.000|1365.975|
+|mal bounded|0.222|0.065|0.000|77.728|
 
-#### Latency with wall clock (threads=1) ####
+#### Latency with wall clock (threads=1)
 
-|logger|mean(us)|standard deviation|min(us)|max(us)|
+ ####|logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.209|0.179|0.000|67.500|
-|mal hybrid|0.210|0.188|0.000|73.250|
-|spdlog async|1.149|3.637|0.000|12022.750|
-|g3log|4.661|2.070|0.000|4037.500|
-|nanolog|0.309|2.512|0.000|878.250|
-|glog|2.915|84.996|0.000|596567.250|
-|mal sync|0.853|79.810|0.000|409559.000|
-|spdlog sync|1.415|2.457|0.000|2413.750|
-|mal bounded|0.117|0.144|0.000|66.000|
+|mal heap|0.347|7.243|0.000|20016.000|
+|mal hybrid|0.356|7.305|0.000|12020.750|
+|spdlog async|1.535|14.460|0.000|12030.750|
+|g3log|9.094|26.285|0.000|24116.250|
+|nanolog|0.585|59.257|0.000|26397.250|
+|glog|3.743|146.206|0.000|887690.500|
+|mal sync|1.837|65.380|0.000|551069.750|
+|spdlog sync|1.464|2.482|0.000|1390.500|
+|mal bounded|0.255|3.668|0.000|213.250|
 
-### threads: 2 ###
+### threads: 2
 
-#### Throughput (threads=2) ####
+ ######## Throughput (threads=2) ####
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.170|5880.785|1.242|805.250|0.334|0.000|
-|mal hybrid|0.179|5589.200|1.258|795.316|0.355|0.000|
-|spdlog async|1.313|763.219|0.000|0.000|2.555|0.000|
-|g3log|1.958|510.790|0.000|0.000|3.793|0.000|
-|nanolog|0.297|3377.687|0.000|0.000|0.591|0.000|
-|glog|4.355|229.915|4.355|229.910|8.701|0.000|
-|mal sync|1.006|1047.717|1.335|779.220|1.948|0.000|
-|spdlog sync|1.697|590.626|0.000|0.000|3.383|0.000|
-|mal bounded|0.066|4710.990|0.362|859.156|0.130|689311.280|
+|mal heap|0.157|6390.438|1.420|704.097|0.235|0.000|
+|mal hybrid|0.149|6704.804|1.398|715.368|0.243|0.000|
+|spdlog async|1.378|726.001|0.000|0.000|2.109|0.000|
+|g3log|3.482|287.276|0.000|0.000|5.505|0.000|
+|nanolog|0.398|2523.710|0.000|0.000|0.592|0.000|
+|glog|4.100|244.018|4.100|244.009|6.376|0.000|
+|mal sync|1.681|610.757|2.024|503.646|3.006|0.000|
+|spdlog sync|1.779|562.598|0.000|0.000|3.500|0.000|
+|mal bounded|0.051|5589.147|0.378|743.404|0.085|719122.107|
 
 #### Latency with thread clock (threads=2) ####
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.542|0.218|0.000|479.759|
-|mal hybrid|0.536|0.144|0.000|72.105|
-|spdlog async|1.991|1.232|0.000|511.705|
-|g3log|4.049|54.288|0.000|82542.491|
-|nanolog|0.692|4.297|0.000|1071.912|
-|glog|6.935|7.851|0.000|3270.576|
-|mal sync|1.310|2.044|0.000|197.826|
-|spdlog sync|3.084|3.479|0.000|4387.442|
-|mal bounded|0.353|0.147|0.000|84.074|
+|mal heap|0.382|0.258|0.000|590.523|
+|mal hybrid|0.380|0.145|0.000|75.543|
+|spdlog async|1.155|2.065|0.000|497.021|
+|g3log|3.107|14.504|0.000|35621.502|
+|nanolog|0.542|13.919|0.000|33780.853|
+|glog|7.155|10.945|0.000|19209.166|
+|mal sync|1.039|124.486|0.000|836462.805|
+|spdlog sync|3.086|3.414|0.000|1687.710|
+|mal bounded|0.259|0.117|0.000|74.806|
 
-#### Latency with wall clock (threads=2) ####
+#### Latency with wall clock (threads=2)
 
-|logger|mean(us)|standard deviation|min(us)|max(us)|
+ ####|logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.434|0.697|0.000|4100.500|
-|mal hybrid|0.430|1.777|0.000|12015.750|
-|spdlog async|2.388|46.579|0.000|120648.500|
-|g3log|3.874|3.494|0.000|3647.500|
-|nanolog|0.589|4.977|0.000|12022.750|
-|glog|8.758|180.237|0.000|570639.000|
-|mal sync|1.658|38.104|0.000|188700.500|
-|spdlog sync|3.288|4.897|0.000|4043.250|
-|mal bounded|0.205|2.413|0.000|12024.000|
+|mal heap|0.396|39.426|0.000|24018.250|
+|mal hybrid|0.395|38.711|0.000|16027.500|
+|spdlog async|1.933|386.506|0.000|402869.750|
+|g3log|5.869|194.717|0.000|96512.750|
+|nanolog|0.620|52.444|0.000|27627.750|
+|glog|6.322|161.424|0.000|841916.750|
+|mal sync|3.161|228.813|0.000|818299.750|
+|spdlog sync|3.260|4.707|0.000|1770.250|
+|mal bounded|0.228|29.513|0.000|16084.000|
 
-### threads: 4 ###
+### threads: 4
 
-#### Throughput (threads=4) ####
+ ######## Throughput (threads=4) ####
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.140|7160.330|1.272|786.811|0.444|0.000|
-|mal hybrid|0.139|7251.798|1.269|788.199|0.475|0.000|
-|spdlog async|1.127|889.108|0.000|0.000|3.658|0.000|
-|g3log|1.437|696.162|0.000|0.000|5.448|0.000|
-|nanolog|0.380|2681.219|0.000|0.000|1.403|0.000|
-|glog|4.166|240.122|4.166|240.114|16.557|0.000|
-|mal sync|0.946|1076.649|1.271|799.819|3.448|0.000|
-|spdlog sync|1.715|584.309|0.000|0.000|6.846|0.000|
-|mal bounded|0.080|3924.831|0.374|835.601|0.294|687639.620|
+|mal heap|0.127|7913.696|1.395|716.917|0.439|0.000|
+|mal hybrid|0.122|8235.414|1.429|699.693|0.414|0.000|
+|spdlog async|1.259|795.823|0.000|0.000|3.694|0.000|
+|g3log|2.118|472.352|0.000|0.000|6.041|0.000|
+|nanolog|0.405|2512.369|0.000|0.000|1.381|0.000|
+|glog|4.123|242.560|4.123|242.550|15.559|0.000|
+|mal sync|1.524|667.417|1.880|538.434|5.344|0.000|
+|spdlog sync|1.743|575.084|0.000|0.000|6.862|0.000|
+|mal bounded|0.063|4557.211|0.398|718.455|0.220|713963.427|
 
 #### Latency with thread clock (threads=4) ####
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.513|0.415|0.000|511.855|
-|mal hybrid|0.512|0.171|0.000|111.561|
-|spdlog async|2.462|2.440|0.000|2628.036|
-|g3log|3.689|53.359|0.000|62680.798|
-|nanolog|0.891|32.689|0.000|49694.812|
-|glog|10.238|10.278|0.000|5594.948|
-|mal sync|1.871|2.591|0.000|279.361|
-|spdlog sync|5.407|4.937|0.000|1781.881|
-|mal bounded|0.341|0.175|0.000|73.406|
+|mal heap|0.481|0.296|0.000|492.147|
+|mal hybrid|0.485|0.200|0.000|102.109|
+|spdlog async|2.228|1.970|0.000|408.481|
+|g3log|3.764|45.104|0.000|56006.180|
+|nanolog|0.880|29.042|0.000|24509.118|
+|glog|9.891|13.717|0.000|13993.848|
+|mal sync|1.632|48.004|0.000|8463.396|
+|spdlog sync|5.664|5.018|0.000|2005.818|
+|mal bounded|0.314|0.205|0.000|72.929|
 
-#### Latency with wall clock (threads=4) ####
+#### Latency with wall clock (threads=4)
 
-|logger|mean(us)|standard deviation|min(us)|max(us)|
+ ####|logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.543|29.021|0.000|24005.750|
-|mal hybrid|0.530|29.526|0.000|24016.250|
-|spdlog async|3.678|742.847|0.000|808391.250|
-|g3log|5.542|90.621|0.000|101110.750|
-|nanolog|0.991|71.331|0.000|102989.000|
-|glog|16.232|284.838|0.000|816382.000|
-|mal sync|3.223|225.919|0.000|794032.500|
-|spdlog sync|6.672|61.045|0.000|210836.500|
-|mal bounded|0.292|22.203|0.000|20007.750|
+|mal heap|0.488|31.253|0.000|20019.500|
+|mal hybrid|0.489|30.215|0.000|16031.000|
+|spdlog async|3.610|717.037|0.000|817889.000|
+|g3log|6.167|165.291|0.000|49672.250|
+|nanolog|0.929|55.725|0.000|39097.500|
+|glog|14.632|91.052|0.000|24396.250|
+|mal sync|5.996|434.340|0.000|850038.250|
+|spdlog sync|6.549|9.813|0.000|2205.000|
+|mal bounded|0.306|24.554|0.000|16035.500|
 
-### threads: 8 ###
+### threads: 8
 
-#### Throughput (threads=8) ####
+ ######## Throughput (threads=8) ####
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.132|7576.450|1.243|804.729|0.683|0.000|
-|mal hybrid|0.127|7895.176|1.271|787.196|0.705|0.000|
-|spdlog async|1.069|937.702|0.000|0.000|6.262|0.000|
-|g3log|1.190|843.128|0.000|0.000|9.008|0.000|
-|nanolog|0.581|1752.534|0.000|0.000|4.218|0.000|
-|glog|3.830|261.100|3.830|261.088|30.337|0.000|
-|mal sync|1.020|1024.347|1.328|774.919|6.765|0.000|
-|spdlog sync|1.735|577.809|0.000|0.000|13.797|0.000|
-|mal bounded|0.081|3836.921|0.376|821.530|0.494|690855.880|
+|mal heap|0.115|8725.011|1.449|690.239|0.733|0.000|
+|mal hybrid|0.114|8813.223|1.451|689.169|0.751|0.000|
+|spdlog async|1.188|842.420|0.000|0.000|6.508|0.000|
+|g3log|1.462|684.855|0.000|0.000|8.763|0.000|
+|nanolog|0.548|1872.165|0.000|0.000|3.701|0.000|
+|glog|4.759|210.207|4.760|210.194|36.373|0.000|
+|mal sync|1.497|678.098|1.843|548.220|10.048|0.000|
+|spdlog sync|1.745|574.548|0.000|0.000|11.835|0.000|
+|mal bounded|0.067|4230.673|0.402|696.510|0.434|719967.040|
 
 #### Latency with thread clock (threads=8) ####
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.496|0.431|0.000|504.111|
-|mal hybrid|0.499|0.170|0.000|97.510|
-|spdlog async|2.243|2.021|0.000|874.355|
-|g3log|3.606|38.342|0.000|54364.680|
-|nanolog|1.294|83.357|0.000|105954.363|
-|glog|11.813|7.999|0.000|1254.618|
-|mal sync|2.093|2.689|0.000|305.088|
-|spdlog sync|5.632|5.035|0.000|1744.719|
-|mal bounded|0.339|0.168|0.000|87.249|
+|mal heap|0.480|0.206|0.000|467.871|
+|mal hybrid|0.489|0.238|0.000|482.395|
+|spdlog async|1.959|1.876|0.000|1569.762|
+|g3log|3.714|33.133|0.000|51278.157|
+|nanolog|1.315|94.957|0.000|113730.770|
+|glog|6.110|19.168|0.000|15323.714|
+|mal sync|1.777|82.498|0.000|423814.612|
+|spdlog sync|3.335|4.561|0.000|5286.152|
+|mal bounded|0.309|0.211|0.000|84.510|
 
-#### Latency with wall clock (threads=8) ####
+#### Latency with wall clock (threads=8)
 
-|logger|mean(us)|standard deviation|min(us)|max(us)|
+ ####|logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.838|72.221|0.000|32013.500|
-|mal hybrid|0.803|68.674|0.000|40010.750|
-|spdlog async|6.084|1199.106|0.000|1005115.750|
-|g3log|9.970|145.274|0.000|73050.250|
-|nanolog|2.698|275.494|0.000|256433.250|
-|glog|32.657|51.267|0.000|12302.250|
-|mal sync|5.993|370.835|0.000|771183.250|
-|spdlog sync|13.784|230.688|0.000|407219.500|
-|mal bounded|0.486|57.932|0.000|36007.750|
+|mal heap|0.876|66.039|0.000|24010.500|
+|mal hybrid|0.882|66.726|0.000|24019.750|
+|spdlog async|6.519|1164.560|0.000|1000879.750|
+|g3log|9.784|197.660|0.000|96865.500|
+|nanolog|2.492|230.070|0.000|240000.750|
+|glog|35.093|1189.785|0.000|1061686.000|
+|mal sync|11.753|585.439|0.000|602712.500|
+|spdlog sync|12.417|250.868|0.000|44341.750|
+|mal bounded|0.559|51.964|0.000|24003.750|
 
-### threads: 16 ###
+### threads: 16
 
-#### Throughput (threads=16) ####
+ ######## Throughput (threads=16) ####
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.125|8017.746|1.237|808.630|1.232|0.000|
-|mal hybrid|0.121|8275.195|1.264|791.818|1.205|0.000|
-|spdlog async|1.093|918.023|0.000|0.000|11.364|0.000|
-|g3log|1.043|965.017|0.000|0.000|15.715|0.000|
-|nanolog|0.923|1096.771|0.000|0.000|13.436|0.000|
-|glog|3.806|262.718|3.807|262.706|59.994|0.000|
-|mal sync|1.071|989.880|1.381|752.963|13.724|0.000|
-|spdlog sync|1.532|658.223|0.000|0.000|24.354|0.000|
-|mal bounded|0.078|3927.956|0.373|819.880|0.741|694552.040|
+|mal heap|0.109|9221.551|1.429|699.848|1.221|0.000|
+|mal hybrid|0.103|9722.275|1.447|691.009|1.274|0.000|
+|spdlog async|1.184|844.823|0.000|0.000|12.449|0.000|
+|g3log|1.203|833.128|0.000|0.000|15.845|0.000|
+|nanolog|0.940|1080.626|0.000|0.000|13.339|0.000|
+|glog|4.822|207.438|4.823|207.399|71.735|0.000|
+|mal sync|1.540|651.859|1.881|532.950|20.764|0.000|
+|spdlog sync|1.727|579.247|0.000|0.000|22.563|0.000|
+|mal bounded|0.069|4033.660|0.404|682.638|0.806|724294.933|
 
 #### Latency with thread clock (threads=16) ####
 
 |logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.489|1.293|0.000|1247.466|
-|mal hybrid|0.491|0.593|0.000|822.522|
-|spdlog async|2.258|2.179|0.000|1454.300|
-|g3log|3.736|33.966|0.000|32536.103|
-|nanolog|2.083|140.071|0.000|64961.240|
-|glog|11.940|9.132|0.000|17724.958|
-|mal sync|2.183|3.221|0.000|4067.417|
-|spdlog sync|5.397|4.933|0.000|1585.444|
-|mal bounded|0.335|0.170|0.000|92.873|
+|mal heap|0.482|0.199|0.000|80.373|
+|mal hybrid|0.492|0.234|0.000|485.819|
+|spdlog async|1.836|1.945|0.000|2637.872|
+|g3log|3.809|36.726|0.000|30658.330|
+|nanolog|2.049|131.082|0.000|71946.083|
+|glog|5.759|19.261|0.000|16127.556|
+|mal sync|1.612|67.974|0.000|18048.726|
+|spdlog sync|2.890|4.411|0.000|5324.756|
+|mal bounded|0.304|0.214|0.000|81.663|
 
-#### Latency with wall clock (threads=16) ####
+#### Latency with wall clock (threads=16)
 
-|logger|mean(us)|standard deviation|min(us)|max(us)|
+ ####|logger|mean(us)|standard deviation|min(us)|max(us)|
 |:-:|:-:|:-:|:-:|:-:|
-|mal heap|1.484|139.507|0.000|86382.250|
-|mal hybrid|1.481|140.247|0.000|64014.250|
-|spdlog async|10.497|1778.972|0.000|1014318.750|
-|g3log|17.291|217.347|0.000|75330.750|
-|nanolog|8.193|741.447|0.000|403990.750|
-|glog|66.517|93.593|0.000|31383.750|
-|mal sync|11.578|154.184|0.000|255123.750|
-|spdlog sync|24.803|512.088|0.000|588557.750|
-|mal bounded|0.766|106.593|0.000|60007.250|
+|mal heap|1.596|126.657|0.000|44007.000|
+|mal hybrid|1.596|126.213|0.000|44007.250|
+|spdlog async|12.070|1823.004|0.000|1020022.750|
+|g3log|17.553|260.136|0.000|88671.250|
+|nanolog|7.617|641.032|0.000|321992.250|
+|glog|71.834|2094.555|0.000|1404892.000|
+|mal sync|23.215|1072.886|0.000|490287.750|
+|spdlog sync|24.159|436.705|0.000|63665.500|
+|mal bounded|1.004|100.148|0.000|44005.500|
 
 ## How does it work ##
 
