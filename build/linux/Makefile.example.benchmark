@@ -5,7 +5,7 @@
 THIS_FILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 # Mandatory variables items
-ARTIFACT := bin/mal-example-benchmark
+ARTIFACT := bin/mal-benchmark
 
 # Standard directory layout overrides
 TOP          := $(THIS_FILE_DIR)/../..
