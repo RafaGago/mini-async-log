@@ -161,9 +161,8 @@ queues.
 
 These are done against the master branch of each project on March 2017.
 
-### threads: 1
-
- ######## Throughput (threads=1) ####
+### threads: 1 ###
+#### Throughput (threads=1) ####
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -205,9 +204,9 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|1.464|2.482|0.000|1390.500|
 |mal bounded|0.255|3.668|0.000|213.250|
 
-### threads: 2
+### threads: 2 ###
 
- ######## Throughput (threads=2) ####
+#### Throughput (threads=2) ####
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -249,9 +248,9 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|3.260|4.707|0.000|1770.250|
 |mal bounded|0.228|29.513|0.000|16084.000|
 
-### threads: 4
+### threads: 4 ###
 
- ######## Throughput (threads=4) ####
+#### Throughput (threads=4) ####
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -293,9 +292,9 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|6.549|9.813|0.000|2205.000|
 |mal bounded|0.306|24.554|0.000|16035.500|
 
-### threads: 8
+### threads: 8 ###
 
- ######## Throughput (threads=8) ####
+#### Throughput (threads=8) ####
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -337,9 +336,9 @@ These are done against the master branch of each project on March 2017.
 |spdlog sync|12.417|250.868|0.000|44341.750|
 |mal bounded|0.559|51.964|0.000|24003.750|
 
-### threads: 16
+### threads: 16 ###
 
- ######## Throughput (threads=16) ####
+#### Throughput (threads=16) ####
 
 |logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|
