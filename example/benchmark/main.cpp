@@ -792,7 +792,8 @@ private:
     //--------------------------------------------------------------------------
     bool wait_until_work_completion()
     {
-        return false; /*No known way to flush the queue. No disk speed stats.*/
+        m_logger->flush();
+        return true;
     }
     //--------------------------------------------------------------------------
     bool                            m_async;
