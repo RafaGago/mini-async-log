@@ -75,15 +75,15 @@ enum {
 };
 //------------------------------------------------------------------------------
 static char const* names[] {
-    "mal heap",
-    "mal hybrid",
-    "spdlog async",
+    "mal-heap",
+    "mal-hybrid",
+    "spdlog-async",
     "g3log",
     "nanolog",
     "glog",
-    "mal sync",
-    "spdlog sync",
-    "mal bounded",
+    "mal-sync",
+    "spdlog-sync",
+    "mal-bounded",
 };
 //------------------------------------------------------------------------------
 static char const* paths[] {
@@ -1128,14 +1128,20 @@ void print_usage()
     std::puts(
 "usage: <msgs> <iterations> <test_type>\n"
 " where \"test type\" can be:\n"
-"       all:        Runs all the tests together.\n"
-"       mal:        Runs \"mini-async-log\".\n"
-"       spdlog:     Runs \"spdlog\".\n"
-"       g3log:      Runs \"g3log\".\n"
-"       glog:       Runs \"Google log\".\n"
-"       nanolog:    Runs \"nanolog\".\n"
-"       mal-stress: Runs \"mini-async-log\" forever without showing results.\n"
-"                   Useful to do long stress testing.\n"
+"       all:          Runs all the tests together.\n"
+"       mal:          Runs \"mini-async-log\". All types.\n"
+"       mal-heap:     Runs \"mini-async-log\". Heap.\n"
+"       mal-hybrid:   Runs \"mini-async-log\". Hybrid.\n"
+"       mal-sync:     Runs \"mini-async-log\". Sync.\n"
+"       mal-bounded:  Runs \"mini-async-log\". Bounded.\n"
+"       spdlog:       Runs \"spdlog\". All types.\n"
+"       spdlog-async: Runs \"spdlog\". Async.\n"
+"       spdlog-sync:  Runs \"spdlog\". Sync.\n"
+"       g3log:        Runs \"g3log\".\n"
+"       glog:         Runs \"Google log\".\n"
+"       nanolog:      Runs \"nanolog\".\n"
+"       mal-stress:   Runs \"mini-async-log\" forever with no results.\n"
+"                     Useful to do long stress testing.\n"
     );
 }
 //------------------------------------------------------------------------------
@@ -1196,7 +1202,6 @@ int main (int argc, const char* argv[])
     std::vector<bool> active_loggers;
     active_loggers.insert (active_loggers.end(), loggers::count, false);
 
-    bool is_mal_stress = test_type.compare ("mal-stress") == 0;
     if (test_type.compare ("all") == 0) {
         active_loggers.clear();
         active_loggers.insert (active_loggers.end(), loggers::count, true);
@@ -1211,39 +1216,39 @@ int main (int argc, const char* argv[])
             "\nTest completed in %d:%d:%f\n", (int) hours, (int) min, sec
             );
     }
-    else if(is_mal_stress || test_type.compare ("mal-perf") == 0) {
+    else if (test_type.compare ("mal-stress") == 0
+        || test_type.compare ("mal") == 0
+        ) {
+        bool is_stress = test_type.compare ("mal-stress");
         active_loggers[loggers::mal_heap] = true;
         active_loggers[loggers::mal_hybrid] = true;
         active_loggers[loggers::mal_sync] = true;
         active_loggers[loggers::mal_bounded] = true;
-        while (is_mal_stress) {
+        while (is_stress) {
             run_tests (1, 50000, active_loggers, 1, true, false);
         }
-        if (!is_mal_stress) {
+        if (!is_stress) {
             run_tests (iterations, msgs, active_loggers);
         }
     }
-    else if (test_type.compare ("nanolog") == 0) {
-        active_loggers[loggers::nanolog] = true;
-        run_tests (iterations, msgs, active_loggers);
-    }
-    else if (test_type.compare ("g3log") == 0) {
-        active_loggers[loggers::g3log] = true;
-        run_tests (iterations, msgs, active_loggers);
-    }
-    else if (test_type.compare ("glog") == 0) {
-        active_loggers[loggers::glog] = true;
-        run_tests (iterations, msgs, active_loggers);
-    }
     else if (test_type.compare ("spdlog") == 0) {
-        active_loggers[loggers::spdlog_async] = true;
         active_loggers[loggers::spdlog_sync] = true;
+        active_loggers[loggers::spdlog_async] = true;
         run_tests (iterations, msgs, active_loggers);
     }
     else {
-        std::printf ("invalid test type\n");
-        print_usage();
-        return 2;
+        int logger = 0;
+        for (; logger < loggers::count; ++logger) {
+            if (test_type.compare (loggers::names[logger]) == 0) {
+                active_loggers[logger] = true;
+                run_tests (iterations, msgs, active_loggers);
+            }
+        }
+        if (logger == loggers::count) {
+            std::printf ("invalid test type\n");
+            print_usage();
+            return 2;
+        }
     }
     return 0;
 }
