@@ -40,7 +40,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <deque>
 #include <string>
 #include <mal_log/util/integer.hpp>
-#include <mal_log/util/mpsc_hybrid_wait_cfg.hpp>
+#include <mal_log/util/queue_backoff_cfg.hpp>
 
 namespace mal {
 
@@ -97,7 +97,7 @@ struct backend_cfg {
     backend_log_entry_alloc_config alloc;
     backend_visualization_config   display;
     backend_severity_files         sev;
-    mpsc_hybrid_wait_cfg           blocking;
+    queue_backoff_cfg              blocking;
 }; //class log_backend_cfg
 //------------------------------------------------------------------------------
 } //namespaces

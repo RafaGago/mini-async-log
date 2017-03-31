@@ -39,27 +39,11 @@ either expressed or implied, of Rafael Gago Castano.
 #include <mal_log/timestamp.hpp>
 #include <mal_log/util/thread.hpp>
 #include <mal_log/util/chrono.hpp>
+#include <mal_log/util/queue_backoff_cfg.hpp>
 #include <mal_log/util/processor_pause.hpp>
 #include <stdlib.h>
 
-namespace mal {
-//------------------------------------------------------------------------------
-struct queue_backoff_cfg {
-    queue_backoff_cfg() {
-        spin_end            = 4;
-        short_cpu_relax_end = 16;
-        long_cpu_relax_end  = 32;
-        yield_end           = 52;
-        short_sleep_end     = 78;
-    }
-    uword spin_end;
-    uword short_cpu_relax_end;
-    uword long_cpu_relax_end;
-    uword yield_end;
-    uword short_sleep_end;
-};
-//------------------------------------------------------------------------------
-namespace detail {
+namespace mal { namespace detail {
 
 class queue_backoff {
 public:
@@ -67,7 +51,14 @@ public:
     //--------------------------------------------------------------------------
     queue_backoff()
     {
-        m_iterations = 0;
+        m_iterations             = 0;
+        cfg.spin_end             = 4;
+        cfg.short_cpu_relax_end  = 16;
+        cfg.long_cpu_relax_end   = 32;
+        cfg.yield_end            = 52;
+        cfg.short_sleep_end      = 78;
+        cfg.long_sleep_ns        = 8000000;
+        cfg.long_sleep_randomize = true;
     }
     //--------------------------------------------------------------------------
     void reset()
@@ -113,6 +104,13 @@ protected:
         return false;
     }
     //--------------------------------------------------------------------------
+    uword get_sleep_block_ns()
+    {
+        return cfg.long_sleep_randomize ?
+            cfg.long_sleep_ns + (rand() % (cfg.long_sleep_ns / 4)) :
+            cfg.long_sleep_ns;
+    }
+    //--------------------------------------------------------------------------
     uword m_iterations;
 };
 
@@ -127,9 +125,7 @@ public:
         if (detail::queue_backoff::wait()) {
             return;
         }
-        th::this_thread::sleep_for(
-            ch::nanoseconds (8000000 + (rand() % 4194304))
-            );
+        th::this_thread::sleep_for (ch::nanoseconds (get_sleep_block_ns()));
     }
     //--------------------------------------------------------------------------
 };
@@ -149,9 +145,7 @@ public:
         if (detail::queue_backoff::wait()) {
             return;
         }
-        m_locked = m_lock.try_lock_for(
-            ch::nanoseconds (8000000 + (rand() % 4194304))
-            );
+        m_locked = m_lock.try_lock_for (ch::nanoseconds (get_sleep_block_ns()));
     }
     //--------------------------------------------------------------------------
 private:
@@ -171,9 +165,7 @@ public:
     {
         if (!detail::queue_backoff::wait()) {
             th::unique_lock<std::mutex> lock (m_mutex);
-            m_cond.wait_for(
-                lock, ch::nanoseconds (8000000 + (rand() % 4194304))
-                );
+            m_cond.wait_for (lock, ch::nanoseconds (get_sleep_block_ns()));
         }
     }
     //--------------------------------------------------------------------------

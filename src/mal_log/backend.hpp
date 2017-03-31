@@ -49,7 +49,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <mal_log/util/atomic.hpp>
 #include <mal_log/util/chrono.hpp>
 #include <mal_log/util/mem_printf.hpp>
-#include <mal_log/util/mpsc_hybrid_wait.hpp>
+#include <mal_log/util/queue_backoff.hpp>
 
 #include <mal_log/output.hpp>
 #include <mal_log/frontend.hpp>
@@ -84,7 +84,7 @@ public:
         m_cfg.file.rotation.delayed_file_count = 0;
         m_cfg.file.erase_and_retry_on_fatal_errors = false;
 
-        m_cfg.blocking = m_wait.get_cfg();
+        m_cfg.blocking = m_wait.cfg;
 
         m_status             = constructed;
         m_alloc_fault        = 0;
@@ -212,7 +212,7 @@ private:
         m_cfg = c;
         m_writer.prints_severity  = m_cfg.display.show_severity;
         m_writer.prints_timestamp = m_cfg.display.show_timestamp;
-        m_wait.set_cfg (c.blocking);
+        m_wait.cfg = c.blocking;
     }
     //--------------------------------------------------------------------------
     bool validate_cfg (const backend_cfg& c)
@@ -296,7 +296,7 @@ private:
                         severity_check();
                     }
                 }
-                m_wait.block();
+                m_wait.wait();
             }
             uword allocf_now = m_alloc_fault.load (mo_relaxed);
             if (alloc_fault != allocf_now) {
@@ -495,17 +495,17 @@ private:
         thread_stopped,
     };
     //--------------------------------------------------------------------------
-    output            m_out;
-    log_writer        m_writer;
-    sev_update_evt    m_sev_evt;
-    backend_cfg       m_cfg;
-    log_file_register m_files_register;
-    th::thread        m_log_thread;
-    at::atomic<uword> m_status;
-    queue             m_fifo;
-    mpsc_hybrid_wait  m_wait;
-    atomic_uword      m_alloc_fault;
-    bool              m_on_error_avoidance;
+    output              m_out;
+    log_writer          m_writer;
+    sev_update_evt      m_sev_evt;
+    backend_cfg         m_cfg;
+    log_file_register   m_files_register;
+    th::thread          m_log_thread;
+    at::atomic<uword>   m_status;
+    queue               m_fifo;
+    sleep_queue_backoff m_wait;
+    atomic_uword        m_alloc_fault;
+    bool                m_on_error_avoidance;
  };
 //------------------------------------------------------------------------------
 } //namespaces
