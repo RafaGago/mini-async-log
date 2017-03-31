@@ -85,8 +85,11 @@ public:
         queue_prepared::error err  = commit_data.get_error();
 
         if (!mem && m_block_on_full_queue && err == queue_prepared::queue_full){
-            mutex_queue_backoff backoff (m_contention_mutex);
+            th::mutex dummy;
+            cond_queue_backoff backoff (dummy, m_back.consume_condition);
+            backoff.cfg.long_sleep_ns = 50000000;
             do {
+
                 backoff.wait();
                 commit_data = m_back.allocate_entry (required_bytes);
                 mem         = commit_data.get_mem();
@@ -233,7 +236,8 @@ public:
     //--------------------------------------------------------------------------
     void block_on_full_queue (bool on)
     {
-        m_block_on_full_queue = on;
+        m_block_on_full_queue           = on;
+        m_back.signal_consume_condition = on;
     }
     //--------------------------------------------------------------------------
     bool block_on_full_queue() const
@@ -261,7 +265,6 @@ private:
     mo_relaxed_atomic<uword> m_state;
     backend_impl             m_back;
     async_to_sync            m_sync;
-    th::timed_mutex          m_contention_mutex;
     bool                     m_prints_timestamp;
     bool                     m_producer_timestamp;
     bool                     m_block_on_full_queue;

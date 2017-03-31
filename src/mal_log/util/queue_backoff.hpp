@@ -156,7 +156,7 @@ private:
 class cond_queue_backoff : public detail::queue_backoff {
 public:
     //--------------------------------------------------------------------------
-    cond_queue_backoff (th::mutex& m, th::condition_variable cond) :
+    cond_queue_backoff (th::mutex& m, th::condition_variable& cond) :
         m_mutex (m),
         m_cond (cond)
     {}

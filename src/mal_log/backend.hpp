@@ -69,6 +69,9 @@ class backend_impl
 public:
     typedef std::function<void()> sev_update_evt;
     //--------------------------------------------------------------------------
+    th::condition_variable consume_condition;
+    bool                   signal_consume_condition;
+    //--------------------------------------------------------------------------
     backend_impl()
     {
         m_cfg.alloc.use_heap_if_required = true;
@@ -89,6 +92,8 @@ public:
         m_status             = constructed;
         m_alloc_fault        = 0;
         m_on_error_avoidance = false;
+
+        signal_consume_condition = false;
     }
     //--------------------------------------------------------------------------
     ~backend_impl()
@@ -279,6 +284,9 @@ private:
                 m_wait.reset();
                 m_writer.decode_and_write (m_out, res.get_mem());
                 m_fifo.pop_commit (res);
+                if (signal_consume_condition) {
+                    consume_condition.notify_all();
+                }
             }
             else {
                 if (m_status.load (mo_relaxed) != running) {
