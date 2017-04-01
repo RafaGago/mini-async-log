@@ -66,9 +66,9 @@ public:
         m_iterations = 0;
     }
     //--------------------------------------------------------------------------
-    bool would_block_now_hint()
+    bool next_wait_is_long_sleep()
     {
-        return m_iterations >= cfg.short_sleep_end;
+        return m_iterations + 1 >= cfg.short_sleep_end;
     }
     //--------------------------------------------------------------------------
 protected:

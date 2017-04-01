@@ -55,6 +55,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <mal_log/frontend.hpp>
 #include <mal_log/log_writer.hpp>
 #include <mal_log/queue.hpp>
+#include <mal_log/backoff_wait.hpp>
 #include <mal_log/backend_cfg.hpp>
 #include <mal_log/log_file_register.hpp>
 #include <mal_log/timestamp.hpp>
@@ -70,6 +71,7 @@ public:
     typedef std::function<void()> sev_update_evt;
     //--------------------------------------------------------------------------
     th::condition_variable consume_condition;
+    backoff_wait           consume_wait;
     bool                   signal_consume_condition;
     //--------------------------------------------------------------------------
     backend_impl()
@@ -285,14 +287,16 @@ private:
                 m_writer.decode_and_write (m_out, res.get_mem());
                 m_fifo.pop_commit (res);
                 if (signal_consume_condition) {
-                    consume_condition.notify_all();
+                    if (consume_wait.call_next_ticket()) {
+                        consume_condition.notify_all();
+                    }
                 }
             }
             else {
                 if (m_status.load (mo_relaxed) != running) {
                     break;
                 }
-                if (m_wait.would_block_now_hint()) {
+                if (m_wait.next_wait_is_long_sleep()) {
                     idle_rotate_if();
                     auto now = ch::steady_clock::now();
                     if (now >= next_flush) {

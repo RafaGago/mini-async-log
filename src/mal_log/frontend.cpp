@@ -86,11 +86,19 @@ public:
 
         if (!mem && m_block_on_full_queue && err == queue_prepared::queue_full){
             th::mutex dummy;
-            cond_queue_backoff backoff (dummy, m_back.consume_condition);
+            cond_queue_backoff  backoff (dummy, m_back.consume_condition);
             backoff.cfg.long_sleep_ns = 20000000;
+            backoff_wait_ticket ticket;
+            bool waiting_for_ticket = false;
             do {
-
+                if (!waiting_for_ticket && backoff.next_wait_is_long_sleep()) {
+                    m_back.consume_wait.push_ticket (ticket);
+                    waiting_for_ticket = true;
+                }
                 backoff.wait();
+                if (waiting_for_ticket && !ticket.is_ready()) {
+                    continue;
+                }
                 commit_data = m_back.allocate_entry (required_bytes);
                 mem         = commit_data.get_mem();
                 err         = commit_data.get_error();
