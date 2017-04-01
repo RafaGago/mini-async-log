@@ -38,6 +38,9 @@
 #include <glog/logging.h>
 #include <spdlog/spdlog.h>
 #include <NanoLog.hpp>
+#include <NanoLog.cpp> /*workaround: to be able to shutdown Nanolog's worker
+                         busy looping each 50us when the other tests are
+                         running. */
 
 #ifdef _WIN32
     #define DIR_SEP "\\"
@@ -808,29 +811,20 @@ private:
     //--------------------------------------------------------------------------
     bool configure()
     {
-        static bool configured = false;
-        if (configured) {
-            return true;
-        }
+        return true;
+    }
+    //--------------------------------------------------------------------------
+    void create()
+    {
         nanolog::initialize(
             nanolog::GuaranteedLogger(),
             NANOLOG_PATH DIR_SEP,
             "nanolog",
             file_size_bytes / (1024 * 1024)
             );
-        configured = true;
-        return true;
     }
     //--------------------------------------------------------------------------
-    void create() {}
-    //--------------------------------------------------------------------------
-    void destroy()
-    {
-        /*other loggers have to cope with this thread being active and having
-          background activity. Giving 2 sec for the log entries to be written*/
-        using namespace mal;
-        th::this_thread::sleep_for (ch::seconds (2));
-    }
+    void destroy() {}
     //--------------------------------------------------------------------------
     int log_one (unsigned i)
     {
@@ -840,7 +834,9 @@ private:
     //--------------------------------------------------------------------------
     bool wait_until_work_completion()
     {
-        return false; /*No known way to flush the queue. No disk speed stats.*/
+        /* workaround: this is relying on internals, not the public API */
+        ::nanolog::nanologger.reset();
+        return true;
     }
     //--------------------------------------------------------------------------
 };

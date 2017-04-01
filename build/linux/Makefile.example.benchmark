@@ -26,7 +26,6 @@ GLOG_STATLIB_FILE := $(CMAKE_LIB)/libglog.a
 G3LOG_STATLIB_FILE := $(CMAKE_LIB)/libg3logger.a
 
 NANOLOG_DIR := $(GIT_SUBMODULES_DIR)/nanolog
-CXX_SRCS    += $(NANOLOG_DIR)/NanoLog.cpp
 
 # Updated vars
 INCLUDE_DIRS := $(TOP)/include $(CMAKE_INCLUDE) $(SPDLOG_INCLUDE) $(NANOLOG_DIR)
