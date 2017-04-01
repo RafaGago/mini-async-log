@@ -64,7 +64,7 @@ public:
         m_producer_timestamp  = true;
         m_timestamp_base      = 0;
         m_block_on_full_queue = false;
-        srand ((unsigned int) get_timestamp() >> 2);
+        srand ((unsigned int) get_ns_timestamp() >> 2);
     }
     //--------------------------------------------------------------------------
     ~frontend_impl() {}
@@ -147,7 +147,7 @@ public:
     {
         uword actual = no_init;
         if (m_state.compare_exchange_strong (actual, on_init, mo_acquire)) {
-            m_timestamp_base = get_timestamp();
+            m_timestamp_base = get_ns_timestamp();
             auto sev_ch = [=]() { this->severity_updated_event(); };
             if (m_back.init (cfg, m_sync, m_timestamp_base, sev_ch))
             {

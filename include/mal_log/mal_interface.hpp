@@ -159,7 +159,7 @@ bool new_entry(                                                                 
     auto td = fe.get_timestamp_data();
     hdr     = ser::make_header_data (sv, fmt, arity, td.producer_timestamps);
     if (hdr.has_tstamp) {                                                        //timestamping is actually slow! in my machine slows down the producers by a factor of 2
-        hdr.tstamp = get_timestamp() - td.base;
+        hdr.tstamp = get_ns_timestamp() - td.base;
     }
     sync_point sync;
     if (!is_async) {

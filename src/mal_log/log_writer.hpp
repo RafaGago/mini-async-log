@@ -90,7 +90,8 @@ public:
         if (prints_timestamp) {
             write_timestamp(
                 o,
-                h.has_tstamp ? h.tstamp : (get_timestamp() - m_timestamp_base)
+                h.has_tstamp ?
+                    h.tstamp : (get_ns_timestamp() - m_timestamp_base)
                 );
         }
         if (prints_severity) { write_severity (o, h.severity); }

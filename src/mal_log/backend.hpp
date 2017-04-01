@@ -272,8 +272,8 @@ private:
         idle_rotate_if();
         m_status.store (running, mo_relaxed);
         uword alloc_fault = m_alloc_fault.load (mo_relaxed);
-        auto  next_flush  = ch::steady_clock::now() + ch::milliseconds (1000);
-        auto  sev_check   = ch::steady_clock::now() + ch::milliseconds (1000);
+        auto next_flush = ch::steady_clock::now() + ch::milliseconds (1000);
+        auto sev_check  = ch::steady_clock::now() + ch::milliseconds (1000);
         change_current_filename();
         severity_check();
 
@@ -324,7 +324,7 @@ private:
     const char* change_current_filename()
     {
         using namespace ch;
-        u64 cpu         = get_timestamp();
+        u64 cpu         = get_ns_timestamp();
         u64 calendar_us = duration_cast<microseconds>(
                         system_clock::now().time_since_epoch()
                         ).count();
@@ -338,7 +338,7 @@ private:
                 str,
                 sizeof str,
                 "[%020llu] [logger_err] %u alloc faults detected",
-                get_timestamp(),
+                get_ns_timestamp(),
                 count
                 );
         m_out.raw_write (sev::error, str);
@@ -390,7 +390,10 @@ private:
         if (m_on_error_avoidance == false) {
             char str[FILE_ERROR_AVOIDANCE_STR_MAX];
             mem_printf(
-                str, sizeof str, FILE_ERROR_AVOIDANCE_FMT_STR, get_timestamp()
+                str,
+                sizeof str,
+                FILE_ERROR_AVOIDANCE_FMT_STR,
+                get_ns_timestamp()
                 );
             m_out.raw_write (sev::error, str);
             m_on_error_avoidance = true;

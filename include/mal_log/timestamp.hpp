@@ -42,11 +42,16 @@ either expressed or implied, of Rafael Gago Castano.
 
 namespace mal {
 //--------------------------------------------------------------------------
-inline u64 get_timestamp()
+inline u64 get_ns_timestamp()
 {
     return ch::duration_cast<ch::nanoseconds>(
             ch::steady_clock::now().time_since_epoch()
             ).count();
+}
+//--------------------------------------------------------------------------
+inline bool timestamp_is_expired (u64 now, u64 deadline)
+{
+    return (i64) (deadline - now) <= 0;
 }
 //------------------------------------------------------------------------------
 
