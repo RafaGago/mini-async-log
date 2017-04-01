@@ -272,8 +272,8 @@ private:
         idle_rotate_if();
         m_status.store (running, mo_relaxed);
         uword alloc_fault = m_alloc_fault.load (mo_relaxed);
-        auto next_flush = ch::steady_clock::now() + ch::milliseconds (1000);
-        auto sev_check  = ch::steady_clock::now() + ch::milliseconds (1000);
+        u64 next_flush = get_ns_timestamp() + (1 * 1000 * 1000 * 1000);
+        u64 sev_check  = next_flush;
         change_current_filename();
         severity_check();
 
@@ -298,13 +298,13 @@ private:
                 }
                 if (m_wait.next_wait_is_long_sleep()) {
                     idle_rotate_if();
-                    auto now = ch::steady_clock::now();
-                    if (now >= next_flush) {
-                        next_flush = now + ch::milliseconds (1000);
+                    auto now = get_ns_timestamp();
+                    if (timestamp_is_expired (now, next_flush)) {
+                        next_flush = now + (1 * 1000 * 1000 * 1000);
                         m_out.flush();
                     }
-                    if (now >= sev_check) {
-                        sev_check = now + ch::milliseconds (1000);
+                    if (timestamp_is_expired (now, sev_check)) {
+                        sev_check = now + (1 * 1000 * 1000 * 1000);
                         severity_check();
                     }
                 }
