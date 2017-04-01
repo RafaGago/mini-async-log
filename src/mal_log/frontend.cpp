@@ -87,7 +87,7 @@ public:
         if (!mem && m_block_on_full_queue && err == queue_prepared::queue_full){
             th::mutex dummy;
             cond_queue_backoff backoff (dummy, m_back.consume_condition);
-            backoff.cfg.long_sleep_ns = 50000000;
+            backoff.cfg.long_sleep_ns = 20000000;
             do {
 
                 backoff.wait();
