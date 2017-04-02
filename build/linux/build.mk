@@ -53,7 +53,7 @@ INCLUDE_DIRS ?= $(TOP)/include
 DEBUG ?= 0
 ifeq ($(DEBUG), 0)
 	CPPFLAGS      += -DNDEBUG
-	CCCXXFLAGS    += -Os #CCCXXFLAGS flags are both for CC and CXX
+	CCCXXFLAGS    += -O3 #CCCXXFLAGS flags are both for CC and CXX
 	BUILDTYPE     :=
 	DEBUG_SUFFIX  :=
 	INSTALL_STRIP :=
