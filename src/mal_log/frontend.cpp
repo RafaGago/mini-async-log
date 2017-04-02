@@ -87,7 +87,12 @@ public:
         if (!mem && m_block_on_full_queue && err == queue_prepared::queue_full){
             th::mutex dummy;
             cond_queue_backoff  backoff (dummy, m_back.consume_condition);
-            backoff.cfg.long_sleep_ns = 20000000;
+            backoff.cfg.spin_end            = 2;
+            backoff.cfg.short_cpu_relax_end = 4;
+            backoff.cfg.long_cpu_relax_end  = 6;
+            backoff.cfg.yield_end           = 8;
+            backoff.cfg.short_sleep_end     = 10;
+            backoff.cfg.long_sleep_ns       = 20000000;
             backoff_wait_ticket ticket;
             bool waiting_for_ticket = false;
             do {
