@@ -1228,7 +1228,10 @@ int main (int argc, const char* argv[])
             double min   = floor (sec / 60.);
             sec         -= min * 60.;
             std::printf(
-                "\nTest completed in %d:%d:%f\n", (int) hours, (int) min, sec
+                "\nTest completed in %d:%02d:%06.3f\n",
+                (int) hours,
+                (int) min,
+                sec
                 );
             return 0;
         }
