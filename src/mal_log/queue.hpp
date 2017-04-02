@@ -91,20 +91,36 @@ public:
         success,
         queue_full,
         entry_size,
+        count,
     };
-
     queue_prepared()
     {
         mem = nullptr;
         pos = 0;
     }
-    u8* get_mem() const { return mem; }
+    u8* get_mem() const
+    {
+        return ((uword) mem >= count) ? mem : nullptr;
+    }
     error get_error() const
     {
-        return mem ? success : (error) pos;
+        return (((uword) mem) < count) ? *((error*) &mem) : success;
+    }
+    size_t transaction_value()
+    {
+        return pos;
     }
 private:
     friend class queue;
+    void set_error (error e, size_t pos)
+    {
+        *((error*) &mem) = e;
+    }
+    void set (u8* mem, size_t pos)
+    {
+        this->mem = mem;
+        this->pos = pos;
+    }
     u8*    mem;
     size_t pos;
 };
@@ -181,7 +197,7 @@ public:
     //--------------------------------------------------------------------------
     queue()
     {
-        m_mem = nullptr;
+        m_bounded_mem = nullptr;
         clear();
     }
     //--------------------------------------------------------------------------
@@ -207,16 +223,16 @@ public:
     //--------------------------------------------------------------------------
     void clear()                                                                //Dangerous, just to be used after failed initializations
     {
-        if (m_mem) {
-            ::operator delete (m_mem);
+        if (m_bounded_mem) {
+            ::operator delete (m_bounded_mem);
         }
-        m_mem         = nullptr;
-        m_mem_end     = nullptr;
-        m_use_heap    = false;
-        m_cell_mask   = 0;
-        m_entry_size  = 0;
-        m_enqueue_pos = 0;
-        m_dequeue_pos = 0;
+        m_bounded_mem     = nullptr;
+        m_bounded_mem_end = nullptr;
+        m_use_heap        = false;
+        m_cell_mask       = 0;
+        m_entry_size      = 0;
+        m_enqueue_pos     = 0;
+        m_dequeue_pos     = 0;
     }
     //--------------------------------------------------------------------------
     bool init (size_t fixed_bytes, size_t fixed_entries, bool can_use_heap)
@@ -236,14 +252,14 @@ public:
             m_entry_size  = align * div_ceil (m_entry_size, align);
             m_enqueue_pos = 0;
             m_dequeue_pos = 0;
-            m_cell_mask = fixed_entries - 1;
-            m_mem         = (u8*) ::operator new(
-                                m_entry_size * fixed_entries, std::nothrow
-                                );
-            if (!m_mem) {
+            m_cell_mask   = fixed_entries - 1;
+            m_bounded_mem = (u8*) ::operator new(
+                m_entry_size * fixed_entries, std::nothrow
+                );
+            if (!m_bounded_mem) {
                 return false;
             }
-            m_mem_end = m_mem + (m_entry_size * fixed_entries);
+            m_bounded_mem_end = m_bounded_mem + (m_entry_size * fixed_entries);
             for (size_t i = 0; i < fixed_entries; ++i) {
                 get_cell (i)->sequence = i;
             }
@@ -260,7 +276,7 @@ public:
     //--------------------------------------------------------------------------
     bool initialized() const
     {
-        return m_mem || m_use_heap;
+        return m_bounded_mem || m_use_heap;
     }
     //--------------------------------------------------------------------------
     size_t fixed_entry_size() const
@@ -271,7 +287,7 @@ public:
     queue_prepared mp_bounded_push_prepare (size_t size)
     {
         queue_prepared pp;
-        if (m_mem && (size <= fixed_entry_size())) {
+        if (m_bounded_mem && (size <= fixed_entry_size())) {
             local_cell* cell;
             size_t pos = m_enqueue_pos;
             while (true) {
@@ -290,7 +306,13 @@ public:
                         alloc_from_heap (pp, size, pos);
                     }
                     else {
-                        pp.pos = queue_prepared::queue_full;
+                        /*this error sets pos to the value that a consumer would
+                          find on its returned "sc_pop_prepare" pos. This can be
+                          used e.g. to know if a producer is blocked before this
+                          transaction.*/
+                        pp.set_error(
+                            queue_prepared::queue_full, pos - entry_count()
+                            );
                     }
                     return pp;
                 }
@@ -298,24 +320,23 @@ public:
                     pos = m_enqueue_pos;
                 }
             }
-            pp.pos  = pos + 1;
-            pp.mem  = cell->storage();
+            pp.set (cell->storage(), pos + 1);
         }
         else if (m_use_heap) {
             alloc_from_heap(
-                pp, size, m_mem ? m_enqueue_pos.load (mo_relaxed) : 0
+                pp, size, m_bounded_mem ? m_enqueue_pos.load (mo_relaxed) : 0
                 );
         }
         else {
             //no alloc, size > fixed_entry_size()
-            pp.pos = queue_prepared::entry_size;
+            pp.set_error (queue_prepared::entry_size, 0);
         }
         return pp;
     }
     //--------------------------------------------------------------------------
     void bounded_push_commit (const queue_prepared& pp)
     {
-        assert (pp.mem);
+        assert (pp.get_mem());
         if (is_local_mem (pp.mem)) {
             auto cell = local_cell::from_storage (pp.mem);
             cell->sequence.store (pp.pos, mo_release);
@@ -324,7 +345,6 @@ public:
             heap_node* n = heap_node::from_storage (pp.mem);
             m_heap_fifo.push (*n);
         }
-        //todo: mpsc sync
     }
     //--------------------------------------------------------------------------
     queue_prepared sc_pop_prepare()
@@ -336,51 +356,53 @@ public:
             auto res = m_heap_fifo.pop();
             if (res.error == mpsc_result::no_error) {
                 heap_node* n   = (heap_node*) res.node;
-                m_heap_pop.mem = n->storage();
-                m_heap_pop.pos = n->pos;
-                again          = false;
+                m_heap_pop.set (n->storage(), n->pos);
+                again = false;
             }
             else if (res.error == mpsc_result::busy_try_again) {
                 again = true;
             }
         }
-        if (m_mem && (m_fixed_pop.mem == nullptr)) {
+        if (m_bounded_mem && (m_fixed_pop.mem == nullptr)) {
             local_cell* cell = get_cell (m_dequeue_pos & m_cell_mask);
-            size_t seq            = cell->sequence.load (mo_acquire);
-            auto pos              = m_dequeue_pos.load (mo_relaxed);
-            intptr_t diff         = (intptr_t) seq - (intptr_t) (pos + 1);
+            size_t seq       = cell->sequence.load (mo_acquire);
+            auto pos         = m_dequeue_pos.load (mo_relaxed);
+            intptr_t diff    = (intptr_t) seq - (intptr_t) (pos + 1);
             if (diff == 0) {
-                m_dequeue_pos   = pos + 1;
-                m_fixed_pop.pos = m_dequeue_pos + m_cell_mask;
-                m_fixed_pop.mem = cell->storage();
+                m_fixed_pop.set (cell->storage(), pos);
+                m_dequeue_pos = pos + 1;
             }
         }
         if (again) {
             goto try_again;
         }
         if (m_heap_pop.mem && m_fixed_pop.mem) {
-            if ((m_fixed_pop.pos - 1 - m_cell_mask) < m_heap_pop.pos) {
-                set (pp, m_fixed_pop);
+            if (m_fixed_pop.pos < m_heap_pop.pos) {
+                pp              = m_fixed_pop;
+                m_fixed_pop.mem = nullptr;
             }
             else {
-                set (pp, m_heap_pop);
+                pp             = m_heap_pop;
+                m_heap_pop.mem = nullptr;
             }
         }
         else if (m_heap_pop.mem) {
-            set (pp, m_heap_pop);
+            pp             = m_heap_pop;
+            m_heap_pop.mem = nullptr;
         }
         else if (m_fixed_pop.mem) {
-            set (pp, m_fixed_pop);
+            pp              = m_fixed_pop;
+            m_fixed_pop.mem = nullptr;
         }
         return pp;
     }
     //--------------------------------------------------------------------------
     void pop_commit (const queue_prepared& pp)
     {
-        assert (pp.mem);
+        assert (pp.get_mem());
         if (is_local_mem (pp.mem)) {
             auto cell = local_cell::from_storage (pp.mem);
-            cell->sequence.store (pp.pos, mo_release);
+            cell->sequence.store (pp.pos + entry_count(), mo_release);
         }
         else {
             heap_node* n = heap_node::from_storage (pp.mem);
@@ -388,18 +410,17 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-private:
-    //--------------------------------------------------------------------------
-    inline static void set (queue_prepared& pp, queue_prepared& src)
+    size_t entry_count()
     {
-        pp      = src;
-        src.mem = nullptr;
+        return m_cell_mask + 1;
     }
+    //--------------------------------------------------------------------------
+private:
     //--------------------------------------------------------------------------
     inline bool is_local_mem (const u8* mem) const
     {
-        auto beg  = (uword) m_mem;
-        auto end  = (uword) m_mem_end;
+        auto beg  = (uword) m_bounded_mem;
+        auto end  = (uword) m_bounded_mem_end;
         auto addr = (uword) mem;
         return (addr >= beg) && (addr < end);
     }
@@ -407,18 +428,17 @@ private:
     void alloc_from_heap (queue_prepared& pp, size_t sz, size_t pos)
     {
         if (auto n = (heap_node*) operator new(
-                            heap_node::strict_total_size (sz), std::nothrow
-                            )) {
-            pp.mem = n->storage();
-            n->pos = pos;
+            heap_node::strict_total_size (sz), std::nothrow
+            )) {
+            pp.set (n->storage(), pos);
         }
     }
     //--------------------------------------------------------------------------
     local_cell* get_cell (uword i)
     {
-        assert (m_mem);
-        local_cell* ret = (local_cell*) (m_mem + (i * m_entry_size));
-        assert ((uword) ret < (uword) m_mem_end);
+        assert (m_bounded_mem);
+        local_cell* ret = (local_cell*) (m_bounded_mem + (i * m_entry_size));
+        assert ((uword) ret < (uword) m_bounded_mem_end);
         return ret;
     }
     //--------------------------------------------------------------------------
@@ -428,8 +448,8 @@ private:
 
     size_t                    m_cell_mask;
     size_t                    m_entry_size;
-    u8*                       m_mem;
-    u8*                       m_mem_end;
+    u8*                       m_bounded_mem;
+    u8*                       m_bounded_mem_end;
     bool                      m_use_heap;
 
     cacheline_pad_t           m_pad1;
