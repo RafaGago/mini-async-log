@@ -288,17 +288,14 @@ private:
                 m_writer.decode_and_write (m_out, res.get_mem());
                 m_fifo.pop_commit (res);
                 if (signal_consume_condition) {
-                    /* the ticket system has a window of failure, a producer can
+                    /* the ticket system has a window of failure: a producer can
                        see the queue full and this consumer reach this point
                        before the producer has been able to insert the ticket.
 
                        As things are now this is taken as a lost oportunity,
                        full consistency/fairness is not desirable (expensive to
                        implement), so the consumer may be notified on the next
-                       message.
-
-                       This is not a problem when the full queue is twice as
-                       big as the max thread count. */
+                       message.*/
                     if (consume_wait.call_next_ticket()) {
                         consume_condition.notify_all();
                     }
