@@ -390,7 +390,9 @@ public:
         queue_prepared pp;
         bool again = false;
     try_again:
-        if (mode_allows_heap() && (m_heap_pop.mem == nullptr)) {
+        if ((mode_allows_heap() || m_mode == blocked) &&
+            m_heap_pop.mem == nullptr
+            ) {
             auto res = m_heap_fifo.pop();
             if (res.error == mpsc_result::no_error) {
                 heap_node* n   = (heap_node*) res.node;
