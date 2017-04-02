@@ -297,18 +297,19 @@ public:
     {
         result_row::print_header();
         std::puts(
-            "enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|"
+            "enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|"
             );
         result_row::print_separator();
-        std::puts (":-:|:-:|:-:|:-:|:-:|:-:|");
+        std::puts (":-:|:-:|:-:|:-:|:-:|:-:|:-:|");
     }
     void print_values()
     {
         result_row::print_values();
         std::printf(
-            "%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|\n",
+            "%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|\n",
             enqueue_sec,
             msg_rate,
+            1000. / msg_rate,
             total_sec,
             disk_rate,
             threads_sec,
