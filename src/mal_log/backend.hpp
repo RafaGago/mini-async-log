@@ -202,6 +202,7 @@ public:
     //--------------------------------------------------------------------------
     void on_termination()
     {
+        m_fifo.block_producers();
         uword exp = running;
         if (m_status.compare_exchange_strong (exp, terminating, mo_relaxed)) {
             m_log_thread.join();
@@ -326,6 +327,10 @@ private:
                 write_alloc_fault (allocf_now - alloc_fault);
                 alloc_fault = allocf_now;
             }
+        }
+        if (signal_consume_condition) {
+            while (consume_wait.call_next_ticket());
+            consume_condition.notify_all();
         }
         idle_rotate_if();
         m_out.file_close();

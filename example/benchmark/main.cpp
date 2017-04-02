@@ -275,14 +275,14 @@ struct throughput_data {
     }
     void zero() {
         enqueue_sec = msg_rate = total_sec = disk_rate = threads_sec = 0.;
-        alloc_faults = 0.;
+        faults = 0.;
     }
     double enqueue_sec;
     double msg_rate;
     double total_sec;
     double disk_rate;
     double threads_sec;
-    double alloc_faults;
+    double faults;
 };
 //------------------------------------------------------------------------------
 class throughput_row : public result_row, public throughput_data {
@@ -313,7 +313,7 @@ public:
             total_sec,
             disk_rate,
             threads_sec,
-            alloc_faults
+            faults
             );
     }
 };
@@ -328,7 +328,7 @@ throughput_data average (std::vector<throughput_data>& in)
         r.total_sec       += c.total_sec;
         r.disk_rate       += c.disk_rate;
         r.threads_sec     += c.threads_sec;
-        r.alloc_faults    += c.alloc_faults;
+        r.faults          += c.faults;
     }
     double count = (double) in.size();
     r.enqueue_sec  /= count;
@@ -336,7 +336,7 @@ throughput_data average (std::vector<throughput_data>& in)
     r.total_sec    /= count;
     r.disk_rate    /= count;
     r.threads_sec  /= count;
-    r.alloc_faults /= count;
+    r.faults       /= count;
     return r;
 }
 //------------------------------------------------------------------------------
@@ -496,7 +496,7 @@ private:
         double&                                          total_sec
         )
     {
-        m_alloc_faults.store (0, mal::mo_relaxed);
+        m_faults.store (0, mal::mo_relaxed);
         typedef typename resultvector::value_type resulttype;
         using namespace mal;
         resvector.clear();
@@ -549,7 +549,7 @@ private:
         if (!ret) {
             return ret;
         }
-        r.alloc_faults   = (double) m_alloc_faults.load (mal::mo_relaxed);
+        r.faults   = (double) m_faults.load (mal::mo_relaxed);
         double min_start = std::numeric_limits<double>::max();
         double max_end   = 0.;
         for (unsigned i = 0; i < thread_count; ++i) {
@@ -563,23 +563,23 @@ private:
         r.threads_sec /= 1000000.;
         if (r.total_sec != 0.) {
             r.disk_rate =
-                (((double) msgs) - r.alloc_faults) / (r.total_sec * 1000.);
+                (((double) msgs) - r.faults) / (r.total_sec * 1000.);
         }
         r.msg_rate =
-            (((double) msgs) - r.alloc_faults) / (r.enqueue_sec * 1000.);
+            (((double) msgs) - r.faults) / (r.enqueue_sec * 1000.);
         return true;
     }
     //--------------------------------------------------------------------------
     time_interval throughput_thread (unsigned msg_count)
     {
         time_interval r;
-        unsigned allocfaults = 0;
+        unsigned faults = 0;
         r.start = wall_clock_now_us();
         for (mal::u64 i = 0; i < msg_count; ++i) {
-            allocfaults += (unsigned) static_cast<derived&> (*this).log_one (i);
+            faults += (unsigned) static_cast<derived&> (*this).log_one (i);
         }
         r.end = wall_clock_now_us();
-        m_alloc_faults.fetch_add (allocfaults, mal::mo_relaxed);
+        m_faults.fetch_add (faults, mal::mo_relaxed);
         return r;
     }
     //--------------------------------------------------------------------------
@@ -633,7 +633,7 @@ private:
     }
     //--------------------------------------------------------------------------
     mal::u64                   m_total_ns;
-    mal::at::atomic<unsigned>  m_alloc_faults;
+    mal::at::atomic<unsigned>  m_faults;
     std::vector<latency_data>  m_latency_results;
     std::vector<time_interval> m_throughput_results;
 };

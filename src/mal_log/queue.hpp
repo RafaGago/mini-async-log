@@ -80,6 +80,8 @@ either expressed or implied, of Rafael Gago Castano.
 #include <mal_log/util/mpsc.hpp>
 #include <mal_log/util/integer_bits.hpp>
 #include <mal_log/util/atomic.hpp>
+#include <mal_log/util/thread.hpp>
+#include <mal_log/util/chrono.hpp>
 
 namespace mal {
 
@@ -91,6 +93,7 @@ public:
         success,
         queue_full,
         entry_size,
+        queue_blocked,
         count,
     };
     queue_prepared()
@@ -193,6 +196,18 @@ private:
         //----------------------------------------------------------------------
     };
     //--------------------------------------------------------------------------
+    enum mode {
+        blocked,
+        bounded,
+        hybrid,
+        heap,
+    };
+
+    bool mode_allows_heap() const
+    {
+        return m_mode >= hybrid;
+    }
+
 public:
     //--------------------------------------------------------------------------
     queue()
@@ -228,7 +243,7 @@ public:
         }
         m_bounded_mem     = nullptr;
         m_bounded_mem_end = nullptr;
-        m_use_heap        = false;
+        m_mode            = bounded;
         m_cell_mask       = 0;
         m_entry_size      = 0;
         m_enqueue_pos     = 0;
@@ -263,12 +278,12 @@ public:
             for (size_t i = 0; i < fixed_entries; ++i) {
                 get_cell (i)->sequence = i;
             }
-            m_use_heap = can_use_heap;
+            m_mode = can_use_heap ? hybrid : bounded;
             return true;
         }
         else if (can_use_heap && (fixed_bytes == 0) && (fixed_entries == 0)) {
             clear();
-            m_use_heap = true;
+            m_mode = heap;
             return true;
         }
         return false;
@@ -276,12 +291,27 @@ public:
     //--------------------------------------------------------------------------
     bool initialized() const
     {
-        return m_bounded_mem || m_use_heap;
+        return m_bounded_mem || mode_allows_heap();
     }
     //--------------------------------------------------------------------------
     size_t fixed_entry_size() const
     {
         return local_cell::effective_size (m_entry_size);
+    }
+    //--------------------------------------------------------------------------
+    void block_producers() /*this is for termination contexts*/
+    {
+        size_t pos = m_enqueue_pos;
+        while (!m_enqueue_pos.compare_exchange_weak(
+                pos, pos + (size_t) blocking_offset, mo_relaxed
+                ));
+        /*ugly: there is no way to block the MPSC intrusive queue, a grace
+          period needs to be added to ensure memory visibility from all cores.
+          As this is to be used only in termination contexts it isn't a problem.
+          A right implementation would require to screw up the queue
+          throughput. 100ms is a brutal overshoot.*/
+        m_mode = blocked;
+        th::this_thread::sleep_for (ch::milliseconds (100));
     }
     //--------------------------------------------------------------------------
     queue_prepared mp_bounded_push_prepare (size_t size)
@@ -302,10 +332,10 @@ public:
                     }
                 }
                 else if (diff < 0) {
-                    if (m_use_heap) {
+                    if (mode_allows_heap()) {
                         alloc_from_heap (pp, size, pos);
                     }
-                    else {
+                    else if (diff > -blocking_offset) {
                         /*this error sets pos to the value that a consumer would
                           find on its returned "sc_pop_prepare" pos. This can be
                           used e.g. to know if a producer is blocked before this
@@ -313,6 +343,9 @@ public:
                         pp.set_error(
                             queue_prepared::queue_full, pos - entry_count()
                             );
+                    }
+                    else {
+                        pp.set_error (queue_prepared::queue_blocked, 0);
                     }
                     return pp;
                 }
@@ -322,14 +355,19 @@ public:
             }
             pp.set (cell->storage(), pos + 1);
         }
-        else if (m_use_heap) {
+        else if (mode_allows_heap()) {
             alloc_from_heap(
                 pp, size, m_bounded_mem ? m_enqueue_pos.load (mo_relaxed) : 0
                 );
         }
         else {
             //no alloc, size > fixed_entry_size()
-            pp.set_error (queue_prepared::entry_size, 0);
+            pp.set_error(
+                m_mode != blocked ?
+                    queue_prepared::entry_size :
+                    queue_prepared::queue_blocked,
+                0
+                );
         }
         return pp;
     }
@@ -352,7 +390,7 @@ public:
         queue_prepared pp;
         bool again = false;
     try_again:
-        if (m_use_heap && (m_heap_pop.mem == nullptr)) {
+        if (mode_allows_heap() && (m_heap_pop.mem == nullptr)) {
             auto res = m_heap_fifo.pop();
             if (res.error == mpsc_result::no_error) {
                 heap_node* n   = (heap_node*) res.node;
@@ -450,7 +488,7 @@ private:
     size_t                    m_entry_size;
     u8*                       m_bounded_mem;
     u8*                       m_bounded_mem_end;
-    bool                      m_use_heap;
+    mode                      m_mode;
 
     cacheline_pad_t           m_pad1;
 
@@ -465,6 +503,9 @@ private:
 
     queue (queue const&);
     void operator= (queue const&);
+
+    static const intptr_t blocking_offset =
+        (intptr_t) ((1ull << ((sizeof (intptr_t) * 8) - 2)) - 1);
 };
 //------------------------------------------------------------------------------
 } //namespaces
