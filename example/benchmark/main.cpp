@@ -1043,7 +1043,7 @@ void run_test_dispatch(
         break;
     case loggers::mal_hybrid:
         ts.mal.set_params(
-            big_queue_bytes, queue_entry_size, true, false
+            big_queue_bytes / 8, queue_entry_size, true, false
             );
         run_all_tests(
             ts.mal, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
