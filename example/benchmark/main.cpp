@@ -394,7 +394,7 @@ public:
     void print_header()
     {
         result_row::print_header();
-        std::puts ("mean(us)|standard deviation|min(us)|max(us)|");
+        std::puts ("mean(us)|standard deviation|best(us)|worst(us)|");
         result_row::print_separator();
         std::puts (":-:|:-:|:-:|:-:|");
     }
