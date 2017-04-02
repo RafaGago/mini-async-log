@@ -67,38 +67,38 @@ namespace loggers {
 enum {
     mal_heap,
     mal_hybrid,
-    spdlog_async,
-    g3log,
     nanolog,
-    glog,
-    mal_sync,
-    spdlog_sync,
+    spdlog_async,
+    mal_blocking,
     mal_bounded,
+    g3log,
+    spdlog_sync,
+    glog,
     count,
 };
 //------------------------------------------------------------------------------
 static char const* names[] {
     "mal-heap",
     "mal-hybrid",
-    "spdlog-async",
-    "g3log",
     "nanolog",
-    "glog",
-    "mal-sync",
-    "spdlog-sync",
+    "spdlog-async",
+    "mal-blocking",
     "mal-bounded",
+    "g3log",
+    "spdlog-sync",
+    "glog",
 };
 //------------------------------------------------------------------------------
 static char const* paths[] {
     MAL_PATH,
     MAL_PATH,
-    SPDLOG_PATH,
-    G3_PATH,
     NANOLOG_PATH,
-    GLOG_PATH,
-    MAL_PATH,
     SPDLOG_PATH,
     MAL_PATH,
+    MAL_PATH,
+    G3_PATH,
+    SPDLOG_PATH,
+    GLOG_PATH,
 };
 //------------------------------------------------------------------------------
 } //namespace loggers
@@ -1049,31 +1049,22 @@ void run_test_dispatch(
             ts.mal, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
             );
         break;
+    case loggers::mal_blocking:
+        ts.mal.set_params (big_queue_bytes, queue_entry_size, false, true);
+        run_all_tests(
+            ts.mal, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
+    case loggers::mal_bounded:
+        ts.mal.set_params (big_queue_bytes, queue_entry_size, false, false);
+        run_all_tests(
+            ts.mal, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
     case loggers::spdlog_async:
         ts.spdlog.set_params (true);
         run_all_tests(
             ts.spdlog, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
-            );
-        break;
-    case loggers::g3log:
-        run_all_tests(
-            ts.g3log, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
-            );
-        break;
-    case loggers::nanolog:
-        run_all_tests(
-            ts.nanolog, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
-            );
-        break;
-    case loggers::glog:
-        run_all_tests(
-            ts.glog, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
-            );
-        break;
-    case loggers::mal_sync:
-        ts.mal.set_params (big_queue_bytes, queue_entry_size, false, true);
-        run_all_tests(
-            ts.mal, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
             );
         break;
     case loggers::spdlog_sync:
@@ -1082,10 +1073,19 @@ void run_test_dispatch(
             ts.spdlog, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
             );
         break;
-    case loggers::mal_bounded:
-        ts.mal.set_params (big_queue_bytes, queue_entry_size, false, false);
+    case loggers::nanolog:
         run_all_tests(
-            ts.mal, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            ts.nanolog, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
+    case loggers::g3log:
+        run_all_tests(
+            ts.g3log, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
+    case loggers::glog:
+        run_all_tests(
+            ts.glog, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
             );
         break;
     default:
@@ -1132,7 +1132,7 @@ void print_usage()
 "       mal:          Adds all \"mini-async-log\" variants.\n"
 "       mal-heap:     Adds \"mini-async-log\" heap.\n"
 "       mal-hybrid:   Adds \"mini-async-log\" hybrid.\n"
-"       mal-sync:     Adds \"mini-async-log\" sync.\n"
+"       mal-blocking:     Adds \"mini-async-log\" sync.\n"
 "       mal-bounded:  Adds \"mini-async-log\" bounded.\n"
 "       spdlog:       Adds all \"spdlog\"variants.\n"
 "       spdlog-async: Adds \"spdlog\" async.\n"
@@ -1202,10 +1202,10 @@ int main (int argc, const char* argv[])
     active_loggers.insert (active_loggers.end(), loggers::count, false);
 
     auto set_mal_loggers = [&]() {
-        active_loggers[loggers::mal_heap]    = true;
-        active_loggers[loggers::mal_hybrid]  = true;
-        active_loggers[loggers::mal_sync]    = true;
-        active_loggers[loggers::mal_bounded] = true;
+        active_loggers[loggers::mal_heap]     = true;
+        active_loggers[loggers::mal_hybrid]   = true;
+        active_loggers[loggers::mal_blocking] = true;
+        active_loggers[loggers::mal_bounded]  = true;
     };
 
     for (int arg = 3; arg < argc; ++arg) {
