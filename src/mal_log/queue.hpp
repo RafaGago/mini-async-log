@@ -450,6 +450,53 @@ public:
         }
     }
     //--------------------------------------------------------------------------
+    /* This code is intended to execute serialized on the next circumstances:
+
+       -The queue is full and the consumer is aware of it by external means.
+       -The consumer has passed the "fullq_last" variable to the producer,
+        which is the result of a "sc_pop_prepare" without having called
+        "pop_commit". Memory fences have been correctly issued.
+       -The consumer is blocked waiting for this function to be called.
+       -The code returning from this function syncs with the consumer again.
+        When exiting this function syncs with the consumer to unlock it and uses
+        the right memory fences.
+
+       Note that this is very heavyweight.
+    */
+    queue_prepared sc_pop_commit_to_mp_push_prepare_queue_full(
+        const queue_prepared& fullq_last_uncommited, size_t size
+        )
+    {
+        queue_prepared pp;
+        if (m_bounded_mem && (size <= fixed_entry_size())) {
+            local_cell* cell;
+            size_t pos = m_enqueue_pos;
+            while (true) {
+                cell       = get_cell (pos & m_cell_mask);
+                size_t seq = cell->sequence.load (mo_acquire);
+                intptr_t diff = (intptr_t) seq - (intptr_t) pos;
+
+                assert (cell->storage() == fullq_last_uncommited.get_mem());
+                assert (seq == (fullq_last_uncommited.pos + 1));
+                assert (diff == -m_cell_mask);
+
+                if (diff == -m_cell_mask &&
+                    seq == (fullq_last_uncommited.pos + 1) &&
+                    cell->storage() == fullq_last_uncommited.get_mem()
+                    ) {
+                    if (m_enqueue_pos.compare_exchange_weak(
+                        pos, pos + 1, mo_relaxed
+                        )) {
+                        pop_commit (fullq_last_uncommited);
+                        pp.set (cell->storage(), pos + 1);
+                        return pp;
+                    }
+                }
+            }
+        }
+        return pp;
+    }
+    //--------------------------------------------------------------------------
     size_t entry_count()
     {
         return m_cell_mask + 1;
