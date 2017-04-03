@@ -12,10 +12,14 @@ After having maintained a slightly modified fork of google log (glog) and given
 the fact that this is a very small project we decided that existing wheels
 weren't round enough.
 
+Then at some point way after the requirements were met I just improved the thing
+for fun.
+
 ## Design rationale ##
 
  - Simple. Not over abstracted and feature bloated, explicit, easy to figure out
-   what the code is doing, easy to modify (2017 self-comment: not that easy :)).
+   what the code is doing, easy to modify (2017 self-comment: not that easy
+   after having switched to raw C coding for a while :D).
  - Very low latency. Fast for the caller. Lock-free.
  - Asynchronous (synchronous calls can be made on top for special messages, but
    they are way slower than using a synchronous logger in the first place).
@@ -29,9 +33,8 @@ weren't round enough.
 
 ## Various features ##
 
- - Targeting g++4.7 and VS 2010
- - Boost dependencies just for parts that will eventually go to the C++
-   standard.
+ - Targeting g++4.7 and VS 2010 (can take parts from boost)
+ - Nanosecond performance.
  - No singleton by design, usable from dynamically loaded libraries. The user
    provides the instance either explicitly or by a global function (Koenig
    lookup).
@@ -40,352 +43,24 @@ weren't round enough.
  - File rotation-slicing (needs some external help at initialization time until
    std::filesystem is implemented on some compilers, see below).
  - One conditional call overhead for inactive severities.
+ - Able to strip log levels at compile time (for Release builds).
  - Lazy parameter evaluation (as usual with most logging libraries).
- - No ostreams (a very ugly part of C++ for my liking), just format strings
-   checked at compile time (if the compiler supports it) with type safe values.
+ - No ostreams (a very ugly part of C++: verbose and stateful), just format
+   strings checked at compile time (if the compiler supports it) with type safe
+   values.
    An on-stack ostream adapter is available as a last resort, but its use is
-   more verbose and has more overhead.
- - The log severity can be externally changed outside of the process. The IPC
-   mechanism is the simplest, the log worker periodically polls some file
-   descriptors when idle (if configured to).
+   more verbose and has more overhead than the format literals.
+ - The logger severity threshold can be externally changed outside of the
+   process. The IPC mechanism is the simplest, the log worker periodically polls
+   some files when idlíng (if configured to).
  - Small, you can actually compile it as a part of your application.
-
-## Performace ##
-
-These are some test I have done for fun to see how this code is aging.
-
-> [Here is the benchmark code.](https://github.com/RafaGago/mini-async-log/blob/master/example/benchmark/main.cpp).
-
-To build it on Linux you don't need to install any of the libraries, all of them
-are downloaded and build for you by the makefile, just run:
-
-> make -f build/linux/Makefile.examples.benchmark
-
-You can "make install" or search for the executable under
-"build/linux/build/stage"
-
-### Masuring an asynchronous loggers worst caselatency in a non-RTOS
-
-TL; DR: Pointless: You don't use a non RTOS for meeting hard-deadlines.
-
-IMO caring about worst case latency in a non RTOS is pointless, why? because
-any thread can be suspended-preempted by the OS scheduler when it wishes for the
-number of time quantas that it wants. In a non-RTOS the main source of
-latency/jitter is the OS scheduler itself. This is the real worst case unless
-the code is a _real_ piece of garbage.
-
-Then there are other dubious things about the clock source itself:
-
-Many OSes have diferent types of clocks, wall, CPU, thread...
-
-Thread clocks and some CPU clocks stop counting when a thread get suspended so
-"diff" in this code...
-
-> auto start = threadclock_time();
-> mutex_lock (&mutex);
-> diff = threadclock_time() - start;
-
-...will have a ceiling value of the time that it takes to enter the Kernel and
-saving the context (roughly explained). It doesn't matter if the thread was
-suspended. These clocks are the best used to measure single-threaded algorithm
-performance, but not optimal to measure multithreaded code in a high-contention
-scenario.
-
-Then the clocks themselves are not well suited to the task. I have confirmed
-myself that mini-async-log is fastest to enqueue than to get the timestamp
-for the most simple (and common) log entries. Some OS clocks are slow, others
-are too coarse-grained to measure in the nanosecond range, etc.
-
-### Test metodology/configuration
-
-The benchmark is a very though but unrealistic load.
-
-It consists in enqueueing 1 million messages as fast as possible with different
-thread counts. There are throughput and latency tests. This is run 75 times and
-then averaged (except for maximum and minimum latencies). The test takes 7:35 on
-my machine. The threads are tried to be evenly distributed between the cores
-from the start.
-
-The latency tests are measured with both a CPU clock and a wall clock. The wall
-clock gives an idea of the real behavior of the logger when the OS scheduler
-puts threads to sleep. In this way loggers using OS mutexes will show its worst
-case in a more realistic way.
-
-In the latency tests the mean, standard deviation, best and worse case of those
-1 million log entries are presented. The standard deviation gives an idea of
-the jitter. The less the better.
-
-It is run in a system with Ubuntu 16.04 server, no X server and disabled network
-interfaces. The machine is a downclocked and undervolted AMD Phenom x4 965 with
-an SSD disk.
-
-The test takes many hours to complete.
-
-Each logger configuration summary is as follows:
-
-- spdlog (async*1, bounded): (8MB / 32) queue entries.
-
-- spdlog (sync, bounded?): spdlog in synchronous mode.
-
-- glog (half-sync, bounded?): Google log stock cfg.
-
-- g3log (async*1, heap?): g3log stock cfg.
-
-- nanolog: (asynchronous, heap). Using the guaranteed version. The
-    non-guaranteed is IMO unusable if the user can't know at the calling
-    point if the call succeeded or not. There is no way to establish a
-    comparison.
-
-- mal (async, heap): mal using only the heap (unbounded). (8MB queue, 32 bytes
-    each element).
-
-- mal (async, heap + bounded): mal using a hybrid bounded queue + heap strategy
-    (8MB/16 queue, 32 bytes each element).
-
-- mal (sync*1, bounded): mal using a bounded queue and blocking on full queue
-      (synchronous mode just added for fun on this test). (1MB queue, 32 bytes
-      each element).
-
-- mal (async, bounded): mal with a bounded queue (8MB queue, 32 bytes each
-      element). will reject _a lot_ of messages. This is _very_ different of
-      nanolog non-guaranteed because the messages not sent are known to fail
-      at the caller point. Faults are substracted from the results and show as a
-      penalties on the benchmark.
-
-*1: All these loggers/configurations are asynchronous but they become blocking
-when the queue is full. This isn't bad per se, as the size should be dimensioned
-for the load to handle. This benchmark is a stress test that overflows the
-queues.
-
-### Results
-
-These are done against the master branch of each project on March 2017.
-
-### threads: 1 ###
-#### Throughput (threads=1) ####
-
-|logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.126|7945.230|1.349|741.506|0.126|0.000|
-|mal hybrid|0.197|5070.545|1.438|695.412|0.197|0.000|
-|spdlog async|1.557|642.433|0.000|0.000|1.557|0.000|
-|g3log|8.825|113.337|0.000|0.000|8.825|0.000|
-|nanolog|0.508|1975.716|0.000|0.000|0.508|0.000|
-|glog|5.174|193.283|5.174|193.282|5.174|0.000|
-|mal sync|2.061|491.328|2.414|418.300|2.061|0.000|
-|spdlog sync|1.412|709.052|0.000|0.000|1.412|0.000|
-|mal bounded|0.084|3495.853|0.420|698.437|0.084|706516.347|
-
-#### Latency with thread clock (threads=1) ####
-
-|logger|mean(us)|standard deviation|min(us)|max(us)|
-|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.270|0.078|0.000|77.447|
-|mal hybrid|0.268|0.084|0.000|75.310|
-|spdlog async|0.850|0.199|0.000|85.209|
-|g3log|3.503|0.537|0.000|641.111|
-|nanolog|0.403|6.766|0.000|22161.255|
-|glog|2.882|4.671|0.000|15048.301|
-|mal sync|0.804|154.365|0.000|978844.613|
-|spdlog sync|1.567|2.430|0.000|1365.975|
-|mal bounded|0.222|0.065|0.000|77.728|
-
-#### Latency with wall clock (threads=1) ####
-
-|logger|mean(us)|standard deviation|min(us)|max(us)|
-|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.347|7.243|0.000|20016.000|
-|mal hybrid|0.356|7.305|0.000|12020.750|
-|spdlog async|1.535|14.460|0.000|12030.750|
-|g3log|9.094|26.285|0.000|24116.250|
-|nanolog|0.585|59.257|0.000|26397.250|
-|glog|3.743|146.206|0.000|887690.500|
-|mal sync|1.837|65.380|0.000|551069.750|
-|spdlog sync|1.464|2.482|0.000|1390.500|
-|mal bounded|0.255|3.668|0.000|213.250|
-
-### threads: 2 ###
-
-#### Throughput (threads=2) ####
-
-|logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.157|6390.438|1.420|704.097|0.235|0.000|
-|mal hybrid|0.149|6704.804|1.398|715.368|0.243|0.000|
-|spdlog async|1.378|726.001|0.000|0.000|2.109|0.000|
-|g3log|3.482|287.276|0.000|0.000|5.505|0.000|
-|nanolog|0.398|2523.710|0.000|0.000|0.592|0.000|
-|glog|4.100|244.018|4.100|244.009|6.376|0.000|
-|mal sync|1.681|610.757|2.024|503.646|3.006|0.000|
-|spdlog sync|1.779|562.598|0.000|0.000|3.500|0.000|
-|mal bounded|0.051|5589.147|0.378|743.404|0.085|719122.107|
-
-#### Latency with thread clock (threads=2) ####
-
-|logger|mean(us)|standard deviation|min(us)|max(us)|
-|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.382|0.258|0.000|590.523|
-|mal hybrid|0.380|0.145|0.000|75.543|
-|spdlog async|1.155|2.065|0.000|497.021|
-|g3log|3.107|14.504|0.000|35621.502|
-|nanolog|0.542|13.919|0.000|33780.853|
-|glog|7.155|10.945|0.000|19209.166|
-|mal sync|1.039|124.486|0.000|836462.805|
-|spdlog sync|3.086|3.414|0.000|1687.710|
-|mal bounded|0.259|0.117|0.000|74.806|
-
-#### Latency with wall clock (threads=2) ####
-
-|logger|mean(us)|standard deviation|min(us)|max(us)|
-|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.396|39.426|0.000|24018.250|
-|mal hybrid|0.395|38.711|0.000|16027.500|
-|spdlog async|1.933|386.506|0.000|402869.750|
-|g3log|5.869|194.717|0.000|96512.750|
-|nanolog|0.620|52.444|0.000|27627.750|
-|glog|6.322|161.424|0.000|841916.750|
-|mal sync|3.161|228.813|0.000|818299.750|
-|spdlog sync|3.260|4.707|0.000|1770.250|
-|mal bounded|0.228|29.513|0.000|16084.000|
-
-### threads: 4 ###
-
-#### Throughput (threads=4) ####
-
-|logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.127|7913.696|1.395|716.917|0.439|0.000|
-|mal hybrid|0.122|8235.414|1.429|699.693|0.414|0.000|
-|spdlog async|1.259|795.823|0.000|0.000|3.694|0.000|
-|g3log|2.118|472.352|0.000|0.000|6.041|0.000|
-|nanolog|0.405|2512.369|0.000|0.000|1.381|0.000|
-|glog|4.123|242.560|4.123|242.550|15.559|0.000|
-|mal sync|1.524|667.417|1.880|538.434|5.344|0.000|
-|spdlog sync|1.743|575.084|0.000|0.000|6.862|0.000|
-|mal bounded|0.063|4557.211|0.398|718.455|0.220|713963.427|
-
-#### Latency with thread clock (threads=4) ####
-
-|logger|mean(us)|standard deviation|min(us)|max(us)|
-|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.481|0.296|0.000|492.147|
-|mal hybrid|0.485|0.200|0.000|102.109|
-|spdlog async|2.228|1.970|0.000|408.481|
-|g3log|3.764|45.104|0.000|56006.180|
-|nanolog|0.880|29.042|0.000|24509.118|
-|glog|9.891|13.717|0.000|13993.848|
-|mal sync|1.632|48.004|0.000|8463.396|
-|spdlog sync|5.664|5.018|0.000|2005.818|
-|mal bounded|0.314|0.205|0.000|72.929|
-
-#### Latency with wall clock (threads=4) ####
-
-|logger|mean(us)|standard deviation|min(us)|max(us)|
-|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.488|31.253|0.000|20019.500|
-|mal hybrid|0.489|30.215|0.000|16031.000|
-|spdlog async|3.610|717.037|0.000|817889.000|
-|g3log|6.167|165.291|0.000|49672.250|
-|nanolog|0.929|55.725|0.000|39097.500|
-|glog|14.632|91.052|0.000|24396.250|
-|mal sync|5.996|434.340|0.000|850038.250|
-|spdlog sync|6.549|9.813|0.000|2205.000|
-|mal bounded|0.306|24.554|0.000|16035.500|
-
-### threads: 8 ###
-
-#### Throughput (threads=8) ####
-
-|logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.115|8725.011|1.449|690.239|0.733|0.000|
-|mal hybrid|0.114|8813.223|1.451|689.169|0.751|0.000|
-|spdlog async|1.188|842.420|0.000|0.000|6.508|0.000|
-|g3log|1.462|684.855|0.000|0.000|8.763|0.000|
-|nanolog|0.548|1872.165|0.000|0.000|3.701|0.000|
-|glog|4.759|210.207|4.760|210.194|36.373|0.000|
-|mal sync|1.497|678.098|1.843|548.220|10.048|0.000|
-|spdlog sync|1.745|574.548|0.000|0.000|11.835|0.000|
-|mal bounded|0.067|4230.673|0.402|696.510|0.434|719967.040|
-
-#### Latency with thread clock (threads=8) ####
-
-|logger|mean(us)|standard deviation|min(us)|max(us)|
-|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.480|0.206|0.000|467.871|
-|mal hybrid|0.489|0.238|0.000|482.395|
-|spdlog async|1.959|1.876|0.000|1569.762|
-|g3log|3.714|33.133|0.000|51278.157|
-|nanolog|1.315|94.957|0.000|113730.770|
-|glog|6.110|19.168|0.000|15323.714|
-|mal sync|1.777|82.498|0.000|423814.612|
-|spdlog sync|3.335|4.561|0.000|5286.152|
-|mal bounded|0.309|0.211|0.000|84.510|
-
-#### Latency with wall clock (threads=8) ####
-
-|logger|mean(us)|standard deviation|min(us)|max(us)|
-|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.876|66.039|0.000|24010.500|
-|mal hybrid|0.882|66.726|0.000|24019.750|
-|spdlog async|6.519|1164.560|0.000|1000879.750|
-|g3log|9.784|197.660|0.000|96865.500|
-|nanolog|2.492|230.070|0.000|240000.750|
-|glog|35.093|1189.785|0.000|1061686.000|
-|mal sync|11.753|585.439|0.000|602712.500|
-|spdlog sync|12.417|250.868|0.000|44341.750|
-|mal bounded|0.559|51.964|0.000|24003.750|
-
-### threads: 16 ###
-
-#### Throughput (threads=16) ####
-
-|logger|enqueue(s)|rate(Kmsg/s)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.109|9221.551|1.429|699.848|1.221|0.000|
-|mal hybrid|0.103|9722.275|1.447|691.009|1.274|0.000|
-|spdlog async|1.184|844.823|0.000|0.000|12.449|0.000|
-|g3log|1.203|833.128|0.000|0.000|15.845|0.000|
-|nanolog|0.940|1080.626|0.000|0.000|13.339|0.000|
-|glog|4.822|207.438|4.823|207.399|71.735|0.000|
-|mal sync|1.540|651.859|1.881|532.950|20.764|0.000|
-|spdlog sync|1.727|579.247|0.000|0.000|22.563|0.000|
-|mal bounded|0.069|4033.660|0.404|682.638|0.806|724294.933|
-
-#### Latency with thread clock (threads=16) ####
-
-|logger|mean(us)|standard deviation|min(us)|max(us)|
-|:-:|:-:|:-:|:-:|:-:|
-|mal heap|0.482|0.199|0.000|80.373|
-|mal hybrid|0.492|0.234|0.000|485.819|
-|spdlog async|1.836|1.945|0.000|2637.872|
-|g3log|3.809|36.726|0.000|30658.330|
-|nanolog|2.049|131.082|0.000|71946.083|
-|glog|5.759|19.261|0.000|16127.556|
-|mal sync|1.612|67.974|0.000|18048.726|
-|spdlog sync|2.890|4.411|0.000|5324.756|
-|mal bounded|0.304|0.214|0.000|81.663|
-
-#### Latency with wall clock (threads=16) ####
-
-|logger|mean(us)|standard deviation|min(us)|max(us)|
-|:-:|:-:|:-:|:-:|:-:|
-|mal heap|1.596|126.657|0.000|44007.000|
-|mal hybrid|1.596|126.213|0.000|44007.250|
-|spdlog async|12.070|1823.004|0.000|1020022.750|
-|g3log|17.553|260.136|0.000|88671.250|
-|nanolog|7.617|641.032|0.000|321992.250|
-|glog|71.834|2094.555|0.000|1404892.000|
-|mal sync|23.215|1072.886|0.000|490287.750|
-|spdlog sync|24.159|436.705|0.000|63665.500|
-|mal bounded|1.004|100.148|0.000|44005.500|
 
 ## How does it work ##
 
 It just borrows ideas from many of the loggers out there.
 
 As with any half-decent asynchronous logger its main objetive is to be as fast
- and to have as low latency as possible for the caller thread.
+and to have as low latency as possible for the caller thread.
 
 When the user is to write a log message, the logging frontend task is to encode
 the passed data to a memory chunk which the backend can then decode, format and
@@ -397,28 +72,25 @@ encoding something like the entry below...
 > log_error ("File:a.cpp line:8 This is a string that just displays the next number {}, int32_val);
 
 ...the memory requirements are just a pointer to the format string and a deep
-copy of the integer value. The job of the caller is just to encode some bytes to
-a memory chunk and to insert the chunk into a queue.
+copy of the integer value. The job of the caller is just to serialize some bytes
+to a memory chunk and to insert the chunk into a queue.
 
 The queue is a custom modification of two famous lockfree queues of Dmitry
-Djukov (kudos to this genious) for this particular MPSC case. The queue is a
+Vyukov (kudos to this genious) for this particular MPSC case. The queue is a
 blend of a fixed capacity and fixed element size array based preallocated queue
-and an intrusive node based dynamically allocated queue which can contain
-elements of heterogenous sizes (which can be disabled). The resulting queue is
+and an intrusive node based dynamically allocated queue. The resulting queue is
 still linearizable.
 
-The worker thread pops from the queue, decodes the message and writes the data.
-Any time consuming operation is masked with the slow file IO.
+The file worker thread pops from the queue, decodes the message and writes the
+data. Any time consuming operation is masked with the slow file IO.
 
 The format string is type-safe and validated at compile time for compilers that
 support "constexpr" and "variadic template parameters" available. Otherwise the
-errors are caught at run time on the logged output.
+errors are caught at run time on the logged output (Visual Studio 2010 mostly).
 
 There are other features, as to block the caller thread until some message has
 been written (as in an asynchronous logger) or as to do C++ stream formatting on
-the caller thread. Both of these are features should be better avoided if
-possible, as they defeat the purpose of this desing and are hacks on top of this
-design.
+the caller thread.
 
 > see this [example](https://github.com/RafaGago/mini-async-log/blob/master/example/overview/main.cpp)
 that more or less shows all available features.
@@ -440,16 +112,17 @@ here.
 ## Initialization ##
 
 The library isn't a singleton, so the user should provide a reference to the
-logger instance. Even if many modules call the initialization function only one
-of them will succeed.
+logger instance on each call. Even if many modules call the initialization
+function of such instance only one of them will succeed.
 
-There are two methods to get the instance when enqueuing a log entry, one is to
-provide it explicitly and the other one is by providing it on a global function.
+There are two methods to pass the instance to the logging macros when enqueuing
+a message, one is to provide it explicitly and the other one is by providing it
+on a global function.
 
 If no instance is provided, the global function "get_mal_logger_instance()" will
 be called without being namespace qualified, so you can use Koenig lookup/ADL
 and provide it from there. This happens when the user calls the macros with no
-explicite instance suffix, as e.g. "log_error(fmt string, ...)".
+explicit instance suffix, as e.g. "log_error(fmt string, ...)".
 
 To provide the instance explictly the macros with the "_i" suffix need to be
 called, e.g. "log_error_i(instance, fmt_string, ...)"
@@ -457,19 +130,12 @@ called, e.g. "log_error_i(instance, fmt_string, ...)"
 The name of the function can be changed at compile time, by defining
 MAL_GET_LOGGER_INSTANCE_FUNCNAME.
 
-Be aware that it's dangerous to have a dynamic library or executable loaded
-multiple times logging to the same folder and rotating files each other.
-Workarounds exists, you can prepend the folder name with the process name and
-ID, disable rotation and manage rotation externally (e.g. by using logrotate),
-etc.
-
 ## Termination ##
 
 The worker blocks on its destructor until its work queue is empty when normally
 exiting a program.
 
-When a signal is sent you can call the frontend function
-[on termination](https://github.com/RafaGago/mini-async-log/blob/master/include/mal_log/frontend.hpp).
+When a signal is caught you can call the frontend function [on termination](https://github.com/RafaGago/mini-async-log/blob/master/include/mal_log/frontend.hpp).
 This will early interrupt any synchronous calls you made.
 
 ## Errors ##
@@ -478,31 +144,9 @@ As for now, every function returns a boolean if it succeeded or false if it
 didn't. A filtered out/below severity call returns true.
 
 The only possible failures are either to be unable to allocate memory for a log
-entry, an asynchronous call that was interrupted by "on_termination" or a string
-byte that was about to be deep copied but would overflow the length variable,
-which would mostly be a bug, I highly doubt that someone will log messages that
-take 4GB).
+entry or an asynchronous call that was interrupted by "on_termination".
 
-The functions never throw.
-
-## Restrictions ##
-
- 1. Just ASCII.
- 2. Partial C++ ostream support. (not sure if it's a good or a bad thing...).
-    Swapping logger in an existing codebase may not be worth the effort in some
-    cases.
- 3. Limited formatting abilities (it can be improved with more parser
-    complexity).
- 4. No way to output runtime strings/memory regions without deep-copying them.
-    This is inherent to the fact that the logger is asynchronous and that I
-    prefer to avoid hacking the reference count on "shared_ptr" using placement
-    new. I avoid this because I think that ouputting memory regions to a log
-    file through a deferred (asynchronous) logger is wrong by design in most if
-    not all cases.
- 5. Some ugly macros, but unfortunately the same syntax can't be achieved in any
-    other way AFAIK.
- 6. Format strings need to be literals. A const char* isn't enough (constexpr
-    can't iterate them at compile time).
+The logging functions never throw.
 
 ## Compiler macros ##
 
@@ -564,5 +208,659 @@ otherwise you need to edit (with a text editor) the newly generated file
 ""build\windows\mal-log\props\mal_dependencies.props" before and to update the
 paths in the file. You can do this through the Visual Studio Property Manager
 too.
+
+## Performace ##
+
+These are some test I have done for fun to see how this code is aging.
+
+> [Here is the benchmark code.](https://github.com/RafaGago/mini-async-log/blob/master/example/benchmark/main.cpp).
+
+To build it on Linux you don't need to install any of the libraries, all of them
+are downloaded and build for you by the makefile, just run:
+
+> make -f build/linux/Makefile.examples.benchmark
+
+You can "make install" or search for the executable under
+"build/linux/build/stage"
+
+### Test metodology
+
+It consists in enqueueing 1 million and 100K messages distributing them evenly
+accross a variying number of threads (1, 2, 4, 8, 16). Each test is run 75 times
+and then averaged (best and worst latencies aren't averaged, the best and worst
+of all runs is taken).
+
+The different message counts (1M and 100K) are intended to show the behavior
+of the bounded queue loggers. With 100K the bounded queue loggers (spdlog and
+some mal variants) have a big enough queue with room for all the messages. With
+the 1M test they get its queue full and need to back-off.
+
+On the latency tests the mean, standard deviation, best and worst case is shown.
+The standard deviation gives an idea of the jitter. The less the better.
+
+The latency tests are measured with both a thread clock and a wall clock. The
+thread clock shows only cycles spent on the thread, not when the thread is
+suspended. The wall clock gives an idea of the "real" timing of the logger when
+the OS scheduler puts threads to sleep, so the different loggers will show its
+worst case in a more realistic way.
+
+Keep in mind that measuring latencies have its quirks. The clock sources aren't
+reliable either for measuring individual calls in the nanosecond scale. I do
+them because I can see value in seeing standard deviations over very long runs
+and the worst latencies allow to detect blocked producers (e.g.due to backoff
+unfairness).
+
+The average latency shown in the latency tests is the one shown by the OS
+clocks. The average latency shown on the throughput test is more reliable, as
+its taken just using two clock time points for the whole batch of messages.
+
+The test is run in a system using Ubuntu 16.04 server, no X server and with all
+network interfaces disabled. The machine is a downclocked and undervolted AMD
+Phenom x4 965 with an SSD disk. Expect more performance with a modern machine.
+
+The code is compiled with gcc -O3. Compiling with -Os has a lot of impact (re-
+duction) in raw performance.
+
+The test takes some hours to run.
+
+The tests are done against the master branch of each project on March 2017.
+
+### Library configuration
+
+Each logger configuration summary is as follows:
+
+|logger|sync/async|queue type|unbounded queue entries|
+|:-:|:-:|:-:|:-:|
+|mal-heap|async|dynamic|-|
+|mal-hybrid|async|dynamic + fixed|32768 ((8Mb/32) / 8)|
+|spdlog-async|async (blocks on full queue)|fixed|262144 (8Mb/32)|
+|g3log|async (blocks on full queue)|fixed (?)|0.000|-|
+|nanolog|async|dynamic|-|
+|glog|half-async|fixed|(?)|
+|mal-blocking|async (blocks on full queue)|fixed|262144 (8Mb/32)|
+|spdlog-sync|sync|fixed (?)|(?)|
+|mal-bounded|async|fixed|262144 (8Mb/32)|
+
+### Result conclusions ###
+
+I have observed some variability on the test results between test runs, which
+shows that 75 averaged runs is not enough. I want to be able to run the
+benchmark overnight, so I won't increase this number.
+
+Regarding the worst case latency for the 1 thread case: when looking at
+the thread clock it looks like the asynchronous loggers have always a lower
+worst-case latency (lower=better), but when looking at the wall clock the
+synchronous loggers have a much lower worst-case (lower=better).
+
+There are many hypotheses to explain why this happens, but excluding clock
+deficiencies I suspect that the asynchronous loggers are "touching" more memory
+and they get minor page faults sometimes. When page faulting the threads get
+suspended so this isn't reflected on the thread clock, only on the wall clock.
+
+The results on the "mal" thread clock, which has standard deviations on the
+sub 0.01 range, support this hypothesis. The algorithms are fast and have low
+variability on the single thread case: something is happening ot the OS level.
+
+So here's the catch, big bounded queues have more chances of page faulting,
+smaller have more changes of being overflown: The size has to be fine-tuned
+for the expected load.
+
+#### mal-heap ####
+
+It shows very stable results in the throughput and latency measurements. The
+latency increases with more contention but it's still lower than all non "mal"
+variants, except for the synchronous loggers with low contention/thread count.
+
+The only competing logger using a heap based queue is nanolog. In the 1M msgs
+test a sensible throughput degradation is seen in it when the thread count
+increases. For the 16 thread case "mal-heap" is 5.35x faster. The latency
+behavior is better too: less standard deviation and shortest worst-case.
+
+### mal-hybrid ####
+
+"mal-hybrid" is just adding a small bounded queue to "mal-heap". On the 1M test
+it seems to help except for the single threaded case. On the 100k single
+threaded test it's the opposite, it helps up to two 4 threads (CPU core count),
+after that the performance is less than "mal-heap".
+
+The latencies are both very similar.
+
+Note that 100k messages and <4 threads is maybe the more realistic load on this
+benchmark.
+
+#### spdlog-async ####
+
+Shows decent performance for a bounded queue logger.
+
+On the 1M (queue full) tests depending and on the thread count "mal-blocking"
+seems to be around 3-20% faster and to have around 2x-10x better worst case
+latency.
+
+On the 100k (queue big enough) single threaded test with low thread count (more
+realistic load) it's significantly slower, specially on the uncontended single
+threaded case, where "mal-sync" seems to be around 21x faster. The worst case
+latencies in this case are on par.
+
+This is logical, as a matter of fact "spdlog-async" internals are similar to
+"mal-blocking"'s; they both use internally the same D.Vyukov bounded queue
+algorithm,(gabime borrowed the idea from this project)  so the performance
+difference is not made in the queue algorithm, but in its usage.
+
+When the queue algorithm is the bottleneck (with high thread count and a lot of
+contention), the performance of "spdlog-async" is similar to the performance
+of the bounded mal variations.
+
+
+#### g3log ####
+
+It shows modest performance. Its single threaded performance uncontended (most
+common situation) is the lowest of all the contenders on the single threaded
+tests.
+
+The good thing is that performance improves along with the thread count and it
+doesn't show extreme big worst-case latencies when on very big contention.
+
+#### nanolog ####
+
+Just a look at the code reveals what the results are going to be. In case the
+producers are contended they just spin burning cycles, always, without backing
+off, it just busy-waits burning CPU and starving other threads. You can see it
+when looking at latency tables: both tables show less divergence than the other
+loggers.
+
+The code shows that when it needs to allocate it uses a very big chunk (8MB
+according to the code). It is good to preallocate, but in unconfigurable 8MB
+chunks?
+
+It shows good performance compared with the bounded queue contenders on the 1M
+messages test when the thread count is low. This is hardly a surprise because
+it uses an unbounded algorithm, so it doesn't need to deal with the queue full
+case.
+
+With 16 threads and 1M messages its throughput is just around 70% better than
+"mal-blocking" and its worst-case latency is much worse. Keep in mind that
+"mal-sync" doesn't use a bounded queue and its producers sleep under contention.
+
+On the 100k test, when the bounded queue versions of mal have enough room on the
+queue it's outperformed in every metric. "spdlog-async" catches up on the 16
+thread case too.
+
+#### glog ####
+
+Included for reference. It never claimed to be fast, but its worst-case latency
+(according to the wall clock) when the thread count is low is the best after
+spdlog-sync.
+
+#### mal-blocking / mal-bounded ####
+
+These are mal with no heap, just using Vjukovs queue. The difference is that
+mal-blocking blocks on full queue and mal-bounded reports a failure and lets the
+caller decide if it has something more useful to do before retrying.
+
+When there are no allocation faults (faults column: 100k msgs) mal-blocking
+is exactly the same as mal-bounded.
+
+On the 100k case with low thread count mal-blocking/mal-bounded are the fastest
+of all.
+
+For the 1M msgs case when "mal-blocking" needs to back-off and wait for the
+consumer (the consumer rate is slower) its performance drops and some producers
+are more starved than others beacause there is some unfairness on its waiting
+scheme, albeit lower than in a traditional exponential backoff scheme.
+
+Keep in mind that in mal the same bounded FIFO queue doubles as a FIFO and
+as a memory allocator (using customizations on D.Vjukov algorithm), so if the
+serialized message size doesn't fit on the queue entry size the messages are
+discarded. This requires either a good entry size selection that you know that
+fits all the messages or using "mal-hybrid" (which is what the library intends).
+
+This requirement may be dropped on the future.
+
+#### spdlog-sync ####
+
+Not very fast, but this is the ĺogger showing the best worst-case latency
+(according to the wall clock) with only one thread.
+
+### Result data
+
+### threads: 1, msgs: 1M ###
+
+#### Throughput (threads=1, msgs=1M) ####
+
+|logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.105|9499.887|0.105|1.172|853.245|0.105|0.000|
+|mal-hybrid|0.146|6881.365|0.145|1.223|818.596|0.146|0.000|
+|nanolog|0.349|2865.832|0.349|3.719|268.860|0.349|0.000|
+|spdlog-async|1.103|906.483|1.103|1.503|665.403|1.103|0.000|
+|mal-blocking|0.876|1141.988|0.876|1.156|864.822|0.876|0.000|
+|mal-bounded|0.046|6041.580|0.166|0.335|829.794|0.046|722011.320|
+|g3log|8.744|114.392|8.742|0.000|0.000|8.744|0.000|
+|spdlog-sync|0.963|1038.046|0.963|0.963|1038.015|0.963|0.000|
+|glog|2.880|347.194|2.880|2.880|347.190|2.880|0.000|
+
+#### Latency with thread clock (threads=1, msgs=1M) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.241|0.045|0.000|86.502|
+|mal-hybrid|0.229|0.054|0.000|78.741|
+|nanolog|0.347|4.332|0.000|10262.499|
+|spdlog-async|0.618|0.152|0.000|77.650|
+|mal-blocking|0.204|0.081|0.000|74.332|
+|mal-bounded|0.198|0.036|0.000|74.056|
+|g3log|3.516|1.421|0.000|1898.100|
+|spdlog-sync|1.141|2.129|0.000|1184.429|
+|glog|3.091|4.447|0.000|623.927|
+
+#### Latency with wall clock (threads=1, msgs=1M) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.260|39.466|0.000|19783.750|
+|mal-hybrid|0.260|39.803|0.000|19887.750|
+|nanolog|0.478|53.367|0.000|23828.250|
+|spdlog-async|1.095|86.731|0.000|32126.500|
+|mal-blocking|0.904|134.936|0.000|38612.750|
+|mal-bounded|0.177|32.769|0.000|15909.250|
+|g3log|9.027|176.479|0.000|36099.750|
+|spdlog-sync|1.008|2.126|0.000|1184.500|
+|glog|2.957|4.991|0.000|10870.250|
+
+### threads: 2, msgs: 1M ###
+
+#### Throughput (threads=2, msgs=1M) ####
+
+|logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.127|7851.252|0.127|1.213|824.499|0.194|0.000|
+|mal-hybrid|0.118|8538.300|0.117|1.217|822.024|0.189|0.000|
+|nanolog|0.280|3579.617|0.279|3.684|271.478|0.479|0.000|
+|spdlog-async|1.093|914.847|1.093|1.390|722.730|1.658|0.000|
+|mal-blocking|0.872|1146.352|0.872|1.155|866.106|1.301|0.000|
+|mal-bounded|0.038|7560.663|0.132|0.328|849.906|0.048|721508.667|
+|g3log|3.614|276.795|3.613|0.000|0.000|5.550|0.000|
+|spdlog-sync|1.296|772.051|1.295|1.296|771.985|2.550|0.000|
+|glog|4.145|241.551|4.140|4.145|241.545|8.282|0.000|
+
+#### Latency with thread clock (threads=2, msgs=1M) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.356|0.208|0.000|446.603|
+|mal-hybrid|0.339|0.145|0.000|74.559|
+|nanolog|0.511|14.626|0.000|19604.226|
+|spdlog-async|0.871|1.014|0.000|501.413|
+|mal-blocking|0.325|0.245|0.000|81.224|
+|mal-bounded|0.233|0.104|0.000|73.537|
+|g3log|2.959|15.843|0.000|39682.811|
+|spdlog-sync|2.385|2.953|0.000|1512.499|
+|glog|6.353|5.798|0.000|620.568|
+
+#### Latency with wall clock (threads=2, msgs=1M) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.323|35.966|0.000|19945.250|
+|mal-hybrid|0.331|36.788|0.000|26595.250|
+|nanolog|0.571|48.877|0.000|36013.250|
+|spdlog-async|1.541|402.998|0.000|407353.750|
+|mal-blocking|1.592|176.466|0.000|47105.000|
+|mal-bounded|0.167|26.099|0.000|26374.500|
+|g3log|5.776|198.746|0.000|86820.750|
+|spdlog-sync|2.531|4.186|0.000|1622.250|
+|glog|7.077|8.951|0.000|13852.500|
+
+### threads: 4, msgs: 1M ###
+
+#### Throughput (threads=4, msgs=1M) ####
+
+|logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.126|7937.776|0.126|1.230|813.398|0.424|0.000|
+|mal-hybrid|0.109|9145.287|0.109|1.229|813.995|0.384|0.000|
+|nanolog|0.295|3410.801|0.293|3.694|270.721|1.096|0.000|
+|spdlog-async|1.033|971.724|1.029|1.278|785.271|2.931|0.000|
+|mal-blocking|0.857|1166.439|0.857|1.142|875.657|2.563|0.000|
+|mal-bounded|0.045|6535.512|0.153|0.333|842.747|0.136|719399.893|
+|g3log|2.076|481.684|2.076|0.000|0.000|5.793|0.000|
+|spdlog-sync|1.611|621.825|1.608|1.611|621.782|6.375|0.000|
+|glog|4.064|246.107|4.063|4.064|246.098|16.109|0.000|
+
+#### Latency with thread clock (threads=4, msgs=1M) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.462|0.194|0.000|474.910|
+|mal-hybrid|0.461|0.187|0.000|109.648|
+|nanolog|0.902|29.667|0.000|33627.726|
+|spdlog-async|2.066|1.980|0.000|550.799|
+|mal-blocking|0.590|0.529|0.000|105.001|
+|mal-bounded|0.295|0.200|0.000|100.486|
+|g3log|3.574|40.379|0.000|47607.687|
+|spdlog-sync|4.502|15.216|0.000|51418.669|
+|glog|9.800|7.232|0.000|2016.700|
+
+#### Latency with wall clock (threads=4, msgs=1M) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.452|28.741|0.000|19820.000|
+|mal-hybrid|0.458|30.415|0.000|19833.750|
+|nanolog|1.012|56.331|0.000|37315.750|
+|spdlog-async|3.078|786.347|0.000|819219.500|
+|mal-blocking|3.256|248.487|0.000|44787.000|
+|mal-bounded|0.256|23.307|0.000|25956.000|
+|g3log|5.938|166.843|0.000|48068.000|
+|spdlog-sync|5.656|45.203|0.000|55947.500|
+|glog|15.057|16.018|0.000|3920.500|
+
+### threads: 8, msgs: 1M ###
+
+#### Throughput (threads=8, msgs=1M) ####
+
+|logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.112|8969.594|0.111|1.240|806.566|0.653|0.000|
+|mal-hybrid|0.106|9499.564|0.105|1.240|806.327|0.650|0.000|
+|nanolog|0.386|2625.303|0.381|3.773|265.072|2.607|0.000|
+|spdlog-async|0.956|1046.983|0.955|1.338|748.533|5.357|0.000|
+|mal-blocking|0.886|1129.817|0.885|1.169|855.640|5.360|0.000|
+|mal-bounded|0.054|5278.950|0.189|0.343|822.408|0.304|718061.400|
+|g3log|1.393|718.022|1.393|0.000|0.000|8.191|0.000|
+|spdlog-sync|1.362|734.524|1.361|1.363|734.224|10.022|0.000|
+|glog|5.299|188.800|5.297|5.299|188.775|40.806|0.000|
+
+#### Latency with thread clock (threads=8, msgs=1M) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.462|0.193|0.000|485.315|
+|mal-hybrid|0.468|0.276|0.000|574.191|
+|nanolog|1.251|110.635|0.000|163074.074|
+|spdlog-async|1.598|1.671|0.000|537.990|
+|mal-blocking|0.564|0.532|0.000|102.706|
+|mal-bounded|0.293|0.210|0.000|85.461|
+|g3log|3.578|31.940|0.000|36182.697|
+|spdlog-sync|2.774|8.095|0.000|32767.595|
+|glog|7.241|10.994|0.000|1979.518|
+
+#### Latency with wall clock (threads=8, msgs=1M) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.789|70.550|0.000|24013.250|
+|mal-hybrid|0.789|70.572|0.000|24033.500|
+|nanolog|2.344|208.913|0.000|165345.250|
+|spdlog-async|5.313|1063.950|0.000|823471.250|
+|mal-blocking|6.430|393.892|0.000|60707.000|
+|mal-bounded|0.481|53.689|0.000|24006.250|
+|g3log|9.408|196.593|0.000|68008.250|
+|spdlog-sync|10.798|266.851|0.000|63681.500|
+|glog|42.027|643.568|0.000|95095.000|
+
+### threads: 16, msgs: 1M ###
+
+#### Throughput (threads=16, msgs=1M) ####
+
+|logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.106|9512.044|0.105|1.249|800.829|1.105|0.000|
+|mal-hybrid|0.095|10539.606|0.095|1.259|794.185|1.142|0.000|
+|nanolog|0.574|1776.734|0.563|3.954|253.007|7.361|0.000|
+|spdlog-async|0.946|1057.712|0.945|1.311|764.723|10.080|0.000|
+|mal-blocking|0.926|1081.371|0.925|1.210|826.498|11.169|0.000|
+|mal-bounded|0.066|4224.109|0.237|0.357|781.058|0.727|721052.893|
+|g3log|1.106|905.473|1.104|0.000|0.000|14.164|0.000|
+|spdlog-sync|1.375|727.978|1.374|1.376|727.064|19.834|0.000|
+|glog|5.446|183.668|5.445|5.448|183.624|81.815|0.000|
+
+#### Latency with thread clock (threads=16, msgs=1M) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.459|0.185|0.000|487.014|
+|mal-hybrid|0.471|0.261|0.000|485.797|
+|nanolog|1.792|120.518|0.000|69922.390|
+|spdlog-async|1.538|1.692|0.000|1433.414|
+|mal-blocking|0.563|0.595|0.000|757.408|
+|mal-bounded|0.288|0.215|0.000|77.137|
+|g3log|3.642|37.741|0.000|28622.650|
+|spdlog-sync|2.508|8.844|0.000|21796.912|
+|glog|6.666|10.537|0.000|2279.296|
+
+#### Latency with wall clock (threads=16, msgs=1M) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|1.475|138.667|0.000|36011.000|
+|mal-hybrid|1.485|140.511|0.000|36012.250|
+|nanolog|7.367|640.868|0.000|464987.500|
+|spdlog-async|9.929|1533.480|0.000|824011.500|
+|mal-blocking|12.916|645.065|0.000|264012.750|
+|mal-bounded|0.881|106.345|0.000|36008.500|
+|g3log|16.615|261.344|0.000|107831.750|
+|spdlog-sync|21.590|458.307|0.000|99859.250|
+|glog|85.751|1313.894|0.000|204089.000|
+
+### threads: 1, msgs: 100k ###
+
+#### Throughput (threads=1, msgs=100k) ####
+
+|logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.016|6375.228|0.157|0.127|789.601|0.016|0.000|
+|mal-hybrid|0.006|16009.559|0.062|0.130|771.471|0.006|0.000|
+|nanolog|0.015|6561.511|0.152|0.369|270.683|0.015|0.000|
+|spdlog-async|0.080|1250.099|0.800|0.140|715.535|0.080|0.000|
+|mal-blocking|0.004|26903.095|0.037|0.125|797.623|0.004|0.000|
+|mal-bounded|0.004|26863.993|0.037|0.125|798.509|0.004|0.000|
+|g3log|0.830|120.741|8.282|0.000|0.000|0.830|0.000|
+|spdlog-sync|0.094|1060.233|0.943|0.094|1059.962|0.094|0.000|
+|glog|0.250|400.607|2.496|0.250|400.591|0.250|0.000|
+
+#### Latency with thread clock (threads=1, msgs=100k) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.237|0.065|0.000|73.584|
+|mal-hybrid|0.219|0.058|0.000|23.001|
+|nanolog|0.307|0.548|0.000|507.379|
+|spdlog-async|0.609|0.182|0.000|77.888|
+|mal-blocking|0.204|0.055|0.000|16.185|
+|mal-bounded|0.204|0.055|0.000|15.487|
+|g3log|3.382|1.583|0.000|578.957|
+|spdlog-sync|1.127|0.726|0.000|83.000|
+|glog|2.744|4.699|0.000|610.724|
+
+#### Latency with wall clock (threads=1, msgs=100k) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.191|29.040|0.000|18694.250|
+|mal-hybrid|0.153|19.869|0.000|18198.500|
+|nanolog|0.304|32.053|0.000|12054.500|
+|spdlog-async|0.919|71.433|0.000|24022.250|
+|mal-blocking|0.126|18.277|0.000|15800.500|
+|mal-bounded|0.123|16.843|0.000|15923.500|
+|g3log|8.461|178.166|0.000|35768.750|
+|spdlog-sync|0.989|0.741|0.000|88.250|
+|glog|2.607|5.041|0.000|1768.000|
+
+### threads: 2, msgs: 100k ###
+
+#### Throughput (threads=2, msgs=100k) ####
+
+|logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.015|6993.205|0.143|0.123|812.608|0.023|0.000|
+|mal-hybrid|0.014|7475.601|0.134|0.129|777.838|0.014|0.000|
+|nanolog|0.023|4393.427|0.228|0.364|275.067|0.023|0.000|
+|spdlog-async|0.049|2067.928|0.484|0.126|799.563|0.084|0.000|
+|mal-blocking|0.009|11348.432|0.088|0.123|811.886|0.009|0.000|
+|mal-bounded|0.009|11755.607|0.085|0.125|803.583|0.009|0.000|
+|g3log|0.326|307.722|3.250|0.000|0.000|0.521|0.000|
+|spdlog-sync|0.122|819.163|1.221|0.122|818.546|0.196|0.000|
+|glog|0.495|202.496|4.938|0.495|202.466|0.958|0.000|
+
+#### Latency with thread clock (threads=2, msgs=100k) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.365|0.261|0.000|74.722|
+|mal-hybrid|0.345|0.245|0.000|37.425|
+|nanolog|0.418|3.256|0.000|6547.597|
+|spdlog-async|0.860|0.466|0.000|78.877|
+|mal-blocking|0.295|0.227|0.000|40.778|
+|mal-bounded|0.294|0.226|0.000|79.924|
+|g3log|2.942|6.123|0.000|4248.991|
+|spdlog-sync|2.056|2.058|0.000|138.149|
+|glog|6.045|6.134|0.000|639.601|
+
+#### Latency with wall clock (threads=2, msgs=100k) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.182|0.243|0.000|58.500|
+|mal-hybrid|0.176|0.241|0.000|69.000|
+|nanolog|0.278|0.426|0.000|99.500|
+|spdlog-async|0.942|49.640|0.000|24019.500|
+|mal-blocking|0.144|0.221|0.000|54.000|
+|mal-bounded|0.140|0.221|0.000|85.500|
+|g3log|5.650|171.274|0.000|40647.750|
+|spdlog-sync|2.037|2.601|0.000|253.000|
+|glog|7.611|8.894|0.000|672.250|
+
+### threads: 4, msgs: 100k ###
+
+#### Throughput (threads=4, msgs=100k) ####
+
+|logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.017|5816.477|0.172|0.124|806.399|0.049|0.000|
+|mal-hybrid|0.014|7369.058|0.136|0.127|789.789|0.038|0.000|
+|nanolog|0.024|4204.168|0.238|0.360|277.912|0.061|0.000|
+|spdlog-async|0.037|2714.878|0.368|0.117|851.558|0.108|0.000|
+|mal-blocking|0.021|4830.749|0.207|0.125|803.084|0.060|0.000|
+|mal-bounded|0.020|5089.425|0.196|0.124|807.103|0.056|0.000|
+|g3log|0.181|555.494|1.800|0.000|0.000|0.506|0.000|
+|spdlog-sync|0.150|667.746|1.498|0.150|667.284|0.474|0.000|
+|glog|0.452|221.417|4.516|0.452|221.360|1.633|0.000|
+
+#### Latency with thread clock (threads=4, msgs=100k) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.530|0.368|0.000|97.979|
+|mal-hybrid|0.519|0.380|0.000|100.225|
+|nanolog|0.698|1.111|0.000|667.632|
+|spdlog-async|1.145|1.029|0.000|2419.031|
+|mal-blocking|0.487|0.339|0.000|82.305|
+|mal-bounded|0.487|0.335|0.000|80.414|
+|g3log|3.744|15.762|0.000|12496.331|
+|spdlog-sync|4.037|4.205|0.000|130.493|
+|glog|9.847|8.395|0.000|2212.302|
+
+#### Latency with wall clock (threads=4, msgs=100k) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.457|0.419|0.000|119.750|
+|mal-hybrid|0.456|1.358|0.000|4031.500|
+|nanolog|0.624|1.935|0.000|1022.250|
+|spdlog-async|1.139|30.480|0.000|13164.750|
+|mal-blocking|0.476|1.344|0.000|4035.750|
+|mal-bounded|0.473|0.423|0.000|120.250|
+|g3log|5.810|130.534|0.000|36022.000|
+|spdlog-sync|4.362|6.812|0.000|296.500|
+|glog|15.221|16.243|0.000|2084.750|
+
+### threads: 8, msgs: 100k ###
+
+#### Throughput (threads=8, msgs=100k) ####
+
+|logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.016|6440.547|0.155|0.127|784.807|0.053|0.000|
+|mal-hybrid|0.020|5064.253|0.197|0.126|797.569|0.078|0.000|
+|nanolog|0.029|3543.887|0.282|0.369|271.005|0.134|0.000|
+|spdlog-async|0.034|2964.436|0.337|0.116|860.729|0.156|0.000|
+|mal-blocking|0.025|4057.172|0.246|0.130|768.689|0.106|0.000|
+|mal-bounded|0.025|4095.472|0.244|0.129|774.193|0.101|0.000|
+|g3log|0.148|677.489|1.476|0.000|0.000|0.779|0.000|
+|spdlog-sync|0.149|675.800|1.480|0.149|675.075|0.773|0.000|
+|glog|0.470|213.186|4.691|0.471|212.904|3.109|0.000|
+
+#### Latency with thread clock (threads=8, msgs=100k) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.555|0.361|0.000|228.484|
+|mal-hybrid|0.546|0.401|0.000|106.212|
+|nanolog|0.850|27.824|0.000|14481.546|
+|spdlog-async|1.130|0.935|0.000|898.256|
+|mal-blocking|0.541|0.347|0.000|55.388|
+|mal-bounded|0.545|0.352|0.000|82.037|
+|g3log|3.780|19.125|0.000|9078.383|
+|spdlog-sync|3.031|4.047|0.000|182.458|
+|glog|6.839|11.920|0.000|2228.419|
+
+#### Latency with wall clock (threads=8, msgs=100k) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.622|27.524|0.000|12054.750|
+|mal-hybrid|0.740|34.288|0.000|14870.500|
+|nanolog|1.225|78.700|0.000|31323.000|
+|spdlog-async|1.698|71.400|0.000|15102.750|
+|mal-blocking|0.842|44.671|0.000|14928.000|
+|mal-bounded|0.835|43.339|0.000|14709.000|
+|g3log|9.030|140.305|0.000|32022.750|
+|spdlog-sync|8.448|192.520|0.000|30112.000|
+|glog|33.577|553.300|0.000|70830.500|
+
+### threads: 16, msgs: 100k ###
+
+#### Throughput (threads=16, msgs=100k) ####
+
+|logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.016|6583.656|0.152|0.130|768.453|0.076|0.000|
+|mal-hybrid|0.018|5648.697|0.177|0.131|764.880|0.114|0.000|
+|nanolog|0.038|2704.247|0.370|0.383|260.937|0.353|0.000|
+|spdlog-async|0.032|3122.116|0.320|0.125|801.972|0.204|0.000|
+|mal-blocking|0.026|3851.225|0.260|0.133|750.795|0.195|0.000|
+|mal-bounded|0.025|4079.836|0.245|0.133|754.916|0.198|0.000|
+|g3log|0.125|802.922|1.245|0.000|0.000|1.337|0.000|
+|spdlog-sync|0.164|613.156|1.631|0.165|608.699|1.740|0.000|
+|glog|0.505|198.595|5.035|0.506|198.310|6.170|0.000|
+
+#### Latency with thread clock (threads=16, msgs=100k) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.546|2.715|0.000|3393.759|
+|mal-hybrid|0.552|0.352|0.000|83.013|
+|nanolog|1.348|68.047|0.000|21244.445|
+|spdlog-async|1.128|1.525|0.000|2455.316|
+|mal-blocking|0.566|0.350|0.000|92.111|
+|mal-bounded|0.564|0.338|0.000|91.244|
+|g3log|3.803|16.043|0.000|4505.704|
+|spdlog-sync|3.240|4.327|0.000|192.859|
+|glog|6.610|12.025|0.000|2161.373|
+
+#### Latency with wall clock (threads=16, msgs=100k) ####
+
+|logger|mean(us)|standard deviation|best(us)|worst(us)|
+|:-:|:-:|:-:|:-:|:-:|
+|mal-heap|0.899|62.431|0.000|16884.750|
+|mal-hybrid|1.214|73.406|0.000|16083.000|
+|nanolog|3.461|236.301|0.000|55229.000|
+|spdlog-async|2.403|121.832|0.000|20874.750|
+|mal-blocking|1.450|81.302|0.000|16016.250|
+|mal-bounded|1.454|81.542|0.000|15466.250|
+|g3log|15.087|190.852|0.000|29835.250|
+|spdlog-sync|19.025|352.546|0.000|56399.500|
+|glog|69.034|1112.627|0.000|180189.000|
 
 > Written with [StackEdit](https://stackedit.io/).
