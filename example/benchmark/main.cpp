@@ -395,14 +395,14 @@ public:
     void print_header()
     {
         result_row::print_header();
-        std::puts ("mean(us)|standard deviation|best(us)|worst(us)|");
+        std::puts ("worst(us)|mean(us)|standard deviation|");
         result_row::print_separator();
-        std::puts (":-:|:-:|:-:|:-:|");
+        std::puts (":-:|:-:|:-:|");
     }
     void print_values()
     {
         result_row::print_values();
-        std::printf ("%.3f|%.3f|%.3f|%.3f|\n", mean, stddev, min, max);
+        std::printf ("%.3f|%.3f|%.3f|\n", max, mean, stddev);
     }
 };
 //------------------------------------------------------------------------------
@@ -956,6 +956,7 @@ struct test_suites {
 void display_results(
     std::vector<bool> active_loggers,
     unsigned          threads_log2_start,
+    unsigned          msgs,
     result_list&      reslist
     )
 {
@@ -965,12 +966,30 @@ void display_results(
     rate_row.prints_logger_name (true);
     latency_row.prints_logger_name (true);
 
+    char const* msgs_unit = "";
+    if (msgs >= 1000000) {
+        msgs     /= 1000000.;
+        msgs_unit = "M";
+    }
+    else if (msgs >= 1000) {
+        msgs     /= 1000;
+        msgs_unit = "k";
+    }
     puts ("Results:\n");
 
     for (unsigned t = threads_log2_start; t < max_threads_log2; ++t) {
+        char thr_msgs[128];
         unsigned threads = 1 << t;
-        printf ("### threads: %u ###\n\n", threads);
-        printf ("#### Throughput (threads=%u) ####\n\n", threads);
+        snprintf(
+            thr_msgs,
+            sizeof thr_msgs,
+            "threads: %u, msgs: %u%s",
+             threads,
+             msgs,
+             msgs_unit
+             );
+        printf ("### %s ###\n\n", thr_msgs);
+        printf ("#### Throughput (%s) ####\n\n", thr_msgs);
         rate_row.print_header();
         for (unsigned l = 0; l < loggers::count; ++l) {
             if (!active_loggers[l]) {
@@ -981,10 +1000,19 @@ void display_results(
             rate_row.print_values();
         }
         puts ("");
+        printf ("#### \"Real\" latency (%s, clock: wall) ####\n\n", thr_msgs);
+        latency_row.print_header();
+        for (unsigned l = 0; l < loggers::count; ++l) {
+            if (!active_loggers[l]) {
+               continue;
+            }
+            latency_row.logger_name = loggers::names[l];
+            ((latency_data&) latency_row) = average (reslist.wall[t][l]);
+            latency_row.print_values();
+        }
+        puts ("");
 #ifdef HAS_THREAD_CLOCK
-        printf(
-            "#### Latency with thread clock (threads=%u) ####\n\n", threads
-            );
+        printf ("#### CPU latency (%s, clock: thread) ####\n\n", thr_msgs);
         latency_row.print_header();
         for (unsigned l = 0; l < loggers::count; ++l) {
             if (!active_loggers[l]) {
@@ -996,17 +1024,6 @@ void display_results(
         }
         puts ("");
 #endif
-        printf ("#### Latency with wall clock (threads=%u) ####\n\n", threads);
-        latency_row.print_header();
-        for (unsigned l = 0; l < loggers::count; ++l) {
-            if (!active_loggers[l]) {
-               continue;
-            }
-            latency_row.logger_name = loggers::names[l];
-            ((latency_data&) latency_row) = average (reslist.wall[t][l]);
-            latency_row.print_values();
-        }
-        puts ("");
     }
 }
 //------------------------------------------------------------------------------
@@ -1117,7 +1134,7 @@ void run_tests(
         }
     }
     if (show_results) {
-        display_results (active_loggers, threads_log2_start, rl);
+        display_results (active_loggers, threads_log2_start, msgs, rl);
     }
 }
 //------------------------------------------------------------------------------
