@@ -169,6 +169,13 @@ public:
         }
     }
     //--------------------------------------------------------------------------
+    void wait (th::unique_lock<std::mutex>& lock)
+    {
+        if (!detail::queue_backoff::wait()) {
+            m_cond.wait_for (lock, ch::nanoseconds (get_sleep_block_ns()));
+        }
+    }
+    //--------------------------------------------------------------------------
     void notify_all()
     {
         m_cond.notify_all();

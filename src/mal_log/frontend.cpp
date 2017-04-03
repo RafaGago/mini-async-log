@@ -47,7 +47,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <mal_log/backend.hpp>
 #include <mal_log/async_to_sync.hpp>
 #include <mal_log/timestamp.hpp>
-
+#include <mal_log/util/side_effect_assert.hpp>
 
 namespace mal {
 
@@ -85,30 +85,64 @@ public:
         queue_prepared::error err  = commit_data.get_error();
 
         if (!mem && m_block_on_full_queue && err == queue_prepared::queue_full){
-            th::mutex dummy;
+            th::mutex           dummy;
             cond_queue_backoff  backoff (dummy, m_back.consume_condition);
             backoff.cfg.spin_end            = 2;
             backoff.cfg.short_cpu_relax_end = 4;
             backoff.cfg.long_cpu_relax_end  = 6;
             backoff.cfg.yield_end           = 8;
             backoff.cfg.short_sleep_end     = 10;
-            backoff.cfg.long_sleep_ns       = 20000000;
-            backoff_wait_ticket ticket;
-            bool waiting_for_ticket = false;
-            do {
-                if (!waiting_for_ticket && backoff.next_wait_is_long_sleep()) {
-                    m_back.consume_wait.push_ticket (ticket);
-                    waiting_for_ticket = true;
-                }
+            backoff.cfg.long_sleep_ns       = 1000000;
+            backoff_ticket ticket;
+            while (true) {
+                // unfair backoff window
                 backoff.wait();
-                if (waiting_for_ticket && !ticket.is_ready()) {
-                    continue;
-                }
                 commit_data = m_back.allocate_entry (required_bytes);
                 mem         = commit_data.get_mem();
                 err         = commit_data.get_error();
+                if (mem || err != queue_prepared::queue_full) {
+                    break;
+                }
+                if (backoff.next_wait_is_long_sleep()) {
+                    m_back.consume_wait.producer_push_ticket (ticket);
+                    break;
+                }
             }
-            while (!mem && err == queue_prepared::queue_full);
+            queue_prepared* last = nullptr;
+            while (!mem && err == queue_prepared::queue_full) {
+                // fair backoff
+                if (!last) {
+                    last = ticket.get_last_q_element();
+                    if (!last) {
+                        if (!ticket.has_failed()) {
+                            backoff.wait();
+                            continue;
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                    backoff.reset();
+                    backoff.cfg.spin_end            = 8;
+                    backoff.cfg.short_cpu_relax_end = 16;
+                    backoff.cfg.long_cpu_relax_end  = 64;
+                    backoff.cfg.yield_end           = 128;
+                    backoff.cfg.short_sleep_end     = 256;
+                    backoff.cfg.long_sleep_ns       = 1000;
+                }
+                /*push_unconsumed_entry can return "queue_full" if there is a
+                  preemted producer doing exactly the same operation before it
+                  could complete */
+                commit_data = m_back.push_unconsumed_entry(
+                    *last, required_bytes
+                    );
+                mem = commit_data.get_mem();
+                err = commit_data.get_error();
+
+                if (!mem) {
+                    backoff.wait();
+                }
+            }
         }
         if (mem) {
             e.init (mem, required_bytes);

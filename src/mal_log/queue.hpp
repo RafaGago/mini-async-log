@@ -450,47 +450,70 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-    /* This code is intended to execute serialized on the next circumstances:
-
-       -The queue is full and the consumer is aware of it by external means.
-       -The consumer has passed the "fullq_last" variable to the producer,
-        which is the result of a "sc_pop_prepare" without having called
-        "pop_commit". Memory fences have been correctly issued.
-       -The consumer is blocked waiting for this function to be called.
-       -The code returning from this function syncs with the consumer again.
-        When exiting this function syncs with the consumer to unlock it and uses
-        the right memory fences.
-
-       Note that this is very heavyweight.
-    */
-    queue_prepared sc_pop_commit_to_mp_push_prepare_queue_full(
-        const queue_prepared& fullq_last_uncommited, size_t size
+    // A producer on a full or near full queue gets one of the last entries
+    // from the cosumer without having called "pop_commit". This is used to
+    // implement backoff fairness.
+    //--------------------------------------------------------------------------
+    queue_prepared sc_pop_commit_to_mp_push_prepare_bounded(
+        const queue_prepared& pop_uncommited, size_t size
         )
     {
+        assert (is_local_mem (pop_uncommited.mem));
         queue_prepared pp;
         if (m_bounded_mem && (size <= fixed_entry_size())) {
             local_cell* cell;
             size_t pos = m_enqueue_pos;
             while (true) {
-                cell       = get_cell (pos & m_cell_mask);
-                size_t seq = cell->sequence.load (mo_acquire);
+                cell          = get_cell (pos & m_cell_mask);
+                size_t seq    = cell->sequence.load (mo_acquire);
                 intptr_t diff = (intptr_t) seq - (intptr_t) pos;
-
-                assert (cell->storage() == fullq_last_uncommited.get_mem());
-                assert (seq == (fullq_last_uncommited.pos + 1));
-                assert (diff == -m_cell_mask);
-
-                if (diff == -m_cell_mask &&
-                    seq == (fullq_last_uncommited.pos + 1) &&
-                    cell->storage() == fullq_last_uncommited.get_mem()
-                    ) {
+                if (diff == 0) {
                     if (m_enqueue_pos.compare_exchange_weak(
                         pos, pos + 1, mo_relaxed
                         )) {
-                        pop_commit (fullq_last_uncommited);
+                        /* we haven't got "pop_uncommited" but another free
+                           element before, we swap them */
+                        pop_commit (pop_uncommited);
                         pp.set (cell->storage(), pos + 1);
-                        return pp;
+                        break;
                     }
+                }
+                else if (diff < 0) {
+                    if (diff == -m_cell_mask &&
+                        cell->storage() == pop_uncommited.get_mem()
+                        ) {
+                        /* Got "pop_uncommited", it means that pop_uncommited
+                           is the  last queue element. As this call has
+                           ownership of the last element of the queue too no
+                           one will be able to change the sequence of this cell,
+                           which also meants that there is no way that another
+                           producer can move "m_enqueue_pos": CAS not needed.
+                        */
+                        m_enqueue_pos.store (pos + 1, mo_relaxed);
+                        pop_commit (pop_uncommited);
+                        pp.set (cell->storage(), pos + 1);
+                    }
+                    else if (diff > -blocking_offset) {
+                        /* another producer(s) may be executing
+                           "sc_pop_commit_to_mp_push_prepare_bounded" on an
+                           previous cell(s) and had no time to complete. We
+                           return full_queue and back off and try again later.
+                        */
+                        /*this error sets pos to the value that a consumer would
+                          find on its returned "sc_pop_prepare" pos. This can be
+                          used e.g. to know if a producer is blocked before this
+                          transaction.*/
+                        pp.set_error(
+                            queue_prepared::queue_full, pos - entry_count()
+                            );
+                    }
+                    else {
+                        pp.set_error (queue_prepared::queue_blocked, 0);
+                    }
+                    break;
+                }
+                else {
+                    pos = m_enqueue_pos;
                 }
             }
         }

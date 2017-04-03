@@ -41,6 +41,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <mal_log/util/atomic.hpp>
 #include <mal_log/util/chrono.hpp>
 #include <mal_log/util/mpsc.hpp>
+#include <mal_log/queue.hpp>
 #include <mal_log/util/processor_pause.hpp>
 #include <stdlib.h>
 
@@ -48,59 +49,84 @@ namespace mal {
 
 class backoff_wait;
 //------------------------------------------------------------------------------
-class backoff_wait_ticket : public mpsc_node_hook {
+class backoff_ticket : public mpsc_node_hook {
 public:
     //--------------------------------------------------------------------------
-    backoff_wait_ticket()
+    backoff_ticket()
     {
-        m_ready = false;
-        m_unlocked.store (false, at::memory_order_relaxed);
+        m_state.store (unitialized, mo_relaxed);
     }
     //--------------------------------------------------------------------------
-    bool is_ready() {
-        if (!m_ready) {
-            m_ready = m_unlocked.exchange (false, at::memory_order_relaxed);
-        }
-        return m_ready;
+    queue_prepared* get_last_q_element()
+    {
+        return (get_state() == sent_q_last) ? &m_last_q_elem : nullptr;
+    }
+    //--------------------------------------------------------------------------
+    void set_last_q_element (queue_prepared& uncommited_last_element)
+    {
+        assert (m_state == request_q_last);
+        m_last_q_elem = uncommited_last_element;
+        set_state (sent_q_last);
+    }
+    //--------------------------------------------------------------------------
+    bool has_failed()  const
+    {
+        return (get_state() == failed);
+    }
+    //--------------------------------------------------------------------------
+    void set_failed()
+    {
+        set_state (failed);
     }
     //--------------------------------------------------------------------------
 private:
+    //--------------------------------------------------------------------------
+    enum state {
+        unitialized,
+        request_q_last,
+        sent_q_last,
+        failed,
+    };
     friend class backoff_wait;
     //--------------------------------------------------------------------------
-    void set_ready() {
-        m_unlocked.store (true, at::memory_order_relaxed);
+    state get_state() const
+    {
+        return m_state.load (mo_acquire);
     }
     //--------------------------------------------------------------------------
-    at::atomic<bool> m_unlocked;
-    bool             m_ready;
+    void set_state (state s)
+    {
+        m_state.store (s, mo_release);
+    }
+    //--------------------------------------------------------------------------
+    queue_prepared    m_last_q_elem;
+    at::atomic<state> m_state;
 };
 //------------------------------------------------------------------------------
 class backoff_wait {
 public:
     //--------------------------------------------------------------------------
-    void push_ticket (backoff_wait_ticket& t)
+    void producer_push_ticket (backoff_ticket& t)
     {
+        t.m_state = backoff_ticket::request_q_last;
         m_fifo.push (t);
     }
     //--------------------------------------------------------------------------
-    bool call_next_ticket()
+    backoff_ticket* get_next_ticket()
     {
-        backoff_wait_ticket* t;
 retry:
         auto v = m_fifo.pop();
         switch (v.error) {
         case mpsc_result::no_error:
-            t = static_cast<backoff_wait_ticket*> (v.node);
-            t->set_ready();
             /*no memory handling, the ticket has to be on the stack*/
-            return true;
+            return static_cast<backoff_ticket*> (v.node);
         case mpsc_result::empty:
-            return false;
+            return nullptr;
         case mpsc_result::busy_try_again:
             processor_pause();
             goto retry;
         default:
-            return false; /*unreachable*/
+            return nullptr; /*unreachable*/
             break;
         }
     }

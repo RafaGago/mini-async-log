@@ -114,6 +114,15 @@ public:
         }
     }
     //--------------------------------------------------------------------------
+    queue_prepared push_unconsumed_entry(
+        queue_prepared& unconsumed_entry, uword size
+        )
+    {
+        return m_fifo.sc_pop_commit_to_mp_push_prepare_bounded(
+            unconsumed_entry, size
+            );
+    }
+    //--------------------------------------------------------------------------
     void push_entry (const queue_prepared& entry)
     {
         m_fifo.bounded_push_commit (entry);
@@ -286,19 +295,16 @@ private:
                 }
                 m_wait.reset();
                 m_writer.decode_and_write (m_out, res.get_mem());
-                m_fifo.pop_commit (res);
+                backoff_ticket* ticket = nullptr;
                 if (signal_consume_condition) {
-                    /* the ticket system has a window of failure: a producer can
-                       see the queue full and this consumer reach this point
-                       before the producer has been able to insert the ticket.
-
-                       As things are now this is taken as a lost oportunity,
-                       full consistency/fairness is not desirable (expensive to
-                       implement), so the consumer may be notified on the next
-                       message.*/
-                    if (consume_wait.call_next_ticket()) {
-                        consume_condition.notify_all();
-                    }
+                    ticket = consume_wait.get_next_ticket();
+                }
+                if (!ticket) {
+                    m_fifo.pop_commit (res);
+                }
+                else {
+                    ticket->set_last_q_element (res);
+                    consume_condition.notify_all();
                 }
             }
             else {
@@ -326,7 +332,13 @@ private:
             }
         }
         if (signal_consume_condition) {
-            while (consume_wait.call_next_ticket());
+            while (true) {
+                backoff_ticket* ticket = consume_wait.get_next_ticket();
+                if (!ticket) {
+                    break;
+                }
+                ticket->set_failed();
+            }
             consume_condition.notify_all();
         }
         idle_rotate_if();
