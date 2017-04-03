@@ -329,7 +329,7 @@ test a sensible throughput degradation is seen in it when the thread count
 increases. For the 16 thread case "mal-heap" is 5.35x faster. The latency
 behavior is better too: less standard deviation and shortest worst-case.
 
-### mal-hybrid ####
+#### mal-hybrid ####
 
 "mal-hybrid" is just adding a small bounded queue to "mal-heap". On the 1M test
 having the extra bounded queue seems to increase the performance except in the
@@ -440,7 +440,7 @@ contiguoud chunk).
 Not very fast, but this is the ĺogger showing the best worst-case latency
 (according to the wall clock) with only one thread.
 
-### Result data
+## Benchmark data ##
 
 ### threads: 1, msgs: 1M ###
 
