@@ -232,7 +232,7 @@ are downloaded and build for you by the makefile, just run:
 You can "make install" or search for the executable under
 "build/linux/build/stage"
 
-### Test metodology
+### Test metodology ###
 
 It consists in enqueueing 1 million and 100K messages distributing them evenly
 accross a variying number of threads (1, 2, 4, 8, 16). Each test is run 75 times
@@ -274,7 +274,7 @@ The test takes some hours to run.
 
 The tests are done against the master branch of each project on March 2017.
 
-### Library configuration
+### Library configuration ###
 
 Each logger configuration summary is as follows:
 
