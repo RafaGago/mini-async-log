@@ -1,19 +1,28 @@
 
 Minimal Asynchronous Logger (MAL)
 -----------
-A non feature-bloated asynchronous data logger. Sponsored by my former employer
-**Diadrom AB.**
+A non overly-bloated and performant asynchronous data logger.
 
-We just wanted an asynchronous logger that can be used from many dynamically
-loaded libraries without doing link-time hacks like linking static and hiding
-symbols and some other "niceties".
+## Credit ##
 
-After having maintained a slightly modified fork of google log (glog) and given
-the fact that this is a very small project we decided that existing wheels
-weren't round enough.
+ - To my former employer **Diadrom AB.** for allowing me to share this code with
+   a BSD license. They funded most of the development of this project.
+ - To Dmitry Vjukov for all the knowledge he has spread on the internets,
+   including the algorithms for the two queues on this project.
+ - To my girlfriend for coexisting with me when I become temporarily autistic
+   after having been "in the zone" for too long.
+
+## Motivation ##
+
+This started with the intention to just develop an asynchronous logger that
+could be used from many dynamically loaded libraries without doing link-time
+hacks like linking static, hiding symbols and some other "niceties".
 
 Then at some point way after the requirements were met I just improved the thing
 for fun.
+
+Who needs a fast asynchronous logger? Anyone using an asynchronous logger,
+otherwise they would just use a synchronous one.
 
 ## Design rationale ##
 
@@ -283,9 +292,13 @@ Each logger configuration summary is as follows:
 
 ### Result conclusions ###
 
-I have observed some variability on the test results between test runs, which
-shows that 75 averaged runs is not enough. I want to be able to run the
-benchmark overnight, so I won't increase this number.
+The results are after these comments, otherwise this would be buried in tables.
+
+I have observed some variability (5-10% ?) on the test results between test
+runs, which shows that 75 averaged runs is not enough. I want to be able to run
+the benchmark overnight, so I won't increase this number.
+
+The variability between machines (AMD-Intel) is big too.
 
 Regarding the worst case latency for the 1 thread case: when looking at
 the thread clock it looks like the asynchronous loggers have always a lower
@@ -309,7 +322,7 @@ for the expected load.
 
 It shows very stable results in the throughput and latency measurements. The
 latency increases with more contention but it's still lower than all non "mal"
-variants, except for the synchronous loggers with low contention/thread count.
+variants except for the synchronous loggers with low contention/thread count.
 
 The only competing logger using a heap based queue is nanolog. In the 1M msgs
 test a sensible throughput degradation is seen in it when the thread count
@@ -319,9 +332,12 @@ behavior is better too: less standard deviation and shortest worst-case.
 ### mal-hybrid ####
 
 "mal-hybrid" is just adding a small bounded queue to "mal-heap". On the 1M test
-it seems to help except for the single threaded case. On the 100k single
-threaded test it's the opposite, it helps up to two 4 threads (CPU core count),
-after that the performance is less than "mal-heap".
+having the extra bounded queue seems to increase the performance except in the
+single threaded case.
+
+In the 100k single threaded test it's the opposite, the bounded queue increases
+performance up to two 4 threads (CPU core count), after that the performance is
+less than "mal-heap".
 
 The latencies are both very similar.
 
@@ -343,13 +359,13 @@ latencies in this case are on par.
 
 This is logical, as a matter of fact "spdlog-async" internals are similar to
 "mal-blocking"'s; they both use internally the same D.Vyukov bounded queue
-algorithm,(gabime borrowed the idea from this project)  so the performance
-difference is not made in the queue algorithm, but in its usage.
+algorithm,(gabime borrowed the idea from this project when spdlog was using
+mutexes) so the performance difference is not made in the queue algorithm, but
+in its usage.
 
 When the queue algorithm is the bottleneck (with high thread count and a lot of
 contention), the performance of "spdlog-async" is similar to the performance
 of the bounded mal variations.
-
 
 #### g3log ####
 
@@ -374,16 +390,16 @@ chunks?
 
 It shows good performance compared with the bounded queue contenders on the 1M
 messages test when the thread count is low. This is hardly a surprise because
-it uses an unbounded algorithm, so it doesn't need to deal with the queue full
+it uses an unbounded algorithm, so it doesn't need to deal with the full-queue
 case.
 
-With 16 threads and 1M messages its throughput is just around 70% better than
+With 16 threads and 1M messages its throughput is around 70% better than
 "mal-blocking" and its worst-case latency is much worse. Keep in mind that
 "mal-sync" doesn't use a bounded queue and its producers sleep under contention.
 
 On the 100k test, when the bounded queue versions of mal have enough room on the
-queue it's outperformed in every metric. "spdlog-async" catches up on the 16
-thread case too.
+queue (average use case) it's outperformed in every metric . "spdlog-async"
+catches up on the 16 thread case too.
 
 #### glog ####
 
@@ -414,7 +430,10 @@ serialized message size doesn't fit on the queue entry size the messages are
 discarded. This requires either a good entry size selection that you know that
 fits all the messages or using "mal-hybrid" (which is what the library intends).
 
-This requirement may be dropped on the future.
+This requirement may be dropped on the future if modifying the queue to do
+multiple pushes in one atomic operation doesn't screw up the cache (producers
+touching the same cache line more often because the storage is on a separated
+contiguoud chunk).
 
 #### spdlog-sync ####
 
