@@ -7,7 +7,8 @@
 
 #include <mal_log/extras/boost_filesystem_list_all_files.hpp>
 #include <mal_log/mal_log.hpp>
-#include <mal_log/frontend.hpp>                                                 //compiled in place, but it could be in a separate library
+//compiled in place, but it could be in a separate library
+#include <mal_log/frontend.hpp>
 #include <mal_log/util/chrono.hpp>
 #include <cstdio>
 
@@ -21,14 +22,15 @@ void rotation_test()
     //WARNING WARNING WARNING, files inside this folder will be deleted!
     const char* path = "./log_out/";
 
-    auto be_cfg                             = fe.get_backend_cfg();
-    be_cfg.file.out_folder                  = path;
-    be_cfg.file.aprox_size                  = 2048 * 1024;
-    be_cfg.file.rotation.file_count         = 4;
-    be_cfg.file.rotation.delayed_file_count = 1;                                //we let the logger to have an extra file when there is a lot of workload
-    be_cfg.file.rotation.past_files         = extras::list_all_files (path);
+    auto mal_cfg                             = fe.get_cfg();
+    mal_cfg.file.out_folder                  = path;
+    mal_cfg.file.aprox_size                  = 2048 * 1024;
+    mal_cfg.file.rotation.file_count         = 4;
+    //we let the logger to have an extra file when there is a lot of workload
+    mal_cfg.file.rotation.delayed_file_count = 1;
+    mal_cfg.file.rotation.past_files         = extras::list_all_files (path);
 
-    if (fe.init_backend (be_cfg) != frontend::init_ok) { return; }
+    if (fe.init_backend (mal_cfg) != frontend::init_ok) { return; }
 
     const uword msg_count = 10000000;
     auto init = ch::steady_clock::now();
@@ -37,8 +39,8 @@ void rotation_test()
         log_error_i (fe, "this is a very simple message {}", i);
     }
     auto reader_ns = ch::duration_cast<ch::nanoseconds>(
-                        ch::steady_clock::now() - init
-                        ).count();
+        ch::steady_clock::now() - init
+        ).count();
     auto reader_msgs_s =
             ((double) msg_count / (double) reader_ns) * 1000000000.;
 
@@ -51,26 +53,28 @@ void rotation_test()
         reader_ns,
         reader_msgs_s
         );
-    fe.on_termination();                                                        //this gracefully shut downs the logger, wait until the queues become empty.
+    // this gracefully shut downs the logger, waiting until the queues becomes
+    // empty.
+    fe.on_termination();
 
     auto writer_ns = ch::duration_cast<ch::nanoseconds>(
-                        ch::steady_clock::now() - init
-                        ).count();
+        ch::steady_clock::now() - init
+        ).count();
     auto writer_msgs_s =
             ((double) msg_count / (double) writer_ns) * 1000000000.;
 
     std::printf(
-            "%u msgs enqueued in %lld ns. %f msgs/sec\n",
-            msg_count,
-            reader_ns,
-            reader_msgs_s
-            );
+        "%u msgs enqueued in %lld ns. %f msgs/sec\n",
+        msg_count,
+        reader_ns,
+        reader_msgs_s
+        );
     std::printf(
-            "%u msgs dispatched in %lld ns. %f msgs/sec\n",
-            msg_count,
-            writer_ns,
-            writer_msgs_s
-            );
+        "%u msgs dispatched in %lld ns. %f msgs/sec\n",
+        msg_count,
+        writer_ns,
+        writer_msgs_s
+        );
 }
 //------------------------------------------------------------------------------
 int main (int argc, const char* argv[])

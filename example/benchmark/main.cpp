@@ -665,20 +665,20 @@ private:
     bool configure()
     {
         using namespace mal;
-        auto be_cfg                     = m_fe->get_backend_cfg();
-        be_cfg.file.out_folder          = MAL_PATH DIR_SEP;                 //this folder has to exist before running
-        be_cfg.file.aprox_size          = file_size_bytes;
-        be_cfg.file.rotation.file_count = 0;
-        be_cfg.file.rotation.delayed_file_count = 0;                            //we let the logger to have an extra file when there is a lot of workload
+        auto mal_cfg = m_fe->get_cfg();
+        //this folder has to exist before running
+        mal_cfg.file.out_folder          = MAL_PATH DIR_SEP;
+        mal_cfg.file.aprox_size          = file_size_bytes;
+        mal_cfg.file.rotation.file_count = 0;
+        mal_cfg.file.rotation.delayed_file_count = 0;
 
-        be_cfg.alloc.fixed_block_size     = m_total_bsz;
-        be_cfg.alloc.fixed_entry_size     = m_entry_size;
-        be_cfg.alloc.use_heap_if_required = m_heap;
+        mal_cfg.queue.bounded_q_block_size   = m_total_bsz;
+        mal_cfg.queue.bounded_q_entry_size   = m_entry_size;
+        mal_cfg.queue.can_use_heap_q         = m_heap;
+        mal_cfg.queue.bounded_q_blocking_sev =
+            (m_block_on_full_queue) ? sev::debug : sev::off;
 
-        m_fe->producer_timestamp (false);                                       //timestamping on producers slows the whole thing down 2.5, 3x, so we timestamp in the file worker for now. todo: for fairness the other libraries should have it disabled too
-        m_fe->block_on_full_queue (m_block_on_full_queue);
-
-        return m_fe->init_backend (be_cfg) == frontend::init_ok;
+        return m_fe->init_backend (mal_cfg) == frontend::init_ok;
     }
     //--------------------------------------------------------------------------
     int log_one (unsigned i)

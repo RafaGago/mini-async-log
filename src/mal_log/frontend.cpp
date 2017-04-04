@@ -63,13 +63,12 @@ public:
         m_prints_timestamp    = true;
         m_producer_timestamp  = true;
         m_timestamp_base      = 0;
-        m_block_on_full_queue = false;
         srand ((unsigned int) get_ns_timestamp() >> 2);
     }
     //--------------------------------------------------------------------------
     ~frontend_impl() {}
     //--------------------------------------------------------------------------
-    ser::exporter get_encoder (uword required_bytes)
+    ser::exporter get_encoder (uword required_bytes, sev::severity s)
     {
         ser::exporter e;
         typedef decltype (e.opaque_data) od;                                    //visual studio 2010 doesn't like this inside the static assertion
@@ -84,16 +83,14 @@ public:
         u8*                   mem  = commit_data.get_mem();
         queue_prepared::error err  = commit_data.get_error();
 
-        if (!mem && m_block_on_full_queue && err == queue_prepared::queue_full){
+        if (!mem
+            && err == queue_prepared::queue_full
+            && s >= m_back.get_cfg().queue.bounded_q_blocking_sev
+            ){
             th::mutex           dummy;
             cond_queue_backoff  backoff (dummy, m_back.consume_condition);
-            backoff.cfg.spin_end            = 2;
-            backoff.cfg.short_cpu_relax_end = 4;
-            backoff.cfg.long_cpu_relax_end  = 6;
-            backoff.cfg.yield_end           = 8;
-            backoff.cfg.short_sleep_end     = 10;
-            backoff.cfg.long_sleep_ns       = 1000000;
             backoff_ticket ticket;
+            backoff.cfg = m_back.get_cfg().producer_backoff;
             while (true) {
                 // unfair backoff window
                 backoff.wait();
@@ -123,12 +120,7 @@ public:
                         }
                     }
                     backoff.reset();
-                    backoff.cfg.spin_end            = 8;
-                    backoff.cfg.short_cpu_relax_end = 16;
-                    backoff.cfg.long_cpu_relax_end  = 64;
-                    backoff.cfg.yield_end           = 128;
-                    backoff.cfg.short_sleep_end     = 256;
-                    backoff.cfg.long_sleep_ns       = 1000;
+                    backoff.cfg = m_back.get_cfg().producer_spin;
                 }
                 /*push_unconsumed_entry can return "queue_full" if there is a
                   preemted producer doing exactly the same operation before it
@@ -177,20 +169,21 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-    backend_cfg get_backend_cfg() const
+    cfg get_cfg() const
     {
         return m_back.get_cfg();
     }
     //--------------------------------------------------------------------------
-    frontend::init_status init_backend (const backend_cfg& cfg)
+    frontend::init_status init_backend (const cfg& c)
     {
         uword actual = no_init;
         if (m_state.compare_exchange_strong (actual, on_init, mo_acquire)) {
             m_timestamp_base = get_ns_timestamp();
             auto sev_ch = [=]() { this->severity_updated_event(); };
-            if (m_back.init (cfg, m_sync, m_timestamp_base, sev_ch))
+            if (m_back.init (c, m_sync, m_timestamp_base, sev_ch))
             {
-                m_prints_timestamp = cfg.display.show_timestamp;
+                m_prints_timestamp   = c.display.show_timestamp;
+                m_producer_timestamp = c.misc.producer_timestamp;
                 m_state.store (init, mo_release);
                 return frontend::init_ok;
             }
@@ -275,23 +268,6 @@ public:
         return m_producer_timestamp && m_prints_timestamp;
     }
     //--------------------------------------------------------------------------
-    bool producer_timestamp (bool on)
-    {
-        m_producer_timestamp = on;
-        return producer_timestamp();
-    }
-    //--------------------------------------------------------------------------
-    void block_on_full_queue (bool on)
-    {
-        m_block_on_full_queue           = on;
-        m_back.signal_consume_condition = on;
-    }
-    //--------------------------------------------------------------------------
-    bool block_on_full_queue() const
-    {
-        return m_block_on_full_queue;
-    }
-    //--------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------
     void severity_updated_event()
@@ -314,7 +290,6 @@ private:
     async_to_sync            m_sync;
     bool                     m_prints_timestamp;
     bool                     m_producer_timestamp;
-    bool                     m_block_on_full_queue;
 };
 //------------------------------------------------------------------------------
 MAL_LIB_EXPORTED_CLASS frontend::frontend()
@@ -337,10 +312,10 @@ bool MAL_LIB_EXPORTED_CLASS frontend::is_constructed() const
 }
 //------------------------------------------------------------------------------
 ser::exporter MAL_LIB_EXPORTED_CLASS
-    frontend::get_encoder (uword required_bytes)
+    frontend::get_encoder (uword required_bytes, sev::severity s)
 {
     assert (is_constructed());
-    return m->get_encoder (required_bytes);
+    return m->get_encoder (required_bytes, s);
 }
 //------------------------------------------------------------------------------
 void MAL_LIB_EXPORTED_CLASS frontend::async_push_encoded(
@@ -360,17 +335,17 @@ bool MAL_LIB_EXPORTED_CLASS frontend::sync_push_encoded(
     return m->sync_push_encoded (encoder, sync);
 }
 //------------------------------------------------------------------------------
-backend_cfg MAL_LIB_EXPORTED_CLASS frontend::get_backend_cfg()
+cfg MAL_LIB_EXPORTED_CLASS frontend::get_cfg()
 {
     assert (is_constructed());
-    return m->get_backend_cfg();
+    return m->get_cfg();
 }
 //------------------------------------------------------------------------------
 frontend::init_status MAL_LIB_EXPORTED_CLASS
-    frontend::init_backend (const backend_cfg& cfg)
+    frontend::init_backend (const cfg& c)
 {
     assert (is_constructed());
-    return m->init_backend (cfg);
+    return m->init_backend (c);
 }
 //------------------------------------------------------------------------------
 sev::severity MAL_LIB_EXPORTED_CLASS frontend::min_severity() const
@@ -407,28 +382,10 @@ timestamp_data MAL_LIB_EXPORTED_CLASS frontend::get_timestamp_data() const
     return d;
 }
 //------------------------------------------------------------------------------
-bool MAL_LIB_EXPORTED_CLASS frontend::producer_timestamp (bool on)
-{
-    assert (is_constructed());
-    return m->producer_timestamp (on);
-}
-//------------------------------------------------------------------------------
 void MAL_LIB_EXPORTED_CLASS frontend::on_termination()
 {
     assert (is_constructed());
     return m->on_termination();
-}
-//------------------------------------------------------------------------------
-void MAL_LIB_EXPORTED_CLASS frontend::block_on_full_queue(bool on)
-{
-    assert (is_constructed());
-    m->block_on_full_queue(on);
-}
-//------------------------------------------------------------------------------
-bool MAL_LIB_EXPORTED_CLASS frontend::block_on_full_queue() const
-{
-    assert (is_constructed());
-    return m->block_on_full_queue();
 }
 //------------------------------------------------------------------------------
 } //namespace

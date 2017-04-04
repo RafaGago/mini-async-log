@@ -26,19 +26,22 @@ void run()
     if (!fe.is_constructed()) {
         return; //new failed in static initializator
     }
-    auto be_cfg                       = fe.get_backend_cfg();
-    be_cfg.file.name_prefix           = "test-data.";
-    be_cfg.file.name_suffix           = ".log.txt";
+    auto mal_cfg             = fe.get_cfg();
+    mal_cfg.file.name_prefix = "test-data.";
+    mal_cfg.file.name_suffix = ".log.txt";
 
 #ifndef MAL_WINDOWS
-    be_cfg.file.out_folder            = "./log_out/";                           //this folder has to exist before running
-    be_cfg.sev.stderr_sev_fd          = "./stderr_sev";                         //the severity input file
+    //this folder has to exist before running
+    mal_cfg.file.out_folder   = "./log_out/";
+    //the severity input file
+    mal_cfg.sev.stderr_sev_fd = "./stderr_sev";
 #else
-    be_cfg.file.out_folder            = ".\\log_out\\";                         //this folder has to exist before running
-    be_cfg.sev.stderr_sev_fd          = ".\\stderr_sev";                        //the severity input file
+    //this folder has to exist before running
+    mal_cfg.file.out_folder    = ".\\log_out\\";
+    //the severity input file
+    mal_cfg.sev.stderr_sev_fd  = ".\\stderr_sev";
 #endif
-
-    if (fe.init_backend (be_cfg) != frontend::init_ok) { return; }
+    if (fe.init_backend (mal_cfg) != frontend::init_ok) { return; }
 
     fe.set_file_severity (sev::off);
     fe.set_console_severity (sev::off);

@@ -56,7 +56,7 @@ either expressed or implied, of Rafael Gago Castano.
 #include <mal_log/log_writer.hpp>
 #include <mal_log/queue.hpp>
 #include <mal_log/backoff_wait.hpp>
-#include <mal_log/backend_cfg.hpp>
+#include <mal_log/cfg.hpp>
 #include <mal_log/log_file_register.hpp>
 #include <mal_log/timestamp.hpp>
 
@@ -72,30 +72,13 @@ public:
     //--------------------------------------------------------------------------
     th::condition_variable consume_condition;
     backoff_wait           consume_wait;
-    bool                   signal_consume_condition;
     //--------------------------------------------------------------------------
     backend_impl()
     {
-        m_cfg.alloc.use_heap_if_required = true;
-        m_cfg.alloc.fixed_entry_size     = 64;
-        m_cfg.alloc.fixed_block_size     = 64 * 1024;
-
-        m_cfg.display.show_severity  = m_writer.prints_severity;
-        m_cfg.display.show_timestamp = m_writer.prints_timestamp;
-
-        m_cfg.file.aprox_size                  = 1024;
-        m_cfg.file.name_suffix                 = ".log";
-        m_cfg.file.rotation.file_count         = 0;
-        m_cfg.file.rotation.delayed_file_count = 0;
-        m_cfg.file.erase_and_retry_on_fatal_errors = false;
-
-        m_cfg.blocking = m_wait.cfg;
-
         m_status             = constructed;
         m_alloc_fault        = 0;
         m_on_error_avoidance = false;
-
-        signal_consume_condition = false;
+        set_cfg_defaults (m_cfg);
     }
     //--------------------------------------------------------------------------
     ~backend_impl()
@@ -143,13 +126,13 @@ public:
         return m_out.min_severity();
     }
     //--------------------------------------------------------------------------
-    backend_cfg get_cfg() const
+    cfg get_cfg() const
     {
         return m_cfg;
     }
     //--------------------------------------------------------------------------
     bool init(
-        const backend_cfg&    c,
+        const cfg&            c,
         async_to_sync&        sync,
         u64                   timestamp_base,
         const sev_update_evt& su
@@ -163,14 +146,10 @@ public:
             assert (false && "log: already initialized");
             return false;
         }
-        uword entries = (c.alloc.fixed_block_size && c.alloc.fixed_entry_size) ?
-                (c.alloc.fixed_block_size / c.alloc.fixed_entry_size) :
-                0;
-        if (!m_fifo.init(
-                c.alloc.fixed_block_size,
-                entries,
-                c.alloc.use_heap_if_required
-                )) {
+        uword bsz     = c.queue.bounded_q_block_size;
+        uword esz     = c.queue.bounded_q_entry_size;
+        uword entries = (bsz && esz) ? (bsz / esz) :  0;
+        if (!m_fifo.init (bsz, entries, c.queue.can_use_heap_q)) {
             std::cerr << "[logger] queue initialization failed\n";
             assert (false && "queue initialization failed");
             return false;
@@ -185,7 +164,6 @@ public:
             m_fifo.clear();
             return false;
         }
-
         auto rollback_cfg = m_cfg;
         set_cfg (c);
 
@@ -224,30 +202,69 @@ public:
     }
     //--------------------------------------------------------------------------
 private:
-    void set_cfg (const backend_cfg& c)
+    //--------------------------------------------------------------------------
+    void set_cfg_defaults (cfg &c)
+    {
+        c.queue.can_use_heap_q         = true;
+        c.queue.bounded_q_entry_size   = 64;
+        c.queue.bounded_q_block_size   = 64 * 4096;
+        c.queue.bounded_q_blocking_sev = sev::off;
+
+        c.display.show_severity  = m_writer.prints_severity;
+        c.display.show_timestamp = m_writer.prints_timestamp;
+
+        c.file.aprox_size          = 1024;
+        c.file.name_suffix         = ".log";
+        c.file.rotation.file_count = 0;
+        c.file.rotation.delayed_file_count     = 0;
+        c.file.erase_and_retry_on_fatal_errors = false;
+
+        c.consumer_backoff = m_wait.cfg;
+
+        c.producer_backoff.spin_end            = 2;
+        c.producer_backoff.short_cpu_relax_end = 4;
+        c.producer_backoff.long_cpu_relax_end  = 6;
+        c.producer_backoff.yield_end           = 8;
+        c.producer_backoff.short_sleep_end     = 10;
+        c.producer_backoff.long_sleep_ns       = 1000000;
+
+        c.producer_spin.spin_end            = 8;
+        c.producer_spin.short_cpu_relax_end = 16;
+        c.producer_spin.long_cpu_relax_end  = 64;
+        c.producer_spin.yield_end           = 128;
+        c.producer_spin.short_sleep_end     = 256;
+        c.producer_spin.long_sleep_ns       = 1000;
+
+        c.misc.producer_timestamp = false;
+    }
+    //--------------------------------------------------------------------------
+    void set_cfg (const cfg& c)
     {
         m_cfg = c;
         m_writer.prints_severity  = m_cfg.display.show_severity;
         m_writer.prints_timestamp = m_cfg.display.show_timestamp;
-        m_wait.cfg = c.blocking;
+        m_wait.cfg                = c.consumer_backoff;
+        /* corrections */
+        if (m_cfg.queue.can_use_heap_q) {
+            m_cfg.queue.bounded_q_blocking_sev = sev::off;
+        }
     }
     //--------------------------------------------------------------------------
-    bool validate_cfg (const backend_cfg& c)
+    bool validate_cfg (const cfg& c)
     {
-        auto& a = c.alloc;
-        if (((!a.fixed_block_size || !a.fixed_entry_size)) &&
-              !a.use_heap_if_required
-            ) {
+        uword bsz = c.queue.bounded_q_block_size;
+        uword esz = c.queue.bounded_q_entry_size;
+        if (((!bsz || !esz)) && !c.queue.can_use_heap_q) {
             std::cerr << "[logger] alloc cfg values can't be 0\n";
             assert (false && "alloc cfg invalid");
             return false;
         }
-        if (a.fixed_block_size && a.fixed_entry_size) {
-            if (a.fixed_entry_size < 32) {
+        if (bsz && esz) {
+            if (esz < 32) {
                 std::cerr << "[logger] minimum fixed block size is 32\n";
                 return false;
             }
-            else if (a.fixed_block_size < a.fixed_entry_size) {
+            else if (bsz < esz) {
                 std::cerr << "[logger] entry size bigger than the block size\n";
                 return false;
             }
@@ -296,7 +313,7 @@ private:
                 m_wait.reset();
                 m_writer.decode_and_write (m_out, res.get_mem());
                 backoff_ticket* ticket = nullptr;
-                if (signal_consume_condition) {
+                if (m_cfg.queue.bounded_q_blocking_sev != sev::off) {
                     ticket = consume_wait.get_next_ticket();
                 }
                 if (!ticket) {
@@ -331,7 +348,7 @@ private:
                 alloc_fault = allocf_now;
             }
         }
-        if (signal_consume_condition) {
+        if (m_cfg.queue.bounded_q_blocking_sev != sev::off) {
             while (true) {
                 backoff_ticket* ticket = consume_wait.get_next_ticket();
                 if (!ticket) {
@@ -538,7 +555,7 @@ private:
     output              m_out;
     log_writer          m_writer;
     sev_update_evt      m_sev_evt;
-    backend_cfg         m_cfg;
+    cfg                 m_cfg;
     log_file_register   m_files_register;
     th::thread          m_log_thread;
     at::atomic<uword>   m_status;

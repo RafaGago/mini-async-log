@@ -167,7 +167,7 @@ bool new_entry(                                                                 
     }
     mal_side_effect_assert (prebuild_data (hdr, hdr_field, length));
 
-    auto enc = fe.get_encoder (length);
+    auto enc = fe.get_encoder (length, sv);
     if (enc.has_memory()) {
         enc.do_export (hdr, hdr_field);
         enc.do_export (a, a_field);

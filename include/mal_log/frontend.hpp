@@ -39,7 +39,7 @@ either expressed or implied, of Rafael Gago Castano.
 
 #include <mal_log/util/system.hpp>
 #include <mal_log/serialization/exporter.hpp>
-#include <mal_log/backend_cfg.hpp>
+#include <mal_log/cfg.hpp>
 #include <mal_log/util/thread.hpp>
 
 namespace mal {
@@ -71,9 +71,9 @@ public:
     //--------------------------------------------------------------------------
     bool is_constructed() const;
     //--------------------------------------------------------------------------
-    backend_cfg get_backend_cfg();
+    cfg get_cfg();
     //--------------------------------------------------------------------------
-    init_status init_backend (const backend_cfg& cfg);
+    init_status init_backend (const cfg& cfg);
     //--------------------------------------------------------------------------
     sev::severity min_severity() const;
     //--------------------------------------------------------------------------
@@ -85,24 +85,25 @@ public:
             sev::severity std_err, sev::severity std_out = sev::off
             );
     //--------------------------------------------------------------------------
-    void block_on_full_queue (bool on);                                         //blocks when the queue is full, only useful when the heap queue is disabled.
-    //--------------------------------------------------------------------------
-    bool block_on_full_queue() const;
-    //--------------------------------------------------------------------------
-    ser::exporter get_encoder (uword required_bytes);
+    ser::exporter get_encoder (uword required_bytes, sev::severity s);
     //--------------------------------------------------------------------------
     void async_push_encoded (ser::exporter& encoder);
     //--------------------------------------------------------------------------
-    bool sync_push_encoded(                                                     //this is an emergency call that blocks the caller until the entry is dequeued by the file worker, it has more overhead and scales very poorly, so if you are using this often you may need to switch to a traditional synchronous-logger. returns false if interrupted/on termination.
+    // this is an emergency call that blocks the caller until the entry is
+    // dequeued by the file worker, it has more overhead and scales very poorly,
+    // so if you are using this often you may need to switch to a traditional
+    // synchronous-logger. returns false if interrupted/on termination.
+    bool sync_push_encoded(
             ser::exporter& encoder,
             sync_point&    syncer
             );
     //--------------------------------------------------------------------------
-    void on_termination();                                                      //you may want to call this from e.g. SIGTERM handlers, be aware that all the data generators/producer should be stopped before to guarantee that the queue can be left completely empty (no memory leaks).
+    // you may want to call this from e.g. SIGTERM handlers, be aware that all
+    // the data generators/producer should be stopped before to guarantee that
+    // the queue can be left completely empty (no memory leaks).
+    void on_termination();
     //--------------------------------------------------------------------------
     timestamp_data get_timestamp_data() const;
-    //--------------------------------------------------------------------------
-    bool producer_timestamp (bool on);                                          //even if you set this on producer_timestamp() can return false if the backed is configured to don't show timestamps
     //--------------------------------------------------------------------------
     u64 timestamp_base() const;
     //--------------------------------------------------------------------------
