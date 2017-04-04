@@ -85,12 +85,12 @@ public:
 
         if (!mem
             && err == queue_prepared::queue_full
-            && s >= m_back.get_cfg().queue.bounded_q_blocking_sev
+            && s >= m_back.config.queue.bounded_q_blocking_sev
             ){
             th::mutex           dummy;
             cond_queue_backoff  backoff (dummy, m_back.consume_condition);
             backoff_ticket ticket;
-            backoff.cfg = m_back.get_cfg().producer_backoff;
+            backoff.cfg = m_back.config.producer_backoff;
             while (true) {
                 // unfair backoff window
                 backoff.wait();
@@ -120,7 +120,7 @@ public:
                         }
                     }
                     backoff.reset();
-                    backoff.cfg = m_back.get_cfg().producer_spin;
+                    backoff.cfg = m_back.config.producer_spin;
                 }
                 /*push_unconsumed_entry can return "queue_full" if there is a
                   preemted producer doing exactly the same operation before it
@@ -171,7 +171,7 @@ public:
     //--------------------------------------------------------------------------
     cfg get_cfg() const
     {
-        return m_back.get_cfg();
+        return m_back.config;
     }
     //--------------------------------------------------------------------------
     frontend::init_status init_backend (const cfg& c)

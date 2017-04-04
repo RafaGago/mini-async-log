@@ -72,13 +72,14 @@ public:
     //--------------------------------------------------------------------------
     th::condition_variable consume_condition;
     backoff_wait           consume_wait;
+    cfg                    config;
     //--------------------------------------------------------------------------
     backend_impl()
     {
         m_status             = constructed;
         m_alloc_fault        = 0;
         m_on_error_avoidance = false;
-        set_cfg_defaults (m_cfg);
+        set_cfg_defaults (config);
     }
     //--------------------------------------------------------------------------
     ~backend_impl()
@@ -126,11 +127,6 @@ public:
         return m_out.min_severity();
     }
     //--------------------------------------------------------------------------
-    cfg get_cfg() const
-    {
-        return m_cfg;
-    }
-    //--------------------------------------------------------------------------
     bool init(
         const cfg&            c,
         async_to_sync&        sync,
@@ -164,7 +160,7 @@ public:
             m_fifo.clear();
             return false;
         }
-        auto rollback_cfg = m_cfg;
+        auto rollback_cfg = config;
         set_cfg (c);
 
         m_writer.set_synchronizer (sync);
@@ -240,13 +236,13 @@ private:
     //--------------------------------------------------------------------------
     void set_cfg (const cfg& c)
     {
-        m_cfg = c;
-        m_writer.prints_severity  = m_cfg.display.show_severity;
-        m_writer.prints_timestamp = m_cfg.display.show_timestamp;
+        config = c;
+        m_writer.prints_severity  = config.display.show_severity;
+        m_writer.prints_timestamp = config.display.show_timestamp;
         m_wait.cfg                = c.consumer_backoff;
         /* corrections */
-        if (m_cfg.queue.can_use_heap_q) {
-            m_cfg.queue.bounded_q_blocking_sev = sev::off;
+        if (config.queue.can_use_heap_q) {
+            config.queue.bounded_q_blocking_sev = sev::off;
         }
     }
     //--------------------------------------------------------------------------
@@ -313,7 +309,7 @@ private:
                 m_wait.reset();
                 m_writer.decode_and_write (m_out, res.get_mem());
                 backoff_ticket* ticket = nullptr;
-                if (m_cfg.queue.bounded_q_blocking_sev != sev::off) {
+                if (config.queue.bounded_q_blocking_sev != sev::off) {
                     ticket = consume_wait.get_next_ticket();
                 }
                 if (!ticket) {
@@ -348,7 +344,7 @@ private:
                 alloc_fault = allocf_now;
             }
         }
-        if (m_cfg.queue.bounded_q_blocking_sev != sev::off) {
+        if (config.queue.bounded_q_blocking_sev != sev::off) {
             while (true) {
                 backoff_ticket* ticket = consume_wait.get_next_ticket();
                 if (!ticket) {
@@ -388,13 +384,13 @@ private:
     //--------------------------------------------------------------------------
     bool slices_files() const
     {
-        return (m_cfg.file.aprox_size != 0);
+        return (config.file.aprox_size != 0);
     }
     //--------------------------------------------------------------------------
     bool has_to_slice_now()
     {
         return slices_files()
-            && (m_out.file_bytes_written() >= m_cfg.file.aprox_size);
+            && (m_out.file_bytes_written() >= config.file.aprox_size);
     }
     //--------------------------------------------------------------------------
     bool rotates() const
@@ -440,13 +436,13 @@ private:
             m_out.raw_write (sev::error, str);
             m_on_error_avoidance = true;
         }
-        if (!m_cfg.file.erase_and_retry_on_fatal_errors) {
+        if (!config.file.erase_and_retry_on_fatal_errors) {
             return false;
         }
         m_out.file_close();
         if (rotates()) {
-            auto keep_count = m_cfg.file.rotation.file_count +
-                m_cfg.file.rotation.delayed_file_count;
+            auto keep_count = config.file.rotation.file_count +
+                config.file.rotation.delayed_file_count;
             while (keep_count-- != 0) {
                 m_files_register.rotation_list_keep_newer (keep_count);
                 success = m_out.file_open (change_current_filename());
@@ -475,8 +471,8 @@ private:
             success = m_out.file_open (change_current_filename());
             if (success && rotates()) {
                 m_files_register.rotation_list_keep_newer(
-                    m_cfg.file.rotation.file_count +
-                    m_cfg.file.rotation.delayed_file_count - 1
+                    config.file.rotation.file_count +
+                    config.file.rotation.delayed_file_count - 1
                     );
                 m_files_register.push_current_filename_to_rotation_list();
             }
@@ -488,7 +484,7 @@ private:
     {
         if (rotates()) {
             m_files_register.rotation_list_keep_newer(
-                m_cfg.file.rotation.file_count
+                config.file.rotation.file_count
                 );
         }
     }
@@ -500,9 +496,9 @@ private:
         out  = out_prev  = m_out.stdout_sev();
         file = file_prev = m_out.file_sev();
 
-        sev_read (file, m_cfg.sev.file_sev_fd);
-        sev_read (err, m_cfg.sev.stderr_sev_fd);
-        sev_read (out, m_cfg.sev.stdout_sev_fd);
+        sev_read (file, config.sev.file_sev_fd);
+        sev_read (err, config.sev.stderr_sev_fd);
+        sev_read (out, config.sev.stdout_sev_fd);
 
         bool change = false;
 
@@ -555,7 +551,6 @@ private:
     output              m_out;
     log_writer          m_writer;
     sev_update_evt      m_sev_evt;
-    cfg                 m_cfg;
     log_file_register   m_files_register;
     th::thread          m_log_thread;
     at::atomic<uword>   m_status;
