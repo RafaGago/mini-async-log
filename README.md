@@ -62,6 +62,9 @@ otherwise they would just use a synchronous one.
  - The logger severity threshold can be externally changed outside of the
    process. The IPC mechanism is the simplest, the log worker periodically polls
    some files when idlíng (if configured to).
+ - Fair blocking behaviour (configurable by severity) when the bounded queue is
+   full and the heap queue is disabled. The logger smoothly starts to act as a
+   synchronous logger. If not blocking is desired an error is returned.
  - Small, you can actually compile it as a part of your application.
 
 ## How does it work ##
@@ -300,45 +303,30 @@ the benchmark overnight, so I won't increase this number.
 
 The variability between machines (AMD-Intel) is big too.
 
-Regarding the worst case latency for the 1 thread case: when looking at
-the thread clock it looks like the asynchronous loggers have always a lower
-worst-case latency (lower=better), but when looking at the wall clock the
-synchronous loggers have a much lower worst-case (lower=better).
-
-There are many hypotheses to explain why this happens, but excluding clock
-deficiencies I suspect that the asynchronous loggers are "touching" more memory
-and they get minor page faults sometimes. When page faulting the threads get
-suspended so this isn't reflected on the thread clock, only on the wall clock.
-
-The results on the "mal" thread clock, which has standard deviations on the
-sub 0.01 range, support this hypothesis. The algorithms are fast and have low
-variability on the single thread case: something is happening ot the OS level.
-
-So here's the catch, big bounded queues have more chances of page faulting,
-smaller have more changes of being overflown: The size has to be fine-tuned
-for the expected load.
-
 #### mal-heap ####
 
 It shows very stable results in the throughput and latency measurements. The
 latency increases with more contention but it's still lower than all non "mal"
 variants except for the synchronous loggers with low contention/thread count.
 
-The only competing logger using a heap based queue is nanolog. In the 1M msgs
-test a sensible throughput degradation is seen in nanolog when the thread count
-increases. For the single thread case mal is significantly faster, the
-difference grows with more threads because nanolog doesn't scale.
+The only competing logger using a heap based queue is nanolog.
 
-On the 100k test they start on a similar level but nanolog degrades worse.
+In the 1M msgs test a sensible throughput degradation is seen in nanolog when
+the thread count increases. For the single thread case mal is significantly
+faster, the difference grows with more threads.
+
+On the 100k test they start on a similar level but nanolog degrades with the
+thread count too.
 
 The latency of mal is alwasy better: less standard deviation and shortest
 worst-case.
 
 #### mal-hybrid ####
 
-"mal-hybrid" is just adding a small bounded queue to "mal-heap". On the 1M test
-having the extra bounded queue seems to increase the performance except in the
-single threaded case.
+"mal-hybrid" is just adding a small bounded queue to "mal-heap".
+
+On the 1M test having the extra bounded queue seems to increase the performance
+except in the single threaded case.
 
 In the 100k single threaded test it's the opposite, the bounded queue increases
 performance up to two 4 threads (CPU core count), after that the performance is
@@ -346,8 +334,8 @@ less than "mal-heap".
 
 The latencies are both very similar.
 
-Note that 100k messages and <4 threads is maybe the more realistic load on this
-benchmark.
+Note that 100k messages and <4 threads is maybe the most "realistic" load on
+this benchmark.
 
 #### spdlog-async ####
 
@@ -356,7 +344,7 @@ Shows decent performance for a bounded queue logger.
 "mal-blocking" uses a bounded queue that blocks on full input too.
 
 On the 1M (queue full) tests depending and on the thread count "mal-blocking"
-seems to be around 3-20% faster and to have around 2x-10x better worst case
+seems to be around 5-18% faster and to have around 2x-10x better worst case
 latency.
 
 On the 100k (queue big enough) single threaded test with low thread count (more
@@ -368,9 +356,13 @@ This is logical, as a matter of fact "spdlog-async" internals are similar to
 "mal-blocking"'s; they both use internally the same D.Vyukov bounded queue
 algorithm,(gabime borrowed the idea from this project when spdlog was using
 mutexes) so the performance difference is not made in the queue algorithm, but
-in its usage. When the queue algorithm is the bottleneck (with high thread count
-and a lot of contention), the performance of "spdlog-async" is similar to the
-performance of the bounded mal variations.
+in its usage.
+
+When the queue algorithm is the bottleneck (with high thread count and a lot of
+contention), the performance of "spdlog-async" is similar to the performance
+of the bounded mal variations.
+
+The worst case latency it's around 30x-60x worse than on mal-blocking.
 
 #### g3log ####
 
@@ -379,7 +371,8 @@ common situation) is the lowest of all the contenders on the single threaded
 tests.
 
 The good thing is that performance improves along with the thread count and it
-doesn't show extreme big worst-case latencies when on very big contention.
+doesn't show extreme big worst-case latencies when on very big contention. These
+worst-case lantecies are still higher than all the mal variants.
 
 #### nanolog ####
 
@@ -393,17 +386,28 @@ The code shows that when it needs to allocate it uses a very big chunk (8MB
 according to the code). It is good to preallocate, but in unconfigurable 8MB
 chunks?
 
+Even the file worker is waken up very often. There is no idling concept on
+nanolog.
+
+So I can safely says that it achieves its performance by burning cycles and
+resources left and right.
+
 It shows good performance compared with the bounded queue contenders on the 1M
 messages test when the thread count is low. This is hardly a surprise because
 it uses an unbounded algorithm, so it doesn't need to deal with the full-queue
 case.
 
-With 16 threads and 1M messages its throughput is around 70% better than
-"mal-blocking" and its worst-case latency is worse. Keep in mind that
-"mal-sync" doesn't use a bounded queue and its producers sleep under contention.
+Against mal-heap/mal-hybrid it loses in every metric in all the tests, the only
+exception being the 100k single threaded test, where it has a slight throughput
+edge over mal-heap and a better worst case latency.
+
+Compared against the mal bounded variants, with 16 threads and 1M messages its
+throughput is around 60% better than "mal-blocking" and its worst-case latency
+is much worse. Keep in mind that "mal-sync" doesn't use a bounded queue and
+its producers sleep under contention. This is hardly an acomplishment.
 
 On the 100k test, when the bounded queue versions of mal have enough room on the
-queue (average use case) it's outperformed in every metric . "spdlog-async"
+queue (average use case) it's outperformed in every metric. "spdlog-async"
 catches up on the 16 thread case too.
 
 #### glog ####
@@ -424,21 +428,15 @@ is exactly the same as mal-bounded.
 On the 100k case with low thread count mal-blocking/mal-bounded are the fastest
 of all.
 
-For the 1M msgs case when "mal-blocking" needs to back-off and wait for the
-consumer (the consumer rate is slower) its performance drops and some producers
-are more starved than others beacause there is some unfairness on its waiting
-scheme, albeit lower than in a traditional exponential backoff scheme.
+For the 1M msgs case when "mal-blocking" needs to back-off and wait it's fair
+backoff algorithm shows on the worst-case latency, which doesn't degrade with
+the thread count.
 
 Keep in mind that in mal the same bounded FIFO queue doubles as a FIFO and
 as a memory allocator (using customizations on D.Vjukov algorithm), so if the
-serialized message size doesn't fit on the queue entry size the messages are
+serialized message size doesn't fit on the queue bucket size the messages are
 discarded. This requires either a good entry size selection that you know that
 fits all the messages or using "mal-hybrid" (which is what the library intends).
-
-This requirement may be dropped on the future if modifying the queue to do
-multiple pushes in one atomic operation doesn't screw up the cache (producers
-touching the same cache line more often because the storage is on a separated
-contiguoud chunk).
 
 #### spdlog-sync ####
 
@@ -453,43 +451,43 @@ Not very fast, but this is the ĺogger showing the best worst-case latency
 
 |logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal-heap|0.106|9439.507|0.106|1.140|877.246|0.106|0.000|
-|mal-hybrid|0.146|6878.846|0.145|1.196|836.162|0.146|0.000|
-|nanolog|0.353|2833.411|0.353|3.619|276.296|0.353|0.000|
-|spdlog-async|1.165|858.319|1.165|1.568|637.590|1.165|0.000|
-|mal-blocking|0.851|1175.662|0.851|1.126|888.469|0.851|0.000|
-|mal-bounded|0.046|6095.156|0.164|0.328|847.918|0.046|721912.667|
-|g3log|8.768|114.080|8.766|0.000|0.000|8.768|0.000|
-|spdlog-sync|1.007|993.392|1.007|1.007|993.363|1.007|0.000|
-|glog|2.671|374.434|2.671|2.671|374.430|2.671|0.000|
+|mal-heap|0.103|9731.264|0.103|1.152|868.403|0.103|0.000|
+|mal-hybrid|0.145|6897.777|0.145|1.199|833.894|0.145|0.000|
+|nanolog|0.352|2845.275|0.351|3.682|271.628|0.352|0.000|
+|spdlog-async|1.075|930.029|1.075|1.462|685.156|1.075|0.000|
+|mal-blocking|0.852|1173.752|0.852|1.140|877.349|0.852|0.000|
+|mal-bounded|0.051|5568.995|0.180|0.331|846.101|0.051|719814.667|
+|g3log|9.014|110.982|9.010|0.000|0.000|9.014|0.000|
+|spdlog-sync|0.948|1055.204|0.948|0.948|1055.171|0.948|0.000|
+|glog|2.936|340.600|2.936|2.936|340.596|2.936|0.000|
 
 #### "Real" latency (threads: 1, msgs: 1M, clock: wall) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|15885.000|0.265|39.920|
-|mal-hybrid|15898.250|0.266|40.386|
-|nanolog|16514.000|0.483|53.491|
-|spdlog-async|32123.250|1.137|87.587|
-|mal-blocking|38386.000|0.883|133.320|
-|mal-bounded|15920.500|0.174|31.906|
-|g3log|36139.000|8.981|176.702|
-|spdlog-sync|1243.750|1.050|2.219|
-|glog|49269.750|2.761|9.851|
+|mal-heap|15921.000|0.268|39.898|
+|mal-hybrid|15761.250|0.262|39.545|
+|nanolog|36017.000|0.486|54.040|
+|spdlog-async|32118.750|1.056|86.077|
+|mal-blocking|20316.000|0.887|37.433|
+|mal-bounded|15876.000|0.177|32.495|
+|g3log|36454.500|9.258|178.717|
+|spdlog-sync|1177.000|1.001|2.109|
+|glog|11548.000|3.014|4.993|
 
 #### CPU latency (threads: 1, msgs: 1M, clock: thread) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|87.821|0.242|0.063|
-|mal-hybrid|80.408|0.232|0.071|
-|nanolog|7991.661|0.350|3.985|
-|spdlog-async|89.969|0.640|0.174|
-|mal-blocking|78.286|0.207|0.088|
-|mal-bounded|75.265|0.201|0.055|
-|g3log|1650.541|3.507|1.336|
-|spdlog-sync|1279.821|1.177|2.201|
-|glog|668.296|2.916|4.478|
+|mal-heap|77.223|0.245|0.060|
+|mal-hybrid|75.189|0.231|0.057|
+|nanolog|11776.148|0.353|4.767|
+|spdlog-async|85.956|0.595|0.134|
+|mal-blocking|85.462|0.210|0.141|
+|mal-bounded|76.186|0.202|0.044|
+|g3log|1636.519|3.607|1.340|
+|spdlog-sync|1164.870|1.137|2.101|
+|glog|586.736|3.175|4.443|
 
 ### threads: 2, msgs: 1M ###
 
@@ -497,43 +495,43 @@ Not very fast, but this is the ĺogger showing the best worst-case latency
 
 |logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal-heap|0.128|7809.447|0.128|1.187|842.588|0.196|0.000|
-|mal-hybrid|0.116|8640.490|0.116|1.191|839.688|0.188|0.000|
-|nanolog|0.276|3640.956|0.275|3.588|278.754|0.471|0.000|
-|spdlog-async|1.106|903.978|1.106|1.502|666.165|1.676|0.000|
-|mal-blocking|0.848|1180.007|0.847|1.124|889.476|1.247|0.000|
-|mal-bounded|0.039|7364.085|0.136|0.319|877.990|0.049|719543.613|
-|g3log|3.586|278.890|3.586|0.000|0.000|5.529|0.000|
-|spdlog-sync|1.343|745.848|1.341|1.343|745.788|2.643|0.000|
-|glog|4.479|223.644|4.471|4.479|223.640|8.952|0.000|
+|mal-heap|0.128|7840.205|0.128|1.197|835.254|0.195|0.000|
+|mal-hybrid|0.120|8412.708|0.119|1.198|834.998|0.192|0.000|
+|nanolog|0.281|3577.053|0.280|3.640|274.707|0.478|0.000|
+|spdlog-async|1.082|924.198|1.082|1.386|725.570|1.657|0.000|
+|mal-blocking|0.838|1193.415|0.838|1.126|888.372|1.276|0.000|
+|mal-bounded|0.039|7289.059|0.137|0.321|873.047|0.051|720091.333|
+|g3log|3.710|269.568|3.710|0.000|0.000|5.668|0.000|
+|spdlog-sync|1.360|736.678|1.357|1.360|736.616|2.679|0.000|
+|glog|4.079|245.282|4.077|4.080|245.276|8.150|0.000|
 
 #### "Real" latency (threads: 2, msgs: 1M, clock: wall) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|19947.000|0.322|36.458|
-|mal-hybrid|26336.000|0.332|35.851|
-|nanolog|16028.000|0.563|47.387|
-|spdlog-async|416772.000|1.598|399.793|
-|mal-blocking|46722.500|1.545|173.404|
-|mal-bounded|26192.250|0.170|25.977|
-|g3log|70973.500|5.758|198.342|
-|spdlog-sync|1639.500|2.578|4.158|
-|glog|51099.500|7.556|12.245|
+|mal-heap|19836.750|0.325|36.154|
+|mal-hybrid|26139.750|0.337|37.015|
+|nanolog|24013.500|0.573|48.382|
+|spdlog-async|415772.000|1.476|398.271|
+|mal-blocking|20185.500|1.458|44.916|
+|mal-bounded|26745.500|0.168|25.945|
+|g3log|100278.750|6.053|198.654|
+|spdlog-sync|1571.000|2.582|4.125|
+|glog|2083.500|7.362|8.571|
 
 #### CPU latency (threads: 2, msgs: 1M, clock: thread) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|90.440|0.357|0.151|
-|mal-hybrid|85.092|0.343|0.155|
-|nanolog|12113.688|0.519|16.238|
-|spdlog-async|509.067|0.991|2.282|
-|mal-blocking|94.573|0.325|0.247|
-|mal-bounded|83.856|0.234|0.114|
-|g3log|36069.776|2.968|14.827|
-|spdlog-sync|1549.817|2.384|2.956|
-|glog|615.535|6.561|5.879|
+|mal-heap|460.821|0.360|0.259|
+|mal-hybrid|466.929|0.344|0.200|
+|nanolog|12064.467|0.523|16.216|
+|spdlog-async|496.562|0.869|1.320|
+|mal-blocking|95.882|0.359|0.817|
+|mal-bounded|74.926|0.235|0.105|
+|g3log|39482.076|3.024|12.121|
+|spdlog-sync|1476.047|2.377|2.942|
+|glog|1279.743|6.653|5.651|
 
 ### threads: 4, msgs: 1M ###
 
@@ -541,43 +539,43 @@ Not very fast, but this is the ĺogger showing the best worst-case latency
 
 |logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal-heap|0.126|7938.846|0.126|1.202|832.064|0.425|0.000|
-|mal-hybrid|0.109|9161.937|0.109|1.205|830.219|0.382|0.000|
-|nanolog|0.284|3546.148|0.282|3.594|278.301|1.056|0.000|
-|spdlog-async|1.045|959.260|1.042|1.333|753.986|3.002|0.000|
-|mal-blocking|0.841|1189.197|0.841|1.119|893.841|2.514|0.000|
-|mal-bounded|0.040|7399.144|0.135|0.321|874.220|0.117|719736.373|
-|g3log|2.050|487.817|2.050|0.000|0.000|5.750|0.000|
-|spdlog-sync|1.622|619.191|1.615|1.622|619.151|6.404|0.000|
-|glog|4.139|241.631|4.139|4.139|241.622|16.397|0.000|
+|mal-heap|0.128|7837.804|0.128|1.215|823.157|0.429|0.000|
+|mal-hybrid|0.112|8954.537|0.112|1.212|825.141|0.392|0.000|
+|nanolog|0.295|3405.411|0.294|3.658|273.351|1.097|0.000|
+|spdlog-async|1.003|1000.610|0.999|1.274|788.426|2.879|0.000|
+|mal-blocking|0.835|1198.380|0.834|1.124|890.025|2.539|0.000|
+|mal-bounded|0.046|6265.497|0.160|0.327|864.487|0.145|717804.507|
+|g3log|2.088|479.075|2.087|0.000|0.000|5.717|0.000|
+|spdlog-sync|1.655|605.254|1.652|1.655|605.212|6.539|0.000|
+|glog|4.021|248.691|4.021|4.022|248.682|15.928|0.000|
 
 #### "Real" latency (threads: 4, msgs: 1M, clock: wall) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|19922.000|0.458|29.705|
-|mal-hybrid|25965.000|0.458|30.505|
-|nanolog|24838.750|0.989|53.389|
-|spdlog-async|824745.250|3.103|792.755|
-|mal-blocking|48373.500|3.204|246.011|
-|mal-bounded|19774.750|0.257|22.382|
-|g3log|48227.500|5.908|164.397|
-|spdlog-sync|48314.000|5.734|38.193|
-|glog|40510.500|15.479|19.851|
+|mal-heap|19908.750|0.459|29.895|
+|mal-hybrid|26003.750|0.461|30.348|
+|nanolog|38808.750|1.005|55.039|
+|spdlog-async|817352.500|3.023|781.755|
+|mal-blocking|19936.750|2.908|59.686|
+|mal-bounded|19910.250|0.261|23.042|
+|g3log|48071.750|6.013|170.018|
+|spdlog-sync|58366.250|5.803|36.602|
+|glog|50625.250|14.996|19.378|
 
 #### CPU latency (threads: 4, msgs: 1M, clock: thread) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|484.745|0.466|0.229|
-|mal-hybrid|107.481|0.465|0.199|
-|nanolog|17853.539|0.882|28.059|
-|spdlog-async|471.822|2.085|1.995|
-|mal-blocking|119.633|0.593|0.535|
-|mal-bounded|92.470|0.300|0.207|
-|g3log|52528.471|3.559|41.145|
-|spdlog-sync|52104.440|4.450|14.149|
-|glog|3326.454|10.150|7.275|
+|mal-heap|487.331|0.469|0.228|
+|mal-hybrid|109.995|0.468|0.191|
+|nanolog|26829.132|0.906|30.808|
+|spdlog-async|452.612|2.038|1.936|
+|mal-blocking|140.048|0.678|1.432|
+|mal-bounded|71.866|0.301|0.196|
+|g3log|52397.746|3.616|43.709|
+|spdlog-sync|41810.485|4.631|9.294|
+|glog|2019.530|10.083|7.214|
 
 ### threads: 8, msgs: 1M ###
 
@@ -585,43 +583,43 @@ Not very fast, but this is the ĺogger showing the best worst-case latency
 
 |logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal-heap|0.112|9016.956|0.111|1.213|824.480|0.650|0.000|
-|mal-hybrid|0.105|9556.211|0.105|1.223|818.017|0.649|0.000|
-|nanolog|0.401|2555.217|0.391|3.705|269.951|2.770|0.000|
-|spdlog-async|0.976|1024.671|0.976|1.368|732.165|5.453|0.000|
-|mal-blocking|0.870|1149.549|0.870|1.149|870.495|5.220|0.000|
-|mal-bounded|0.057|5048.009|0.198|0.337|837.383|0.323|717636.387|
-|g3log|1.382|723.740|1.382|0.000|0.000|8.192|0.000|
-|spdlog-sync|1.405|712.198|1.404|1.406|711.949|10.411|0.000|
-|glog|5.144|194.471|5.142|5.145|194.441|39.579|0.000|
+|mal-heap|0.111|9046.775|0.111|1.226|815.967|0.653|0.000|
+|mal-hybrid|0.106|9477.125|0.106|1.230|813.039|0.652|0.000|
+|nanolog|0.386|2641.245|0.379|3.743|267.190|2.604|0.000|
+|spdlog-async|0.935|1070.040|0.935|1.300|771.821|5.164|0.000|
+|mal-blocking|0.854|1171.466|0.854|1.142|875.573|5.240|0.000|
+|mal-bounded|0.056|5120.124|0.195|0.336|841.482|0.319|717274.760|
+|g3log|1.412|708.666|1.411|0.000|0.000|8.144|0.000|
+|spdlog-sync|1.337|748.162|1.337|1.338|747.865|9.866|0.000|
+|glog|5.330|187.693|5.328|5.330|187.684|41.027|0.000|
 
 #### "Real" latency (threads: 8, msgs: 1M, clock: wall) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|24019.250|0.790|70.386|
-|mal-hybrid|24013.750|0.796|71.116|
-|nanolog|190358.250|2.384|222.503|
-|spdlog-async|828008.250|5.474|1079.145|
-|mal-blocking|122138.000|6.294|388.685|
-|mal-bounded|24013.250|0.479|54.009|
-|g3log|52308.750|9.360|199.095|
-|spdlog-sync|46720.750|11.113|251.574|
-|glog|85228.500|41.098|642.852|
+|mal-heap|24014.250|0.795|70.512|
+|mal-hybrid|26144.250|0.791|69.942|
+|nanolog|238768.250|2.403|213.334|
+|spdlog-async|822317.500|5.163|1026.767|
+|mal-blocking|22524.000|5.821|104.872|
+|mal-bounded|24006.250|0.479|53.588|
+|g3log|96784.750|9.441|201.723|
+|spdlog-sync|71575.500|10.561|264.474|
+|glog|91003.500|42.554|659.028|
 
 #### CPU latency (threads: 8, msgs: 1M, clock: thread) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|452.466|0.465|0.202|
-|mal-hybrid|488.421|0.471|0.275|
-|nanolog|125720.111|1.170|81.148|
-|spdlog-async|577.736|1.672|1.732|
-|mal-blocking|131.500|0.566|0.535|
-|mal-bounded|87.406|0.296|0.218|
-|g3log|41114.183|3.529|32.118|
-|spdlog-sync|26581.961|3.054|8.112|
-|glog|2613.243|7.000|11.074|
+|mal-heap|81.930|0.468|0.176|
+|mal-hybrid|489.042|0.473|0.248|
+|nanolog|115831.987|1.178|79.945|
+|spdlog-async|818.419|1.592|1.668|
+|mal-blocking|582.754|0.657|1.300|
+|mal-bounded|102.818|0.297|0.207|
+|g3log|36160.787|3.595|33.296|
+|spdlog-sync|31160.451|2.678|9.349|
+|glog|1641.988|7.242|11.057|
 
 ### threads: 16, msgs: 1M ###
 
@@ -629,43 +627,43 @@ Not very fast, but this is the ĺogger showing the best worst-case latency
 
 |logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal-heap|0.107|9431.366|0.106|1.214|823.998|1.103|0.000|
-|mal-hybrid|0.094|10598.259|0.094|1.226|815.983|1.129|0.000|
-|nanolog|0.589|1730.768|0.578|3.894|256.868|7.656|0.000|
-|spdlog-async|0.980|1021.346|0.979|1.339|748.703|10.227|0.000|
-|mal-blocking|0.890|1124.271|0.889|1.168|856.152|10.649|0.000|
-|mal-bounded|0.067|4200.588|0.238|0.349|802.745|0.737|719960.480|
-|g3log|1.076|930.519|1.075|0.000|0.000|13.722|0.000|
-|spdlog-sync|1.420|704.480|1.419|1.423|703.348|20.537|0.000|
-|glog|5.274|189.690|5.272|5.274|189.660|79.148|0.000|
+|mal-heap|0.106|9491.509|0.105|1.222|818.084|1.134|0.000|
+|mal-hybrid|0.096|10434.305|0.096|1.234|810.435|1.149|0.000|
+|nanolog|0.581|1752.232|0.571|3.930|254.501|7.519|0.000|
+|spdlog-async|0.940|1065.202|0.939|1.283|782.497|9.865|0.000|
+|mal-blocking|0.879|1137.470|0.879|1.170|854.898|11.198|0.000|
+|mal-bounded|0.067|4215.358|0.237|0.346|809.264|0.726|720138.560|
+|g3log|1.109|902.396|1.108|0.000|0.000|14.161|0.000|
+|spdlog-sync|1.353|739.699|1.352|1.354|738.820|19.418|0.000|
+|glog|5.459|183.264|5.457|5.460|183.220|82.224|0.000|
 
 #### "Real" latency (threads: 16, msgs: 1M, clock: wall) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|36013.000|1.464|137.730|
-|mal-hybrid|36013.250|1.470|138.995|
-|nanolog|376027.250|6.913|601.028|
-|spdlog-async|832372.750|10.155|1590.006|
-|mal-blocking|226071.000|12.571|631.377|
-|mal-bounded|36011.750|0.897|107.970|
-|g3log|99101.500|16.407|267.347|
-|spdlog-sync|91268.500|21.815|441.968|
-|glog|208788.500|83.016|1309.373|
+|mal-heap|36006.250|1.470|138.611|
+|mal-hybrid|36011.250|1.475|140.046|
+|nanolog|366640.500|6.729|581.031|
+|spdlog-async|826169.250|9.640|1554.331|
+|mal-blocking|32934.500|12.582|176.227|
+|mal-bounded|36008.000|0.878|106.028|
+|g3log|103242.750|16.630|266.320|
+|spdlog-sync|92228.250|21.237|456.754|
+|glog|236054.750|85.820|1348.902|
 
 #### CPU latency (threads: 16, msgs: 1M, clock: thread) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|84.478|0.462|0.186|
-|mal-hybrid|499.284|0.473|0.220|
-|nanolog|69376.032|1.764|119.433|
-|spdlog-async|791.316|1.604|1.738|
-|mal-blocking|256.985|0.569|0.591|
-|mal-bounded|74.043|0.294|0.227|
-|g3log|25403.596|3.588|39.124|
-|spdlog-sync|15026.155|2.731|5.545|
-|glog|2234.957|6.431|10.603|
+|mal-heap|75.721|0.466|0.179|
+|mal-hybrid|508.669|0.474|0.222|
+|nanolog|68220.222|1.780|119.141|
+|spdlog-async|970.301|1.550|1.682|
+|mal-blocking|304.119|0.667|1.841|
+|mal-bounded|75.527|0.292|0.212|
+|g3log|31950.738|3.653|37.502|
+|spdlog-sync|33243.511|2.466|8.753|
+|glog|4864.109|6.688|10.551|
 
 ### threads: 1, msgs: 100k ###
 
@@ -673,43 +671,43 @@ Not very fast, but this is the ĺogger showing the best worst-case latency
 
 |logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal-heap|0.016|6289.491|0.159|0.124|804.266|0.016|0.000|
-|mal-hybrid|0.006|15941.866|0.063|0.128|778.947|0.006|0.000|
-|nanolog|0.015|6514.371|0.154|0.354|282.662|0.015|0.000|
-|spdlog-async|0.098|1028.634|0.972|0.145|690.070|0.098|0.000|
-|mal-blocking|0.004|26442.015|0.038|0.124|805.491|0.004|0.000|
-|mal-bounded|0.004|26346.006|0.038|0.124|805.341|0.004|0.000|
-|g3log|0.794|126.192|7.924|0.000|0.000|0.794|0.000|
-|spdlog-sync|0.097|1034.339|0.967|0.097|1034.083|0.097|0.000|
-|glog|0.265|377.234|2.651|0.265|377.219|0.265|0.000|
+|mal-heap|0.017|6229.091|0.161|0.128|780.942|0.017|0.000|
+|mal-hybrid|0.006|15803.907|0.063|0.131|765.356|0.006|0.000|
+|nanolog|0.015|6532.717|0.153|0.361|277.290|0.015|0.000|
+|spdlog-async|0.082|1215.450|0.823|0.137|730.042|0.082|0.000|
+|mal-blocking|0.004|26587.720|0.038|0.127|788.129|0.004|0.000|
+|mal-bounded|0.004|26527.742|0.038|0.128|784.324|0.004|0.000|
+|g3log|0.845|118.530|8.437|0.000|0.000|0.845|0.000|
+|spdlog-sync|0.095|1054.902|0.948|0.095|1054.640|0.095|0.000|
+|glog|0.294|340.320|2.938|0.294|340.308|0.294|0.000|
 
 #### "Real" latency (threads: 1, msgs: 100k, clock: wall) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|15941.500|0.227|36.744|
-|mal-hybrid|15931.500|0.218|37.523|
-|nanolog|12082.500|0.306|31.832|
-|spdlog-async|24022.000|1.087|78.774|
-|mal-blocking|15927.750|0.157|28.639|
-|mal-bounded|18961.000|0.165|30.696|
-|g3log|36060.750|8.131|176.175|
-|spdlog-sync|83.250|1.023|0.775|
-|glog|718.750|2.747|5.023|
+|mal-heap|15931.000|0.195|30.788|
+|mal-hybrid|15668.500|0.157|22.386|
+|nanolog|12062.000|0.310|33.138|
+|spdlog-async|24020.250|0.921|72.531|
+|mal-blocking|15853.750|0.121|16.913|
+|mal-bounded|15896.750|0.132|21.390|
+|g3log|36035.500|8.516|177.455|
+|spdlog-sync|105.500|0.996|0.751|
+|glog|1842.500|3.009|5.027|
 
 #### CPU latency (threads: 1, msgs: 100k, clock: thread) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|76.550|0.242|0.088|
-|mal-hybrid|87.976|0.224|0.092|
-|nanolog|434.037|0.312|0.542|
-|spdlog-async|82.975|0.691|0.210|
-|mal-blocking|71.373|0.208|0.072|
-|mal-bounded|71.379|0.208|0.074|
-|g3log|552.272|3.341|1.570|
-|spdlog-sync|96.574|1.146|0.754|
-|glog|637.613|2.870|4.711|
+|mal-heap|77.630|0.238|0.084|
+|mal-hybrid|77.902|0.220|0.091|
+|nanolog|513.270|0.306|0.517|
+|spdlog-async|101.899|0.593|0.183|
+|mal-blocking|76.677|0.205|0.075|
+|mal-bounded|76.175|0.205|0.068|
+|g3log|535.287|3.380|1.582|
+|spdlog-sync|106.401|1.130|0.734|
+|glog|626.015|3.198|4.688|
 
 ### threads: 2, msgs: 100k ###
 
@@ -717,43 +715,43 @@ Not very fast, but this is the ĺogger showing the best worst-case latency
 
 |logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal-heap|0.017|6562.956|0.152|0.123|817.340|0.025|0.000|
-|mal-hybrid|0.014|7357.125|0.136|0.125|798.883|0.014|0.000|
-|nanolog|0.021|4750.074|0.211|0.346|288.861|0.021|0.000|
-|spdlog-async|0.056|1779.670|0.562|0.127|789.977|0.097|0.000|
-|mal-blocking|0.009|11605.597|0.086|0.122|816.869|0.009|0.000|
-|mal-bounded|0.009|10886.797|0.092|0.122|820.564|0.009|0.000|
-|g3log|0.321|312.110|3.204|0.000|0.000|0.513|0.000|
-|spdlog-sync|0.123|810.650|1.234|0.124|810.033|0.198|0.000|
-|glog|0.533|187.922|5.321|0.533|187.895|1.033|0.000|
+|mal-heap|0.018|6274.397|0.159|0.126|797.249|0.027|0.000|
+|mal-hybrid|0.013|7898.762|0.127|0.129|772.546|0.013|0.000|
+|nanolog|0.023|4399.696|0.227|0.353|283.012|0.023|0.000|
+|spdlog-async|0.049|2035.741|0.491|0.123|814.354|0.085|0.000|
+|mal-blocking|0.009|11294.196|0.089|0.125|798.822|0.009|0.000|
+|mal-bounded|0.008|12380.739|0.081|0.126|797.178|0.008|0.000|
+|g3log|0.334|300.072|3.333|0.000|0.000|0.528|0.000|
+|spdlog-sync|0.125|800.271|1.250|0.125|799.651|0.200|0.000|
+|glog|0.366|273.857|3.652|0.366|273.802|0.697|0.000|
 
 #### "Real" latency (threads: 2, msgs: 100k, clock: wall) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|98.500|0.190|0.261|
-|mal-hybrid|86.000|0.189|0.258|
-|nanolog|93.000|0.280|0.451|
-|spdlog-async|24021.000|1.039|46.513|
-|mal-blocking|115.500|0.146|0.227|
-|mal-bounded|113.750|0.146|0.231|
-|g3log|48020.500|5.462|167.522|
-|spdlog-sync|256.500|2.012|2.569|
-|glog|1852.250|8.100|9.179|
+|mal-heap|108.750|0.179|0.254|
+|mal-hybrid|16023.500|0.173|5.073|
+|nanolog|158.250|0.276|0.426|
+|spdlog-async|24021.000|0.911|46.812|
+|mal-blocking|121.000|0.142|0.227|
+|mal-bounded|95.500|0.141|0.220|
+|g3log|36666.500|5.529|168.542|
+|spdlog-sync|248.500|2.086|2.638|
+|glog|758.250|6.769|8.532|
 
 #### CPU latency (threads: 2, msgs: 100k, clock: thread) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|89.421|0.344|0.258|
-|mal-hybrid|79.162|0.313|0.213|
-|nanolog|4521.303|0.422|1.848|
-|spdlog-async|82.463|0.941|0.490|
-|mal-blocking|96.005|0.284|0.229|
-|mal-bounded|70.455|0.285|0.223|
-|g3log|4163.162|2.944|6.727|
-|spdlog-sync|102.571|2.042|2.032|
-|glog|658.081|6.812|6.165|
+|mal-heap|75.980|0.362|0.263|
+|mal-hybrid|78.123|0.347|0.256|
+|nanolog|4280.018|0.409|1.417|
+|spdlog-async|84.549|0.849|0.457|
+|mal-blocking|70.881|0.292|0.219|
+|mal-bounded|98.299|0.294|0.222|
+|g3log|11858.539|2.969|8.581|
+|spdlog-sync|136.311|2.047|2.019|
+|glog|615.372|6.109|5.874|
 
 ### threads: 4, msgs: 100k ###
 
@@ -761,43 +759,43 @@ Not very fast, but this is the ĺogger showing the best worst-case latency
 
 |logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal-heap|0.018|5659.060|0.177|0.123|814.564|0.049|0.000|
-|mal-hybrid|0.015|6494.585|0.154|0.125|797.198|0.044|0.000|
-|nanolog|0.023|4325.884|0.231|0.343|291.547|0.061|0.000|
-|spdlog-async|0.039|2571.495|0.389|0.120|836.034|0.118|0.000|
-|mal-blocking|0.021|4870.926|0.205|0.125|803.434|0.060|0.000|
-|mal-bounded|0.021|4711.819|0.212|0.126|793.449|0.061|0.000|
-|g3log|0.179|559.847|1.786|0.000|0.000|0.491|0.000|
-|spdlog-sync|0.147|680.953|1.469|0.147|680.462|0.466|0.000|
-|glog|0.453|220.645|4.532|0.453|220.589|1.652|0.000|
+|mal-heap|0.018|5751.547|0.174|0.126|793.999|0.049|0.000|
+|mal-hybrid|0.014|7227.660|0.138|0.129|778.236|0.039|0.000|
+|nanolog|0.024|4165.695|0.240|0.351|285.307|0.062|0.000|
+|spdlog-async|0.037|2682.639|0.373|0.118|848.510|0.109|0.000|
+|mal-blocking|0.021|4753.500|0.210|0.125|798.123|0.061|0.000|
+|mal-bounded|0.020|5141.856|0.194|0.124|804.476|0.056|0.000|
+|g3log|0.183|549.006|1.821|0.000|0.000|0.499|0.000|
+|spdlog-sync|0.150|665.711|1.502|0.151|665.252|0.478|0.000|
+|glog|0.395|252.896|3.954|0.396|252.823|1.440|0.000|
 
 #### "Real" latency (threads: 4, msgs: 100k, clock: wall) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|87.500|0.426|0.424|
-|mal-hybrid|102.000|0.425|0.474|
-|nanolog|662.500|0.638|1.568|
-|spdlog-async|16035.500|1.214|30.175|
-|mal-blocking|140.500|0.444|0.440|
-|mal-bounded|147.250|0.448|0.428|
-|g3log|32021.250|5.584|123.366|
-|spdlog-sync|245.250|4.301|6.741|
-|glog|12380.750|15.366|18.782|
+|mal-heap|117.750|0.444|0.427|
+|mal-hybrid|4026.750|0.441|1.358|
+|nanolog|5125.250|0.637|3.349|
+|spdlog-async|13337.000|1.127|30.566|
+|mal-blocking|170.750|0.467|0.431|
+|mal-bounded|115.500|0.484|0.424|
+|g3log|28021.000|5.662|125.799|
+|spdlog-sync|275.500|4.395|6.926|
+|glog|2340.250|13.706|16.257|
 
 #### CPU latency (threads: 4, msgs: 100k, clock: thread) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|80.445|0.552|0.403|
-|mal-hybrid|102.677|0.537|0.406|
-|nanolog|3747.178|0.702|2.373|
-|spdlog-async|872.343|1.241|0.788|
-|mal-blocking|73.867|0.512|0.371|
-|mal-bounded|75.517|0.507|0.367|
-|g3log|14192.837|3.672|17.429|
-|spdlog-sync|139.781|3.962|4.166|
-|glog|2125.836|9.964|8.367|
+|mal-heap|86.564|0.541|0.375|
+|mal-hybrid|106.038|0.521|0.394|
+|nanolog|564.621|0.709|1.185|
+|spdlog-async|554.027|1.137|0.700|
+|mal-blocking|91.428|0.493|0.346|
+|mal-bounded|100.992|0.489|0.341|
+|g3log|13303.077|3.728|17.151|
+|spdlog-sync|136.298|3.961|4.186|
+|glog|2127.903|9.528|8.686|
 
 ### threads: 8, msgs: 100k ###
 
@@ -805,43 +803,43 @@ Not very fast, but this is the ĺogger showing the best worst-case latency
 
 |logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal-heap|0.016|6460.841|0.155|0.126|791.689|0.053|0.000|
-|mal-hybrid|0.018|5627.070|0.178|0.123|814.300|0.069|0.000|
-|nanolog|0.029|3607.094|0.277|0.353|283.549|0.131|0.000|
-|spdlog-async|0.036|2789.200|0.359|0.118|847.201|0.176|0.000|
-|mal-blocking|0.025|4111.818|0.243|0.130|769.593|0.106|0.000|
-|mal-bounded|0.024|4333.825|0.231|0.130|769.272|0.099|0.000|
-|g3log|0.145|690.786|1.448|0.000|0.000|0.761|0.000|
-|spdlog-sync|0.149|672.811|1.486|0.149|672.123|0.789|0.000|
-|glog|0.489|205.205|4.873|0.490|204.942|3.235|0.000|
+|mal-heap|0.017|6066.315|0.165|0.129|777.246|0.059|0.000|
+|mal-hybrid|0.019|5332.438|0.188|0.126|792.341|0.076|0.000|
+|nanolog|0.027|3874.368|0.258|0.361|277.096|0.119|0.000|
+|spdlog-async|0.034|2937.436|0.340|0.116|864.422|0.159|0.000|
+|mal-blocking|0.025|4167.024|0.240|0.132|757.416|0.099|0.000|
+|mal-bounded|0.024|4157.706|0.241|0.131|764.742|0.101|0.000|
+|g3log|0.150|669.797|1.493|0.000|0.000|0.797|0.000|
+|spdlog-sync|0.150|669.810|1.493|0.150|667.060|0.791|0.000|
+|glog|0.504|198.900|5.028|0.505|198.646|3.418|0.000|
 
 #### "Real" latency (threads: 8, msgs: 100k, clock: wall) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|12059.500|0.575|25.011|
-|mal-hybrid|13878.500|0.714|32.645|
-|nanolog|38012.000|1.208|73.687|
-|spdlog-async|16029.250|1.806|74.099|
-|mal-blocking|19762.000|0.768|43.870|
-|mal-bounded|19837.750|0.760|43.513|
-|g3log|28030.000|8.727|127.049|
-|spdlog-sync|35685.500|8.400|189.415|
-|glog|83449.500|35.175|571.295|
+|mal-heap|12047.750|0.623|27.575|
+|mal-hybrid|15081.750|0.734|33.938|
+|nanolog|28373.500|1.205|74.775|
+|spdlog-async|14156.000|1.701|70.583|
+|mal-blocking|14678.750|0.835|44.900|
+|mal-bounded|14902.000|0.831|43.641|
+|g3log|24033.250|8.924|136.648|
+|spdlog-sync|30953.750|8.534|183.509|
+|glog|61332.000|36.396|553.571|
 
 #### CPU latency (threads: 8, msgs: 100k, clock: thread) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|984.072|0.582|0.668|
-|mal-hybrid|92.632|0.570|0.409|
-|nanolog|11935.776|0.847|24.631|
-|spdlog-async|2443.657|1.211|1.440|
-|mal-blocking|84.416|0.579|0.375|
-|mal-bounded|75.323|0.577|0.368|
-|g3log|10709.557|3.762|21.077|
-|spdlog-sync|137.823|3.009|3.976|
-|glog|2046.264|7.080|11.887|
+|mal-heap|77.895|0.562|0.375|
+|mal-hybrid|127.589|0.551|0.398|
+|nanolog|11957.629|0.843|24.888|
+|spdlog-async|1472.393|1.134|1.037|
+|mal-blocking|93.541|0.543|0.360|
+|mal-bounded|92.413|0.540|0.361|
+|g3log|8530.451|3.798|20.403|
+|spdlog-sync|172.788|3.088|4.045|
+|glog|2202.467|7.604|11.743|
 
 ### threads: 16, msgs: 100k ###
 
@@ -849,43 +847,42 @@ Not very fast, but this is the ĺogger showing the best worst-case latency
 
 |logger|enqueue(s)|rate(Kmsg/s)|latency(us)|total(s)|disk(Kmsg/s)|thread time(s)|faults|
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|mal-heap|0.015|6676.020|0.150|0.129|777.355|0.070|0.000|
-|mal-hybrid|0.016|6107.878|0.164|0.130|770.332|0.100|0.000|
-|nanolog|0.040|2672.196|0.374|0.368|272.213|0.353|0.000|
-|spdlog-async|0.035|2845.103|0.351|0.120|835.918|0.254|0.000|
-|mal-blocking|0.026|3927.394|0.255|0.132|755.905|0.180|0.000|
-|mal-bounded|0.025|4034.480|0.248|0.131|764.811|0.158|0.000|
-|g3log|0.124|811.141|1.233|0.000|0.000|1.334|0.000|
-|spdlog-sync|0.166|607.000|1.647|0.166|605.987|1.757|0.000|
-|glog|0.524|191.188|5.230|0.526|190.758|6.488|0.000|
+|mal-heap|0.016|6524.866|0.153|0.130|771.370|0.077|0.000|
+|mal-hybrid|0.025|4029.686|0.248|0.131|764.090|0.121|0.000|
+|nanolog|0.041|2556.876|0.391|0.378|264.895|0.376|0.000|
+|spdlog-async|0.032|3122.716|0.320|0.126|795.609|0.201|0.000|
+|mal-blocking|0.026|3877.355|0.258|0.131|762.332|0.165|0.000|
+|mal-bounded|0.026|3973.065|0.252|0.134|750.073|0.152|0.000|
+|g3log|0.124|807.984|1.238|0.000|0.000|1.331|0.000|
+|spdlog-sync|0.167|601.541|1.662|0.169|595.542|1.792|0.000|
+|glog|0.547|183.366|5.454|0.548|182.967|6.890|0.000|
 
 #### "Real" latency (threads: 16, msgs: 100k, clock: wall) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|16050.750|0.769|52.206|
-|mal-hybrid|15105.000|1.033|63.471|
-|nanolog|64017.000|3.385|233.455|
-|spdlog-async|23075.000|2.568|133.269|
-|mal-blocking|18518.750|1.172|70.478|
-|mal-bounded|16041.500|1.177|70.472|
-|g3log|27332.000|14.994|163.924|
-|spdlog-sync|53792.000|19.435|362.396|
-|glog|173164.500|70.735|1161.158|
+|mal-heap|16016.000|0.800|48.578|
+|mal-hybrid|20027.500|1.238|74.507|
+|nanolog|55443.000|3.508|242.199|
+|spdlog-async|21379.500|2.408|123.336|
+|mal-blocking|20022.000|1.276|79.256|
+|mal-bounded|16639.500|1.390|84.611|
+|g3log|35626.500|15.001|198.524|
+|spdlog-sync|67680.000|19.180|355.417|
+|glog|137111.000|76.035|1113.100|
 
 #### CPU latency (threads: 16, msgs: 100k, clock: thread) ####
 
 |logger|worst(us)|mean(us)|standard deviation|
 |:-:|:-:|:-:|:-:|
-|mal-heap|2901.548|0.572|3.991|
-|mal-hybrid|617.192|0.567|0.477|
-|nanolog|19951.827|1.322|64.806|
-|spdlog-async|2033.800|1.177|1.681|
-|mal-blocking|108.104|0.576|0.452|
-|mal-bounded|96.332|0.568|0.441|
-|g3log|4659.070|3.811|16.536|
-|spdlog-sync|148.064|3.224|4.302|
-|glog|2174.871|6.884|11.909|
-
+|mal-heap|2286.598|0.557|2.984|
+|mal-hybrid|105.936|0.576|0.359|
+|nanolog|27984.121|1.282|63.513|
+|spdlog-async|2306.155|1.123|1.732|
+|mal-blocking|92.825|0.562|0.355|
+|mal-bounded|75.559|0.568|0.329|
+|g3log|5419.923|3.825|18.176|
+|spdlog-sync|218.267|3.178|4.271|
+|glog|2255.306|7.341|11.911|
 
 > Written with [StackEdit](https://stackedit.io/).
