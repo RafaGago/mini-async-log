@@ -303,6 +303,13 @@ the benchmark overnight, so I won't increase this number.
 
 The variability between machines (AMD-Intel) is big too.
 
+Said that, and being as biased as I am, I consider the mal variants the only
+asynchronous loggers of the ones tested here that can be severely stressed and
+still have a controlled behavior in all the tested parameters: the performance
+is always respectable and the worst case latency never goes out of control.
+
+An analisys logger by logger is presented below.
+
 #### mal-heap ####
 
 It shows very stable results in the throughput and latency measurements. The
@@ -311,15 +318,16 @@ variants except for the synchronous loggers with low contention/thread count.
 
 The only competing logger using a heap based queue is nanolog.
 
-In the 1M msgs test a sensible throughput degradation is seen in nanolog when
+On the 1M msgs test a sensible throughput degradation is seen in nanolog when
 the thread count increases. For the single thread case mal is significantly
-faster, the difference grows with more threads.
+faster, the difference grows with more threads. It's outclassed by a wide
+margin by mal-heap on every metric, e.g the throughput with 16 threads is 535%
+higher on mal-heap.
 
-On the 100k test they start on a similar level but nanolog degrades with the
-thread count too.
+On the 100k test they start on a similar level (nanolog has a 5% edge) but
+nanolog degrades with the thread count too. At 16 threads mal is 255% faster.
 
-The latency of mal is alwasy better: less standard deviation and shortest
-worst-case.
+With the worst case latency it's the same. nanolog starts with
 
 #### mal-hybrid ####
 
@@ -334,6 +342,8 @@ less than "mal-heap".
 
 The latencies are both very similar.
 
+Against nanolog "mal-hybrid" is superior in every case.
+
 Note that 100k messages and <4 threads is maybe the most "realistic" load on
 this benchmark.
 
@@ -341,38 +351,37 @@ this benchmark.
 
 Shows decent performance for a bounded queue logger.
 
-"mal-blocking" uses a bounded queue that blocks on full input too.
+"mal-blocking" is the other logger having a similar configuration: bounded queue
+with blocking behavior when the queue is full, so it's fair to establish a com-
+parison.
 
-On the 1M (queue full) tests depending and on the thread count "mal-blocking"
-seems to be around 5-18% faster and to have around 2x-10x better worst case
-latency.
+On the 1M (queue full) tests and depending on the thread count "mal-blocking"
+seems to be around 5-20% faster and to have significantly shorter worst case
+latency (2000-4000%).
 
 On the 100k (queue big enough) single threaded test with low thread count (more
-realistic load) it's significantly outperformed by mal, specially on the
-uncontended single threaded case. The worst case latencies in this case are on
-par.
+realistic load) it's significantly slower, specially on the uncontended single
+threaded case, where "mal-sync" seems to be around 2100% faster. The worst case
+latencies are on par.
 
-This is logical, as a matter of fact "spdlog-async" internals are similar to
-"mal-blocking"'s; they both use internally the same D.Vyukov bounded queue
-algorithm,(gabime borrowed the idea from this project when spdlog was using
-mutexes) so the performance difference is not made in the queue algorithm, but
-in its usage.
-
-When the queue algorithm is the bottleneck (with high thread count and a lot of
-contention), the performance of "spdlog-async" is similar to the performance
-of the bounded mal variations.
-
-The worst case latency it's around 30x-60x worse than on mal-blocking.
+The performances at 100k start to converge with more contention/threads (while
+mal is still 20% faster with 16 threads), this is logical as both are based on
+the D.Vjukov queue (historically the spdlog dev borrowed the idea from this
+project when spdlog was still using mutexes), so when the queue is on extremely
+high contention the differences decrease.
 
 #### g3log ####
 
-It shows modest performance. Its single threaded performance uncontended (most
-common situation) is the lowest of all the contenders on the single threaded
-tests.
+It shows a very modest performance. On the single threaded test with 1M messages
+it's not even performing above the synchronous loggers. It starts to take off
+with more threads but it never reaches the standard of other loggers tested
+here.
 
-The good thing is that performance improves along with the thread count and it
-doesn't show extreme big worst-case latencies when on very big contention. These
-worst-case lantecies are still higher than all the mal variants.
+I wonder if I have something misconfigured.
+
+The only positive performance aspect that I can see given these results it's
+that it never reaches the 800ms worst-case latency that is seen on spdlog-async
+and stays at 100ms.
 
 #### nanolog ####
 
@@ -386,7 +395,7 @@ The code shows that when it needs to allocate it uses a very big chunk (8MB
 according to the code). It is good to preallocate, but in unconfigurable 8MB
 chunks?
 
-Even the file worker is waken up very often. There is no idling concept on
+Even the file worker doesn't back-off for long. There is no idling concept on
 nanolog.
 
 So I can safely says that it achieves its performance by burning cycles and
@@ -397,9 +406,14 @@ messages test when the thread count is low. This is hardly a surprise because
 it uses an unbounded algorithm, so it doesn't need to deal with the full-queue
 case.
 
+With 16 threads and 1M messages its throughput is around 70% better than
+"mal-blocking" and its worst-case latency is 1100% worse. Keep in mind that
+"mal-sync" doesn't use a bounded queue and its producers sleep under contention.
+
 Against mal-heap/mal-hybrid it loses in every metric in all the tests, the only
 exception being the 100k single threaded test, where it has a slight throughput
-edge over mal-heap and a better worst case latency.
+edge over mal-heap and a better worst case latency. On the 16 thread case
+it reaches a 366ms worst case latency.
 
 Compared against the mal bounded variants, with 16 threads and 1M messages its
 throughput is around 60% better than "mal-blocking" and its worst-case latency
@@ -425,18 +439,24 @@ caller decide if it has something more useful to do before retrying.
 When there are no allocation faults (faults column: 100k msgs) mal-blocking
 is exactly the same as mal-bounded.
 
-On the 100k case with low thread count mal-blocking/mal-bounded are the fastest
-of all.
+On the 100k case with low thread count mal-blocking/mal-bounded are the fastest.
 
-For the 1M msgs case when "mal-blocking" needs to back-off and wait it's fair
-backoff algorithm shows on the worst-case latency, which doesn't degrade with
-the thread count.
+For the 1M msgs case when "mal-blocking" needs to back-off and wait it's
+throughput drops but the worst-case latency stays controlled and lower than
+all the other asynchronous loggers. The worst case latency is still better than
+the one achieved by the synchronous variants when the thread count is high (!).
 
 Keep in mind that in mal the same bounded FIFO queue doubles as a FIFO and
 as a memory allocator (using customizations on D.Vjukov algorithm), so if the
-serialized message size doesn't fit on the queue bucket size the messages are
+serialized message size doesn't fit on the queue entry size the messages are
 discarded. This requires either a good entry size selection that you know that
-fits all the messages or using "mal-hybrid" (which is what the library intends).
+fits all the messages on the program (dangerous) or to use "mal-hybrid" (which
+is what the library intends).
+
+This requirement may be dropped on the future if modifying the queue to do
+multiple pushes in one atomic operation doesn't screw up the cache (producers
+touching the same cache line more often because the storage is on a separated
+contiguoud chunk).
 
 #### spdlog-sync ####
 
