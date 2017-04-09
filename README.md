@@ -184,22 +184,20 @@ Those that are self-explanatory won't be explained.
     (plus header), so encoding is less space efficient in this way but it frees
     the CPU and allows the compiler to inline more.
 
-## Linux compilation ##
+## compilation ##
 
 You can compile the files in the "src" folder and make a library or just compile
 everything under /src in your project.
 
-Otherwise you can use the GNU makefile in the "/build/linux" folder. It respects
-the GNU makefile conventions. "DESTDIR", "prefix", "includedir" and "libdir" can
-be used.
+Otherwise you can use cmake.
 
-One example of compile invocation using boost could be:
+On Linux there are GNU makefiles in the "/build/linux" folder too. They respect
+the GNU makefile conventions. "DESTDIR", "prefix", "includedir" and "libdir"
+can be used.
 
-    make CXXFLAGS="-DMAL_USE_BOOST_THREAD -DMAL_USE_BOOST_CHRONO -DBOOST_ALL_DYN_LINK -DBOOST_CHRONO_HEADER_ONLY" LDLIBS="-lboost_thread" CXX="arm-linux-gnueabihf-g++"
-
-REMEMBER: That the if the library is compiled with e.g. the
-"MAL_USE_BOOST_THREAD" and "MAL_USE_BOOST_CHRONO" preprocessor variables the
-client code must define them too.
+REMEMBER (legacy uses that use boost): That the if the library is compiled with
+e.g. the "MAL_USE_BOOST_THREAD" and "MAL_USE_BOOST_CHRONO" preprocessor
+variables the client code must define them too.
 
 ## Windows compilation ##
 
