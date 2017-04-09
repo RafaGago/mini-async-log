@@ -36,84 +36,90 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_SYSTEM_HPP_
 #define MAL_SYSTEM_HPP_
 
-#if defined (__GXX_EXPERIMENTAL_CXX0X__) &&\
-    defined (__GNUC__) &&\
+/*As clang is added in 2017, just assume fully clang supports C++11*/
+#if defined (__clang__) || \
+    defined (__GXX_EXPERIMENTAL_CXX0X__) && \
+    defined (__GNUC__) && \
     (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
 
+    #define MAL_GCC_INTERFACE 1
     #define MAL_HAS_CONSTEXPR 1
     #define MAL_HAS_VARIADIC_TEMPLATES 1
-    #define MAL_UNIX_LIKE //this is wrong but correct enough for now to just support win an linux
+    #ifdef __unix__
+        #define MAL_UNIX_LIKE 1
+    #endif
     #define MAL_ALIGNED_STORAGE_DEFAULTS_MAX_ALIGN
 
-    #if __x86_64__ || __ppc64__
+    #if __x86_64__ || __ppc64__ || __aarch64__
+        #define MAL_64
+    #else
+        #define MAL_32
+    #endif
+#endif
+
+#if 0 //REMINDER
+    MSVC++ 12.0 _MSC_VER == 1800 (Visual Studio 2013)
+    MSVC++ 11.0 _MSC_VER == 1700 (Visual Studio 2012)
+    MSVC++ 10.0 _MSC_VER == 1600 (Visual Studio 2010)
+    MSVC++ 9.0  _MSC_VER == 1500 (Visual Studio 2008)
+    MSVC++ 8.0  _MSC_VER == 1400 (Visual Studio 2005)
+    MSVC++ 7.1  _MSC_VER == 1310 (Visual Studio 2003)
+#endif
+
+#if defined (_MSC_VER)
+    #ifdef _WIN64
         #define MAL_64
     #else
         #define MAL_32
     #endif
 
-namespace mal {
-    const char fs_separator = '/';
-}
-
-#endif
-
-#if 0 //REMINDER
-
-MSVC++ 12.0 _MSC_VER == 1800 (Visual Studio 2013)
-MSVC++ 11.0 _MSC_VER == 1700 (Visual Studio 2012)
-MSVC++ 10.0 _MSC_VER == 1600 (Visual Studio 2010)
-MSVC++ 9.0  _MSC_VER == 1500 (Visual Studio 2008)
-MSVC++ 8.0  _MSC_VER == 1400 (Visual Studio 2005)
-MSVC++ 7.1  _MSC_VER == 1310 (Visual Studio 2003)
-
-#endif
-
-#if defined (_MSC_VER)
-
-#ifdef _WIN64
-    #define MAL_64
-#else
-    #define MAL_32
-#endif
-
     #define MAL_WINDOWS
 
-#if _MSC_VER >= 1800 //1600 >= vs2010
-    #define MAL_HAS_VARIADIC_TEMPLATES 1
-#endif
+    #if _MSC_VER >= 1800 //1600 >= vs2010
+        #define MAL_HAS_VARIADIC_TEMPLATES 1
+    #endif
 
-#if _MSC_VER >= 1700
-    #define MAL_ALIGNED_STORAGE_DEFAULTS_MAX_ALIGN
-#endif
+    #if _MSC_VER >= 1700
+        #define MAL_ALIGNED_STORAGE_DEFAULTS_MAX_ALIGN
+    #endif
 
-namespace mal {
-    const char fs_separator = '\\';
-}
-
+    namespace mal {
+        const char fs_separator = '\\';
+    }
 #endif
 
 #ifndef MAL_DYN_LIB_CALL
 
-#if defined (_MSC_VER)    
+#if defined (_MSC_VER)
     #if defined (MAL_DYNLIB_COMPILE)
-        #define MAL_LIB_EXPORTED_CLASS __declspec(dllexport)        
+        #define MAL_LIB_EXPORTED_CLASS __declspec(dllexport)
     #elif defined (MAL_AS_DYNLIB)
         #define MAL_LIB_EXPORTED_CLASS __declspec(dllimport)
     #else
         #define MAL_LIB_EXPORTED_CLASS
     #endif
-#elif __GNUC__ >= 4
+#elif __GNUC__ >= 4 || defined (MAL_GCC_INTERFACE)
     #if defined (MAL_DYNLIB_COMPILE) || defined (MAL_AS_DYNLIB)
         #define MAL_LIB_EXPORTED_CLASS\
             __attribute__ ((visibility ("default")))
     #else
         #define MAL_LIB_EXPORTED_CLASS
     #endif
-#else    
+#else
     #define MAL_LIB_EXPORTED_CLASS
 #endif
 
 #endif //MAL_DYN_LIB_CALL
+
+#if defined (MAL_UNIX_LIKE)
+    namespace mal {
+        const char fs_separator = '/';
+    }
+#else
+    namespace mal {
+        const char fs_separator = '\\';
+    }
+#endif
 
 namespace mal {
 #ifndef MAL_CACHE_LINE_SIZE
@@ -126,7 +132,7 @@ namespace mal {
 #if defined (MAL_HAS_CONSTEXPR)
     #define MAL_CONSTEXPR constexpr
 #else
-    #define MAL_CONSTEXPR constexpr
+    #define MAL_CONSTEXPR
 #endif
 
 #endif /* MAL_SYSTEM_HPP_ */
