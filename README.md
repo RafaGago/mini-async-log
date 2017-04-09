@@ -1,7 +1,7 @@
 
 Minimal Asynchronous Logger (MAL)
 -----------
-A non overly-bloated and performant asynchronous data logger.
+A performant asynchronous data logger with acceptable feature-bloat.
 
 ## Credit ##
 
@@ -16,11 +16,11 @@ A non overly-bloated and performant asynchronous data logger.
 
 This started with the intention to just develop an asynchronous logger that
 could be used from different dynamically loaded libraries on the same binary
-without doing link-time hacks like linking static, hiding symbols and some other
-"niceties".
+without doing link-time hacks like being forced to link static, hiding symbols
+and some other "niceties".
 
-Then at some point way after the requirements were met I just improved the thing
-for fun.
+Then at some point way after the requirements were met I just improved it for
+fun.
 
 ## Design rationale ##
 
@@ -41,7 +41,8 @@ To be:
 
 ## Various features ##
 
- - Targeting g++4.7 and VS 2010 (can take parts from boost)
+ - Targeting g++4.7 and VS 2010(can use incomplete or broken C+11 features from
+   boost).
  - Nanosecond performance.
  - No singleton by design, usable from dynamically loaded libraries. The user
    provides the logger instance either explicitly or by a global function
@@ -52,19 +53,20 @@ To be:
  - One conditional call overhead for inactive logging levels.
  - Able to strip log levels at compile time (for Release builds).
  - Lazy parameter evaluation (as usual with most logging libraries).
- - No ostreams (a very ugly part of C++: verbose and stateful), just format
-   strings checked at compile time (if the compiler supports it) with type safe
-   values.
-   An on-stack ostream adapter is available as a last resort, but its use is
-   more verbose and has more overhead than the format literals.
+ - No ostreams(*) (a very ugly part of C++: dynamically allocated, verbose and
+   stateful), just format strings checked at compile time (if the compiler
+   supports it) with type safe values.
  - The logger severity threshold can be externally changed outside of the
    process. The IPC mechanism is the simplest, the log worker periodically polls
-   some files when idlíng (if configured to).
+   some files when idling (if configured to).
  - Fair blocking behaviour (configurable by severity) when the bounded queue is
    full and the heap queue is disabled. The logger smoothly starts to act as a
    synchronous logger. If non-blocking behavior is desired an error is returned
-   instad.
+   instead.
  - Small, you can actually compile it as a part of your application.
+
+(*)An on-stack ostream adapter is available as a last resort, but its use is
+ more verbose and has more overhead than the format literals.
 
 > see this [example](https://github.com/RafaGago/mini-async-log/blob/master/example/overview/main.cpp)
 that more or less showcases all available features.
@@ -73,13 +75,13 @@ that more or less showcases all available features.
 
 It just borrows ideas from many of the loggers out there.
 
-As with any half-decent asynchronous logger its main objetive is to be as fast
-and to have as low latency as possible for the caller thread.
+As an asynchronous logger its main objetive is to be as fast and to have as low
+latency as possible for the caller thread.
 
 When the user is to write a log message, the producer task is to serialize the
 data to a memory chunk which then the logging backend (consumer) can decode,
 format and write. No expensive operations occur on the consumer, and if they do
-it is when using secondary features.
+it's when using secondary features.
 
 The format string is required to be a literal (compile time constant), so when
 encoding something like the entry below...
@@ -96,16 +98,16 @@ and fixed element size array based preallocated queue and an intrusive node
 based dynamically allocated queue. The resulting queue is still linearizable.
 
 The format string is type-safe and validated at compile time for compilers that
-support "constexpr" and "variadic template parameters" available. Otherwise the
-errors are caught at run time on the logged output (Visual Studio 2010 mostly).
+support "constexpr" and "variadic template parameters". Otherwise the errors
+are caught at run time on the logged output (Visual Studio 2010 mostly).
 
-There are other features, you can block the caller thread until some message has
-been dequeued by the logger thread or to do C++ stream formatting on the caller
-thread.
+There are other features: you can block the caller thread until some message has
+been dequeued by the logger thread, to do C++ stream formatting on the caller
+thread, etc.
 
 ## File rotation ##
 
-The library can rotate fixed size log files.
+The library can rotate log files.
 
 Using the current C++11 standard files can just be created, modified and
 deleted. There is no way to list a directory, so the user is required to pass
@@ -119,9 +121,8 @@ here.
 The library isn't a singleton, so the user should provide a reference to the
 logger instance on each call.
 
-There are two methods to pass the instance to the logging macros when enqueuing
-a message, one is to provide it explicitly and the other one is by providing it
-on a global function.
+There are two methods to pass the instance to the logging macros, one is to
+provide it explicitly and the other one is by providing it on a global function.
 
 If no instance is provided, the global function "get_mal_logger_instance()" will
 be called without being namespace qualified, so you can use Koenig lookup/ADL.
@@ -139,16 +140,17 @@ MAL_GET_LOGGER_INSTANCE_FUNCNAME.
 The worker blocks on its destructor until its work queue is empty when normally
 exiting a program.
 
-When a signal is caught you can call the frontend function [on termination](https://github.com/RafaGago/mini-async-log/blob/master/include/mal_log/frontend.hpp).
-This will early interrupt any synchronous calls you made.
+When a signal is caught you can call the frontend function [on termination](https://github.com/RafaGago/mini-async-log/blob/master/include/mal_log/frontend.hpp) in
+your signal handler. This will flush the logger queue and early abort any
+synchronous calls.
 
 ## Errors ##
 
-As for now, every function returns a boolean if it succeeded or false if it
-didn't. A filtered out/below severity call returns true.
+As of now, every log call returns a boolean to indicate success.
 
 The only possible failures are either to be unable to allocate memory for a log
-entry or an asynchronous call that was interrupted by "on_termination".
+entry or an asynchronous call that was interrupted by "on_termination". A
+filtered out call returns true".
 
 The logging functions never throw.
 
@@ -216,12 +218,12 @@ too.
 
 ## Performace ##
 
-These are some test I have done for fun to see how this code is aging.
+These are some tests I have done for fun to see how this code is aging.
 
 > [Here is the benchmark code.](https://github.com/RafaGago/mini-async-log/blob/master/example/benchmark/main.cpp).
 
-To build it on Linux you don't need to install any of the libraries, all of them
-are downloaded and build for you by the makefile, just run:
+To build them on Linux you don't need to install any of the libraries, all of
+them are downloaded and build for you by the makefile, just run:
 
 > make -f build/linux/Makefile.examples.benchmark
 
@@ -236,9 +238,10 @@ test is run 75 times and then averaged (best and worst latencies aren't
 averaged, the best and worst of all runs is taken).
 
 The different message counts (1M and 100K) are intended to show the behavior
-of the bounded queue loggers. With 100K msgs the bounded queue loggers (spdlog
-and some mal variants) have a big enough queue to contain all the messages. On
-the 1M msgs test its queue will get full and they will need to back-off.
+of the bounded queue loggers. On the 100K msgs tests the bounded queue loggers
+(spdlog and some mal variants) have a big enough queue to contain all the
+messages. On the 1M msgs test its queue will get full and they will need to
+back-off.
 
 On the latency tests the mean, standard deviation, best and worst case is shown.
 The standard deviation gives an idea of the jitter. The less the better.
@@ -249,20 +252,21 @@ suspended. The wall clock gives an idea of the "real" timing of the logger when
 the OS scheduler puts threads to sleep, so the different loggers will show its
 worst case in a more realistic way.
 
-Keep in mind that measuring latencies have its quirks. The OS clocks aren't
-good enough for measuring individual calls in the nanosecond scale. I do
-them because I can see value in seeing standard deviations over very long runs
-and the worst latencies allow to detect blocked/starved producers (e.g.due to
-backoff unfairness).
+Keep in mind that measuring latencies has its caveats. The OS clocks aren't
+good enough for measuring individual calls at the nanosecond scale. I do these
+latency tests because I can see value in seeing latency standard deviations for
+very long runs and the worst latencies allow to detect blocked/starved producers
+(e.g.due to backoff unfairness).
 
-The average latency column shown on the latency tests is the one shown by the OS
-clocks and done on individual calls. The average latency column shown on the
-throughput test is more reliable, as its taken just using two clock meaurements
-for the whole batch of messages.
+The "average latency" column shown on the latency tests is the one measured on
+individual calls (mostly unreliable). The "average latency" column shown on the
+throughput tests is taken just using two clock meaurements for the whole batch
+of messages (reliable).
 
-The test is run in a system using Ubuntu 16.04 server, no X server and with all
-network interfaces disabled. The machine is a downclocked and undervolted AMD
-Phenom x4 965 with an SSD disk. Expect more performance with a modern machine.
+The test is run in a system using Ubuntu 16.04 server, no X server and having
+all the network interfaces disabled. The machine is a downclocked and
+undervolted AMD Phenom x4 965 with an SSD disk. Expect more performance with a
+modern machine.
 
 The code is compiled with gcc -O3. Compiling with -Os has a lot of impact (re-
 duction) in raw performance.
@@ -289,9 +293,6 @@ Each logger configuration summary is as follows:
 
 ### Result conclusions ###
 
-The results are after these comments, otherwise this conclusion section would be
-buried in tables.
-
 I have observed some variability (5-10% ?) on the test results between test
 runs, which shows that 75 averaged runs is not enough. I want to be able to run
 the benchmark overnight, so I won't increase this number.
@@ -303,157 +304,7 @@ asynchronous loggers of the ones tested here that can be severely stressed and
 still have a controlled behavior in all the tested parameters: the performance
 is always respectable and the worst case latency never goes out of control.
 
-An analisys logger by logger is presented below.
-
-#### mal-heap ####
-
-It shows very stable results in the throughput and latency measurements. The
-latency increases with more contention but it's still lower than all non "mal"
-variants except for the synchronous loggers on the low contention/thread count
-tests.
-
-The only competing logger using a heap based queue is nanolog.
-
-On the 1M msgs test a sensible throughput degradation is seen in nanolog when
-the thread count increases. For the single thread case mal is significantly
-faster, the difference grows with more threads. It's outclassed by a wide
-margin by mal-heap on every metric, e.g the throughput with 16 threads is 535%
-higher on mal-heap.
-
-On the 100k test they start on a similar level (nanolog has a 5% edge) but
-nanolog degrades with the thread count too. At 16 threads mal is 255% faster.
-
-On the latency tests it's the same. Nanolog shows more variability than
-mal-heap, reaching peak worst case latencies of +300ms.
-
-#### mal-hybrid ####
-
-"mal-hybrid" is just adding a small bounded queue to "mal-heap".
-
-On the 1M test having the extra bounded queue seems to increase the performance
-except on the single threaded case test.
-
-On the 100k single threaded test it's the opposite, the bounded queue increases
-performance up to 4 threads (CPU core count), after that the performance is
-less than "mal-heap".
-
-The latencies are both very similar.
-
-Against nanolog "mal-hybrid" is superior in every case.
-
-Note that 100k messages and <4 threads is maybe the most "realistic" load on
-this benchmark.
-
-#### spdlog-async ####
-
-Shows decent performance for a bounded queue logger.
-
-"mal-blocking" is the other logger having a similar configuration: bounded queue
-with blocking behavior when the queue is full, so it's fair to establish a com-
-parison.
-
-On the 1M (queue full) tests and depending on the thread count "mal-blocking"
-seems to be around 5-20% faster and to have significantly shorter worst case
-latency (2000-4000%).
-
-On the 100k (queue big enough) single threaded test with low thread count (more
-realistic load) spdlog-async it's significantly slower, specially on the
-uncontended single threaded case, where "mal-sync" seems to be around 2100%
-faster. The worst case latencies are on par.
-
-The performances at 100k start to converge with more contention/threads (while
-mal is still 20% faster with 16 threads), this is logical as both are based on
-the D.Vjukov queue (historically the spdlog dev borrowed the idea from this
-project when spdlog was still using mutexes), so when the queue is on extremely
-high contention the differences decrease.
-
-#### g3log ####
-
-It shows a very modest performance. On the single threaded test with 1M messages
-it's not even performing above the synchronous loggers. It starts to take off
-with more threads but it never reaches the standard of other loggers tested
-here.
-
-I wonder if I have something misconfigured.
-
-The only positive performance aspect that I can see given these results it's
-that it never reaches the 800ms worst-case latency that is seen on spdlog-async
-and stays at 100ms.
-
-#### nanolog ####
-
-Just a look at the code reveals what the results are going to be. In case the
-producers are contended they just spin burning cycles, always, without backing
-off, it just busy-waits burning CPU and starving other threads. You can see it
-when looking at latency tables: both tables show less divergence than the other
-loggers.
-
-The code shows that when it needs to allocate it uses a very big chunk (8MB
-according to the code). It is good to preallocate, but in unconfigurable 8MB
-chunks?
-
-Even the file worker doesn't back-off for long. There is no idling concept on
-nanolog.
-
-So I can safely says that it achieves its performance by burning cycles and
-resources left and right.
-
-It shows good performance compared with the bounded queue contenders on the 1M
-messages test when the thread count is low. This is hardly a surprise because
-it uses an unbounded algorithm, so it doesn't need to deal with the full-queue
-case and synchronize its data rate with the consumers.
-
-With 16 threads and 1M messages its throughput is around 70% better than
-"mal-blocking" and its worst-case latency is 1100% worse. Keep in mind that
-"mal-sync" doesn't use a bounded queue and its producers sleep under contention.
-
-Against mal-heap/mal-hybrid it loses in every metric in all the tests, the only
-exception being the 100k single threaded test, where it has a slight throughput
-edge over mal-heap and a better worst case latency. On the 16 thread case
-it reaches a 366ms worst case latency.
-
-On the 100k test, when the bounded queue versions of mal have enough room on the
-queue (average use case) it's outperformed in every metric. "spdlog-async"
-catches up on the 16 thread case too.
-
-#### glog ####
-
-Included for reference. It never claimed to be fast, but its worst-case latency
-(according to the wall clock) when the thread count is low is the best after
-spdlog-sync.
-
-#### mal-blocking / mal-bounded ####
-
-These are mal with no heap, just using Vjukovs queue. The difference is that
-mal-blocking blocks on full queue and mal-bounded reports a failure and lets the
-caller decide if it has something more useful to do before retrying.
-
-When there are no allocation faults (faults column: 100k msgs) mal-blocking
-is exactly the same as mal-bounded.
-
-On the 100k case with low thread count mal-blocking/mal-bounded are the fastest.
-
-For the 1M msgs case when "mal-blocking" needs to back-off and wait it's
-throughput drops but the worst-case latency stays controlled and lower than
-all the other asynchronous loggers. The worst case latency is still better than
-the one achieved by the synchronous variants when the thread count is high (!).
-
-Keep in mind that in mal the same bounded FIFO queue doubles as a FIFO and
-as a memory allocator (using customizations on D.Vjukov algorithm), so if the
-serialized message size doesn't fit on the queue entry size the messages are
-discarded. This requires either a good entry size selection that you know that
-fits all the messages on the program (dangerous) or to use "mal-hybrid" (which
-is what the library intends).
-
-This requirement may be dropped on the future if modifying the queue to do
-multiple pushes in one atomic operation is viable performance-wise.
-
-#### spdlog-sync ####
-
-Not very fast, but this is the ĺogger showing the best worst-case latency
-(according to the wall clock) with only one thread.
-
-## Benchmark data ##
+## Result data ##
 
 ### threads: 1, msgs: 1M ###
 
