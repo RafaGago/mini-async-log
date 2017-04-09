@@ -230,7 +230,7 @@ them are downloaded and build for you by the makefile, just run:
 You can "make install" or search for the executable under
 "build/linux/build/stage"
 
-### Test metodology ###
+### Test methodology ###
 
 It consists on enqueueing either 1 million or 100K messages distributing them
 evenly accross a variying number of threads (1, 2, 4, 8, 16) for each test. Each
