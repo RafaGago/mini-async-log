@@ -54,9 +54,9 @@ public:
         static_assert( N >= 1, "not a string literal");
     }
     //--------------------------------------------------------------------------
-    constexpr operator const char*()    { return m_lit;  }
-    constexpr uword size()              { return m_size; }
-    constexpr char operator[] (uword i) { return m_lit[i]; }
+    constexpr operator const char*() const    { return m_lit;  }
+    constexpr uword size() const              { return m_size; }
+    constexpr char operator[] (uword i) const { return m_lit[i]; }
     //--------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------
