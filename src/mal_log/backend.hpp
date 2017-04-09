@@ -55,7 +55,6 @@ either expressed or implied, of Rafael Gago Castano.
 #include <mal_log/frontend.hpp>
 #include <mal_log/log_writer.hpp>
 #include <mal_log/queue.hpp>
-#include <mal_log/backoff_wait.hpp>
 #include <mal_log/cfg.hpp>
 #include <mal_log/log_file_register.hpp>
 #include <mal_log/timestamp.hpp>
@@ -70,9 +69,7 @@ class backend_impl
 public:
     typedef std::function<void()> sev_update_evt;
     //--------------------------------------------------------------------------
-    th::condition_variable consume_condition;
-    backoff_wait           consume_wait;
-    cfg                    config;
+    cfg config;
     //--------------------------------------------------------------------------
     backend_impl()
     {
@@ -98,13 +95,14 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-    queue_prepared push_unconsumed_entry(
-        queue_prepared& unconsumed_entry, uword size
-        )
+    queue_prepared reserve_next_bounded_entry()
     {
-        return m_fifo.sc_pop_commit_to_mp_push_prepare_bounded(
-            unconsumed_entry, size
-            );
+        return m_fifo.mp_bounded_push_next_entry_reserve();
+    }
+    //--------------------------------------------------------------------------
+    queue_prepared::error bounded_entry_is_ready (const queue_prepared& entry)
+    {
+        return m_fifo.mp_bounded_push_reserved_entry_is_ready (entry);
     }
     //--------------------------------------------------------------------------
     void push_entry (const queue_prepared& entry)
@@ -219,17 +217,10 @@ private:
 
         c.producer_backoff.spin_end            = 2;
         c.producer_backoff.short_cpu_relax_end = 4;
-        c.producer_backoff.long_cpu_relax_end  = 6;
-        c.producer_backoff.yield_end           = 8;
-        c.producer_backoff.short_sleep_end     = 10;
-        c.producer_backoff.long_sleep_ns       = 1000000;
-
-        c.producer_spin.spin_end            = 8;
-        c.producer_spin.short_cpu_relax_end = 16;
-        c.producer_spin.long_cpu_relax_end  = 64;
-        c.producer_spin.yield_end           = 128;
-        c.producer_spin.short_sleep_end     = 256;
-        c.producer_spin.long_sleep_ns       = 1000;
+        c.producer_backoff.long_cpu_relax_end  = 8;
+        c.producer_backoff.yield_end           = 16;
+        c.producer_backoff.short_sleep_end     = 32;
+        c.producer_backoff.long_sleep_ns       = 100000;
 
         c.misc.producer_timestamp = false;
     }
@@ -256,14 +247,28 @@ private:
             return false;
         }
         if (bsz && esz) {
-            if (esz < 32) {
-                std::cerr << "[logger] minimum fixed block size is 32\n";
+            if (esz < queue::min_entry_bytes) {
+                std::cerr << "[logger] entry size too small, minimum size is: "
+                          << queue::min_entry_bytes << "\n";
                 return false;
             }
             else if (bsz < esz) {
                 std::cerr << "[logger] entry size bigger than the block size\n";
                 return false;
             }
+            if ((bsz / esz) <= queue::min_entries) {
+                std::cerr << "[logger] block size too small. requires "
+                          << bsz / esz
+                          << " bytes for the current entry size\n";
+                return false;
+            }
+        }
+        uword entries = (bsz && esz) ? (bsz / esz) :  0;
+        if (!queue::validate_size_constraints(
+            bsz, entries, c.queue.can_use_heap_q
+            )) {
+            std::cerr << "[logger] invalid queue configuration\n";
+            return false;
         }
         if (c.file.rotation.file_count != 0 && c.file.aprox_size == 0) {
             std::cerr <<
@@ -308,17 +313,7 @@ private:
                 }
                 m_wait.reset();
                 m_writer.decode_and_write (m_out, res.get_mem());
-                backoff_ticket* ticket = nullptr;
-                if (config.queue.bounded_q_blocking_sev != sev::off) {
-                    ticket = consume_wait.get_next_ticket();
-                }
-                if (!ticket) {
-                    m_fifo.pop_commit (res);
-                }
-                else {
-                    ticket->set_last_q_element (res);
-                    consume_condition.notify_all();
-                }
+                m_fifo.pop_commit (res);
             }
             else {
                 if (m_status.load (mo_relaxed) != running) {
@@ -343,16 +338,6 @@ private:
                 write_alloc_fault (allocf_now - alloc_fault);
                 alloc_fault = allocf_now;
             }
-        }
-        if (config.queue.bounded_q_blocking_sev != sev::off) {
-            while (true) {
-                backoff_ticket* ticket = consume_wait.get_next_ticket();
-                if (!ticket) {
-                    break;
-                }
-                ticket->set_failed();
-            }
-            consume_condition.notify_all();
         }
         idle_rotate_if();
         m_out.file_close();

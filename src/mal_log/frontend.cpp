@@ -87,53 +87,18 @@ public:
             && err == queue_prepared::queue_full
             && s >= m_back.config.queue.bounded_q_blocking_sev
             ){
-            th::mutex           dummy;
-            cond_queue_backoff  backoff (dummy, m_back.consume_condition);
-            backoff_ticket ticket;
+            sleep_queue_backoff backoff;
             backoff.cfg = m_back.config.producer_backoff;
+            commit_data = m_back.reserve_next_bounded_entry();
             while (true) {
-                // unfair backoff window
+                err = m_back.bounded_entry_is_ready (commit_data);
+                if (err != queue_prepared::queue_full) {
+                    break;
+                }
                 backoff.wait();
-                commit_data = m_back.allocate_entry (required_bytes);
-                mem         = commit_data.get_mem();
-                err         = commit_data.get_error();
-                if (mem || err != queue_prepared::queue_full) {
-                    break;
-                }
-                if (backoff.next_wait_is_long_sleep()) {
-                    m_back.consume_wait.producer_push_ticket (ticket);
-                    break;
-                }
             }
-            queue_prepared* last = nullptr;
-            while (!mem && err == queue_prepared::queue_full) {
-                // fair backoff
-                if (!last) {
-                    last = ticket.get_last_q_element();
-                    if (!last) {
-                        if (!ticket.has_failed()) {
-                            backoff.wait();
-                            continue;
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                    backoff.reset();
-                    backoff.cfg = m_back.config.producer_spin;
-                }
-                /*push_unconsumed_entry can return "queue_full" if there is a
-                  preemted producer doing exactly the same operation before it
-                  could complete */
-                commit_data = m_back.push_unconsumed_entry(
-                    *last, required_bytes
-                    );
+            if (err == queue_prepared::success) {
                 mem = commit_data.get_mem();
-                err = commit_data.get_error();
-
-                if (!mem) {
-                    backoff.wait();
-                }
             }
         }
         if (mem) {

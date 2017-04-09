@@ -93,7 +93,6 @@ set(mal_PUBLIC_HEADERS
 set(mal_PRIVATE_HEADERS
     "${PROJECT_SOURCE_DIR}/src/mal_log/async_to_sync.hpp"
     "${PROJECT_SOURCE_DIR}/src/mal_log/backend.hpp"
-    "${PROJECT_SOURCE_DIR}/src/mal_log/backoff_wait.hpp"
     "${PROJECT_SOURCE_DIR}/src/mal_log/log_file_register.hpp"
     "${PROJECT_SOURCE_DIR}/src/mal_log/log_writer.hpp"
     "${PROJECT_SOURCE_DIR}/src/mal_log/output.hpp"

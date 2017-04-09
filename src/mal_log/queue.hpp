@@ -250,18 +250,42 @@ public:
         m_dequeue_pos     = 0;
     }
     //--------------------------------------------------------------------------
+    static const size_t min_entries = 256; // bigger (hopefully) than the thread count
+    static const size_t min_entry_bytes = 32;
+    //--------------------------------------------------------------------------
+    static bool validate_bounded_q_size_constraints(
+        size_t fixed_bytes, size_t fixed_entries
+        )
+    {
+        return fixed_entries >= min_entries
+            && (fixed_entries & (fixed_entries - 1)) == 0
+            && fixed_bytes >= fixed_entries
+            && fixed_entries <= (((size_t) -1) >> 2); //wrap bit + qblock bit
+    }
+    //--------------------------------------------------------------------------
+    static bool validate_size_constraints(
+        size_t fixed_bytes, size_t fixed_entries, bool can_use_heap
+        )
+    {
+        bool bounded = validate_bounded_q_size_constraints(
+            fixed_bytes, fixed_entries
+            );
+        bool unbounded =
+            can_use_heap
+            && (fixed_bytes == 0)
+            && (fixed_entries == 0);
+        return bounded || unbounded;
+    }
+    //--------------------------------------------------------------------------
     bool init (size_t fixed_bytes, size_t fixed_entries, bool can_use_heap)
     {
         static const uword align = std::alignment_of<local_cell>::value;
 
         if (initialized()) { return false; }
 
-        if ((fixed_entries >= 2) &&
-            ((fixed_entries & (fixed_entries - 1)) == 0) &&
-            (fixed_bytes >= fixed_entries)
-            ) {
+        if (validate_bounded_q_size_constraints (fixed_bytes, fixed_entries)) {
             clear();
-            fixed_bytes   = (fixed_bytes / fixed_entries) * fixed_entries;      //just rounding...
+            fixed_bytes   = (fixed_bytes / fixed_entries) * fixed_entries;   //just rounding...
             m_entry_size  = fixed_bytes / fixed_entries;
             m_entry_size  = local_cell::strict_total_size (m_entry_size);
             m_entry_size  = align * div_ceil (m_entry_size, align);
@@ -301,10 +325,7 @@ public:
     //--------------------------------------------------------------------------
     void block_producers() /*this is for termination contexts*/
     {
-        size_t pos = m_enqueue_pos;
-        while (!m_enqueue_pos.compare_exchange_weak(
-                pos, pos + (size_t) blocking_offset, mo_relaxed
-                ));
+        m_enqueue_pos.fetch_add (queue_blocked_offset(), mo_relaxed);
         /*ugly: there is no way to block the MPSC intrusive queue, a grace
           period needs to be added to ensure memory visibility from all cores.
           As this is to be used only in termination contexts it isn't a problem.
@@ -319,7 +340,7 @@ public:
         queue_prepared pp;
         if (m_bounded_mem && (size <= fixed_entry_size())) {
             local_cell* cell;
-            size_t pos = m_enqueue_pos;
+            size_t pos = m_enqueue_pos.load (mo_relaxed);
             while (true) {
                 cell          = get_cell (pos & m_cell_mask);
                 size_t seq    = cell->sequence.load (mo_acquire);
@@ -335,7 +356,7 @@ public:
                     if (mode_allows_heap()) {
                         alloc_from_heap (pp, size, pos);
                     }
-                    else if (diff > -blocking_offset) {
+                    else if (diff > -queue_blocked_offset()) {
                         /*this error sets pos to the value that a consumer would
                           find on its returned "sc_pop_prepare" pos. This can be
                           used e.g. to know if a producer is blocked before this
@@ -370,6 +391,32 @@ public:
                 );
         }
         return pp;
+    }
+    //--------------------------------------------------------------------------
+    queue_prepared mp_bounded_push_next_entry_reserve()
+    {
+        queue_prepared pp;
+        size_t pos = m_enqueue_pos.fetch_add (1, mo_relaxed);
+        pp.set (get_cell (pos & m_cell_mask)->storage(), pos + 1);
+        return pp;
+    }
+    //--------------------------------------------------------------------------
+    queue_prepared::error mp_bounded_push_reserved_entry_is_ready(
+        const queue_prepared& pp
+        )
+    {
+        auto cell  = local_cell::from_storage (pp.mem);
+        size_t pos = pp.pos - 1;
+        size_t seq = cell->sequence.load (mo_acquire);
+        intptr_t diff = (intptr_t) seq - (intptr_t) pos;
+        assert (diff <= 0);
+        if (diff == 0) {
+            return queue_prepared::success;
+        }
+        size_t posnow = m_enqueue_pos.load (mo_relaxed);
+        auto diffnow  = (intptr_t) posnow - (intptr_t) pos;
+        return diffnow < entry_count() ?
+            queue_prepared::queue_full : queue_prepared::queue_blocked;
     }
     //--------------------------------------------------------------------------
     void bounded_push_commit (const queue_prepared& pp)
@@ -450,82 +497,17 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-    // A producer on a full or near full queue gets one of the last entries
-    // from the cosumer without having called "pop_commit". This is used to
-    // implement backoff fairness.
-    //--------------------------------------------------------------------------
-    queue_prepared sc_pop_commit_to_mp_push_prepare_bounded(
-        const queue_prepared& pop_uncommited, size_t size
-        )
-    {
-        assert (is_local_mem (pop_uncommited.mem));
-        queue_prepared pp;
-        if (m_bounded_mem && (size <= fixed_entry_size())) {
-            local_cell* cell;
-            size_t pos = m_enqueue_pos;
-            while (true) {
-                cell          = get_cell (pos & m_cell_mask);
-                size_t seq    = cell->sequence.load (mo_acquire);
-                intptr_t diff = (intptr_t) seq - (intptr_t) pos;
-                if (diff == 0) {
-                    if (m_enqueue_pos.compare_exchange_weak(
-                        pos, pos + 1, mo_relaxed
-                        )) {
-                        /* we haven't got "pop_uncommited" but another free
-                           element before, we swap them */
-                        pop_commit (pop_uncommited);
-                        pp.set (cell->storage(), pos + 1);
-                        break;
-                    }
-                }
-                else if (diff < 0) {
-                    if (diff == -m_cell_mask &&
-                        cell->storage() == pop_uncommited.get_mem()
-                        ) {
-                        /* Got "pop_uncommited", it means that pop_uncommited
-                           is the  last queue element. As this call has
-                           ownership of the last element of the queue too no
-                           one will be able to change the sequence of this cell,
-                           which also meants that there is no way that another
-                           producer can move "m_enqueue_pos": CAS not needed.
-                        */
-                        m_enqueue_pos.store (pos + 1, mo_relaxed);
-                        pop_commit (pop_uncommited);
-                        pp.set (cell->storage(), pos + 1);
-                    }
-                    else if (diff > -blocking_offset) {
-                        /* another producer(s) may be executing
-                           "sc_pop_commit_to_mp_push_prepare_bounded" on an
-                           previous cell(s) and had no time to complete. We
-                           return full_queue and back off and try again later.
-                        */
-                        /*this error sets pos to the value that a consumer would
-                          find on its returned "sc_pop_prepare" pos. This can be
-                          used e.g. to know if a producer is blocked before this
-                          transaction.*/
-                        pp.set_error(
-                            queue_prepared::queue_full, pos - entry_count()
-                            );
-                    }
-                    else {
-                        pp.set_error (queue_prepared::queue_blocked, 0);
-                    }
-                    break;
-                }
-                else {
-                    pos = m_enqueue_pos;
-                }
-            }
-        }
-        return pp;
-    }
-    //--------------------------------------------------------------------------
     size_t entry_count()
     {
         return m_cell_mask + 1;
     }
     //--------------------------------------------------------------------------
 private:
+    //--------------------------------------------------------------------------
+    size_t queue_blocked_offset()
+    {
+        return 2 * (entry_count());
+    }
     //--------------------------------------------------------------------------
     inline bool is_local_mem (const u8* mem) const
     {
@@ -575,9 +557,6 @@ private:
 
     queue (queue const&);
     void operator= (queue const&);
-
-    static const intptr_t blocking_offset =
-        (intptr_t) ((1ull << ((sizeof (intptr_t) * 8) - 2)) - 1);
 };
 //------------------------------------------------------------------------------
 } //namespaces

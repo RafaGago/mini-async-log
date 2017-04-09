@@ -143,14 +143,13 @@ struct misc_settings {
 };
 //------------------------------------------------------------------------------
 struct cfg {
-    file_config            file;
-    queue_config           queue;
-    visualization_config   display;
-    severity_files         sev;
-    queue_backoff_cfg      consumer_backoff; // read the code before tweaking
-    queue_backoff_cfg      producer_backoff; // read the code before tweaking
-    queue_backoff_cfg      producer_spin;    // read the code before tweaking
-    misc_settings          misc;
+    file_config          file;
+    queue_config         queue;
+    visualization_config display;
+    severity_files       sev;
+    queue_backoff_cfg    consumer_backoff; // read the code before tweaking
+    queue_backoff_cfg    producer_backoff; // read the code before tweaking
+    misc_settings        misc;
 };
 //------------------------------------------------------------------------------
 } //namespaces
