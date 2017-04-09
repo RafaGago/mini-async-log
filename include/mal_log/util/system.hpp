@@ -42,7 +42,6 @@ either expressed or implied, of Rafael Gago Castano.
     defined (__GNUC__) && \
     (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
 
-    #define MAL_GCC_INTERFACE 1
     #define MAL_HAS_CONSTEXPR 1
     #define MAL_HAS_VARIADIC_TEMPLATES 1
     #ifdef __unix__
@@ -98,7 +97,7 @@ either expressed or implied, of Rafael Gago Castano.
     #else
         #define MAL_LIB_EXPORTED_CLASS
     #endif
-#elif __GNUC__ >= 4 || defined (MAL_GCC_INTERFACE)
+#elif __GNUC__ >= 4 || defined (__clang__)
     #if defined (MAL_DYNLIB_COMPILE) || defined (MAL_AS_DYNLIB)
         #define MAL_LIB_EXPORTED_CLASS\
             __attribute__ ((visibility ("default")))
