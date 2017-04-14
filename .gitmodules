@@ -14,3 +14,6 @@
 	path = example/benchmark-submodules/g3log
 	url = https://github.com/KjellKod/g3log.git
 	branch = master
+[submodule "example/benchmark-submodules/reckless"]
+	path = example/benchmark-submodules/reckless
+	url = https://github.com/mattiasflodin/reckless.git

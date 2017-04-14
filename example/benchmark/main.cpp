@@ -42,6 +42,9 @@
                          busy looping each 50us when the other tests are
                          running. */
 
+#include <reckless/severity_log.hpp>
+#include <reckless/file_writer.hpp>
+
 #ifdef _WIN32
     #define DIR_SEP "\\"
     #define OUT_FOLDER ".\\mal_benchmark_logs"
@@ -56,11 +59,12 @@ static const unsigned queue_entry_size  = 32;
 static const unsigned big_queue_entries = big_queue_bytes / queue_entry_size;
 static const unsigned max_threads_log2  = 5; // (2 pow 5 = 32 threads)
 
-#define MAL_PATH     OUT_FOLDER DIR_SEP "mal"
-#define SPDLOG_PATH  OUT_FOLDER DIR_SEP "spdlog"
-#define G3_PATH      OUT_FOLDER DIR_SEP "g3"
-#define NANOLOG_PATH OUT_FOLDER DIR_SEP "nanolog"
-#define GLOG_PATH    OUT_FOLDER DIR_SEP "glog"
+#define MAL_PATH      OUT_FOLDER DIR_SEP "mal"
+#define SPDLOG_PATH   OUT_FOLDER DIR_SEP "spdlog"
+#define RECKLESS_PATH OUT_FOLDER DIR_SEP "reckless"
+#define G3_PATH       OUT_FOLDER DIR_SEP "g3"
+#define NANOLOG_PATH  OUT_FOLDER DIR_SEP "nanolog"
+#define GLOG_PATH     OUT_FOLDER DIR_SEP "glog"
 
 namespace loggers {
 //------------------------------------------------------------------------------
@@ -68,6 +72,7 @@ enum {
     mal_heap,
     mal_hybrid,
     nanolog,
+    reckless,
     spdlog_async,
     mal_blocking,
     mal_bounded,
@@ -81,6 +86,7 @@ static char const* names[] {
     "mal-heap",
     "mal-hybrid",
     "nanolog",
+    "reckless",
     "spdlog-async",
     "mal-blocking",
     "mal-bounded",
@@ -93,6 +99,7 @@ static char const* paths[] {
     MAL_PATH,
     MAL_PATH,
     NANOLOG_PATH,
+    RECKLESS_PATH,
     SPDLOG_PATH,
     MAL_PATH,
     MAL_PATH,
@@ -804,6 +811,54 @@ private:
     std::shared_ptr<spdlog::logger> m_logger;
 };
 //------------------------------------------------------------------------------
+class reckless_perf_test: public perf_test<reckless_perf_test>
+{
+public:
+private:
+    friend class perf_test<reckless_perf_test>;
+    //--------------------------------------------------------------------------
+    bool configure()
+    {
+        return true;
+    }
+    //--------------------------------------------------------------------------
+    void create()
+    {
+        m_fwriter = std::make_shared<reckless::file_writer>(
+            RECKLESS_PATH DIR_SEP "file.txt"
+            );
+        m_logger = std::make_shared<reckless_logger>(m_fwriter.get());
+    }
+    //--------------------------------------------------------------------------
+    void destroy()
+    {
+        m_logger.reset();
+        m_fwriter.reset();
+    }
+    //--------------------------------------------------------------------------
+    int log_one (unsigned i)
+    {
+        m_logger->info (log_fileline TEST_LITERAL " %d", (int) i);
+        return 0;
+    }
+    //--------------------------------------------------------------------------
+    bool wait_until_work_completion()
+    {
+        m_logger->flush();
+        return true;
+    }
+    //--------------------------------------------------------------------------
+    typedef reckless::severity_log<
+        reckless::indent<4>,
+        ' ',
+        reckless::severity_field,
+        reckless::timestamp_field
+        >
+    reckless_logger;
+    std::shared_ptr<reckless_logger>       m_logger;
+    std::shared_ptr<reckless::file_writer> m_fwriter;
+};
+//------------------------------------------------------------------------------
 class nanolog_perf_test: public perf_test<nanolog_perf_test>
 {
 public:
@@ -946,11 +1001,12 @@ struct result_list {
 };
 //------------------------------------------------------------------------------
 struct test_suites {
-    spd_log_perf_test spdlog;
-    google_perf_test  glog;
-    mal_perf_test     mal;
-    nanolog_perf_test nanolog;
-    g3log_perf_test   g3log;
+    spd_log_perf_test  spdlog;
+    google_perf_test   glog;
+    mal_perf_test      mal;
+    nanolog_perf_test  nanolog;
+    reckless_perf_test reckless;
+    g3log_perf_test    g3log;
 };
 //------------------------------------------------------------------------------
 void display_results(
@@ -1084,6 +1140,11 @@ void run_test_dispatch(
             ts.spdlog, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
             );
         break;
+    case loggers::reckless:
+        run_all_tests(
+            ts.reckless, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
     case loggers::spdlog_sync:
     ts.spdlog.set_params (false);
         run_all_tests(
@@ -1154,6 +1215,7 @@ void print_usage()
 "       spdlog:       Adds all \"spdlog\"variants.\n"
 "       spdlog-async: Adds \"spdlog\" async.\n"
 "       spdlog-sync:  Adds \"spdlog\" sync.\n"
+"       reckless:     Adds \"reckless\".\n"
 "       g3log:        Adds \"g3log\".\n"
 "       glog:         Adds \"Google log\".\n"
 "       nanolog:      Adds \"nanolog\".\n"

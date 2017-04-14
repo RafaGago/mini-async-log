@@ -25,11 +25,15 @@ GLOG_STATLIB_FILE := $(CMAKE_LIB)/libglog.a
 
 G3LOG_STATLIB_FILE := $(CMAKE_LIB)/libg3logger.a
 
+RECKLESS_DIR := $(GIT_SUBMODULES_DIR)/reckless
+
+RECKLESS_STATLIB_FILE := $(RECKLESS_DIR)/reckless/lib/libreckless.a
+
 NANOLOG_DIR := $(GIT_SUBMODULES_DIR)/nanolog
 
 # Updated vars
-INCLUDE_DIRS := $(TOP)/include $(CMAKE_INCLUDE) $(SPDLOG_INCLUDE) $(NANOLOG_DIR)
-EXTRA_CLEAN_DIRS := $(CMAKE_DIR )
+INCLUDE_DIRS := $(TOP)/include $(CMAKE_INCLUDE) $(SPDLOG_INCLUDE) $(NANOLOG_DIR) $(RECKLESS_DIR)/boost $(RECKLESS_DIR)/reckless/include
+EXTRA_CLEAN_DIRS := $(CMAKE_DIR)
 
 # Verbose fix
 ifeq ($(VERBOSE), 1)
@@ -42,8 +46,9 @@ endif
 
 # Compiler setup
 CXXFLAGS += -std=c++0x -fmessage-length=0
-LDLIBS   += -Wl,-Bstatic -lglog -lg3logger -Wl,-Bdynamic  -lpthread -lrt
+LDLIBS   += -Wl,-Bstatic -lglog -lg3logger -lreckless -Wl,-Bdynamic  -lpthread -lrt
 LDFLAGS  += -L$(CMAKE_LIB)
+LDFLAGS  += -L$(RECKLESS_DIR)/reckless/lib
 LD       := $(CXX)
 
 include build.mk
@@ -58,4 +63,7 @@ $(G3LOG_STATLIB_FILE):
 	@echo "CMake Build g3log"
 	$(CMDPRINT)$(THIS_FILE_DIR)/build_cmake_benchmark_submodule.sh g3log $(SILENT_REDIRECTION)
 
-$(OBJ)/example/benchmark/main.cpp.o : $(GLOG_STATLIB_FILE) $(G3LOG_STATLIB_FILE)
+$(RECKLESS_STATLIB_FILE):
+	$(MAKE) -C $(RECKLESS_DIR)
+
+$(OBJ)/example/benchmark/main.cpp.o : $(GLOG_STATLIB_FILE) $(G3LOG_STATLIB_FILE) $(RECKLESS_STATLIB_FILE)
