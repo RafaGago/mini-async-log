@@ -130,8 +130,7 @@ public:
     reconstruct_negative (T val)
     {
         typedef typename std::make_unsigned<T>::type U;
-        static const U sign_mask = ~(((U) -1) >> 1);
-        return (T)((~((U) val)) | sign_mask);
+        return (T) (~((U) val));
     }
     //--------------------------------------------------------------------------
     template <class T>
