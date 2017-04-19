@@ -37,8 +37,10 @@ either expressed or implied, of Rafael Gago Castano.
 #ifndef MAL_LOG_PRINTF_MODIFIERS_HPP_
 #define MAL_LOG_PRINTF_MODIFIERS_HPP_
 
-
 #ifndef MAL_USE_BOOST_CSTDINT
+  #ifndef __STDC_FORMAT_MACROS
+    #define __STDC_FORMAT_MACROS 1 /* this is required for some compilers */
+  #endif
   #include <inttypes.h>
 #else
   #include <boost/cstdint.hpp>
