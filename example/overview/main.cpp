@@ -44,6 +44,15 @@ void general_features()
     fe.set_console_severity (sev::notice);
     int i = 0;
 
+    bool log_success = log_error (
+        "message {}, note that logging functions can fail for queue space "
+        "issues (mainly when the heap is disabled), see "
+        "\"/include/mal_log/cfg.hpp\". They can fail on termination contexts "
+        "too.", i
+        );
+    assert (log_success);
+    ++i;
+
     log_error ("message {}, bool = {}", i, true); ++i;
 
     log_error ("message {}, char = {c}", i, (i8) '!'); ++i;
