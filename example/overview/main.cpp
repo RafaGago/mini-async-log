@@ -46,6 +46,10 @@ void general_features()
 
     log_error ("message {}, bool = {}", i, true); ++i;
 
+    log_error ("message {}, char = {c}", i, (i8) '!'); ++i;
+    log_error ("message {}, char = {c}", i, (u8) '+'); ++i;
+    log_error ("message {}, char = {c}", i, '?'); ++i;
+
     log_error ("message {}, u8  = {}", i, (u8) 8); ++i;
     log_error ("message {}, u16 = {}", i, (u16) 16); ++i;
     log_error ("message {}, u32 = {}", i, (u32) 32); ++i;

@@ -52,10 +52,12 @@ struct u8_modif {
     static const char* norm;
     static const char* fwidth;
     static const char* hex;
+    static const char* ascii;
 };
 const char* u8_modif::norm     = "%" PRIu8;
 const char* u8_modif::fwidth   = "+%03" PRIu8;
 const char* u8_modif::hex      = "0x%02x";
+const char* u8_modif::ascii    = "%c";
 //------------------------------------------------------------------------------
 struct u16_modif {
     static const char* norm;
@@ -88,10 +90,12 @@ struct i8_modif {
     static const char* norm;
     static const char* fwidth;
     static const char* hex;
+    static const char* ascii;
 };
 const char* i8_modif::norm     = "%" PRIi8;
 const char* i8_modif::fwidth   = "%+0.3"  PRIi8;
 const char* i8_modif::hex      = "0x%02x";
+const char* i8_modif::ascii    = "%c";
 //------------------------------------------------------------------------------
 struct i16_modif {
     static const char* norm;

@@ -178,11 +178,11 @@ private:
         type      += ((uword) f.is_negative) * 4;
 
         switch (type) {
-        case 0: return output_int_type<u8,  u8_modif>  (o, f, has_placeholder);
+        case 0: return output_char<u8_modif> (o, f, has_placeholder);
         case 1: return output_int_type<u16, u16_modif> (o, f, has_placeholder);
         case 2: return output_int_type<u32, u32_modif> (o, f, has_placeholder);
         case 3: return output_int_type<u64, u64_modif> (o, f, has_placeholder);
-        case 4: return output_int_type<i8,  i8_modif>  (o, f, has_placeholder);
+        case 4: return output_char<i8_modif> (o, f, has_placeholder);
         case 5: return output_int_type<i16, i16_modif> (o, f, has_placeholder);
         case 6: return output_int_type<i32, i32_modif> (o, f, has_placeholder);
         case 7: return output_int_type<i64, i64_modif> (o, f, has_placeholder);
@@ -273,6 +273,40 @@ private:
         default:
             assert (false && "bug");
             break;
+        }
+    }
+    //--------------------------------------------------------------------------
+    template <class fmt_struct>
+    void output_char(
+            output& o, ser::integral_field f, bool has_placeholder
+            )
+    {
+        using namespace ser;
+        i8 v;
+        do_import (v, f);
+        const char* fmt;
+        switch (m_fmt_modif) {
+        case 0:
+            fmt = fmt_struct::norm;
+            break;
+        case fmt::hex:
+            fmt = fmt_struct::hex;
+            break;
+        case fmt::full_width:
+            fmt = fmt_struct::fwidth;
+            break;
+        case fmt::ascii:
+            fmt = fmt_struct::ascii;
+            break;
+        default:
+            if (has_placeholder) {
+                write_invalid_modifier (o);
+            }
+            fmt = i8_modif::norm;
+            break;
+        }
+        if (has_placeholder) {
+            output_num (o, v, fmt);
         }
     }
     //--------------------------------------------------------------------------

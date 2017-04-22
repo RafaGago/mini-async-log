@@ -114,13 +114,32 @@ private:
     //--------------------------------------------------------------------------
     template <class T>
     static constexpr typename std::enable_if<
-        std::is_integral<T>::value && !std::is_same<T, bool>::value,
+        std::is_integral<T>::value &&
+        !std::is_same<T, bool>::value &&
+        !std::is_same<T, i8>::value &&
+        !std::is_same<T, u8>::value &&
+        !std::is_same<T, char>::value,
         bool
         >::type
     is_formatting_valid (char f, T*)
     {
         return (f == fmt::hex)        ? true :
                (f == fmt::full_width) ? true :
+                                        false;
+    }
+    //--------------------------------------------------------------------------
+    template <class T>
+    static constexpr typename std::enable_if<
+        std::is_same<T, i8>::value ||
+        std::is_same<T, u8>::value ||
+        std::is_same<T, char>::value,
+        bool
+        >::type
+    is_formatting_valid (char f, T*)
+    {
+        return (f == fmt::hex)        ? true :
+               (f == fmt::full_width) ? true :
+               (f == fmt::ascii)      ? true :
                                         false;
     }
     //--------------------------------------------------------------------------
@@ -230,7 +249,7 @@ private:
 //------------------------------------------------------------------------------
 #define MAL_PARAMERR_LIT "too many parameters for format string"
 #define MAL_PCHERR_LIT   "too many placeholders in format string"
-#define MAL_MODIFERR_LIT "invalid modifier in format string parameter "
+#define MAL_MODIFERR_LIT "invalid modifier in format string parameter"
 //------------------------------------------------------------------------------
 template <word result>
 constexpr bool trigger_format_error()

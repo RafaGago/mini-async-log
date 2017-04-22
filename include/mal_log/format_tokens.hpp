@@ -46,6 +46,7 @@ static const char placeholder_close = '}';
 static const char full_width        = 'w';
 static const char hex               = 'x';
 static const char scientific        = 's';
+static const char ascii             = 'c';
 
 //------------------------------------------------------------------------------
 }} //namespaces
