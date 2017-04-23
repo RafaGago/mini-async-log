@@ -17,3 +17,6 @@
 [submodule "example/benchmark-submodules/reckless"]
 	path = example/benchmark-submodules/reckless
 	url = https://github.com/mattiasflodin/reckless.git
+[submodule "example/benchmark-submodules/mini-async-log-c"]
+	path = example/benchmark-submodules/mini-async-log-c
+	url = https://github.com/RafaGago/mini-async-log-c.git

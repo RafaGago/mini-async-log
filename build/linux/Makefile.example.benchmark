@@ -11,7 +11,8 @@ ARTIFACT := bin/mal-benchmark
 TOP          := $(THIS_FILE_DIR)/../..
 BUILD_DIR    := $(THIS_FILE_DIR)/build
 SRC_DIRS     := $(TOP)/src $(TOP)/example/benchmark
-GIT_SUBMODULES_DIR := $(TOP)/example/benchmark-submodules
+BENCHMARK_PROJECTS_DIR := $(TOP)/example/benchmark-submodules
+#GIT_SUBMODULES_DIR     := $(TOP)/example/benchmark-submodules
 
 # Dependant projects
 CMAKE_DIR     := $(BUILD_DIR)/benchmark
@@ -19,21 +20,13 @@ CMAKE_INSTALL := $(CMAKE_DIR)/install
 CMAKE_INCLUDE := $(CMAKE_INSTALL)/include
 CMAKE_LIB     := $(CMAKE_INSTALL)/lib
 
-SPDLOG_INCLUDE := $(GIT_SUBMODULES_DIR)/spdlog/include
+SPDLOG_INCLUDE := $(BENCHMARK_PROJECTS_DIR)/spdlog/include
 
 GLOG_STATLIB_FILE := $(CMAKE_LIB)/libglog.a
 
 G3LOG_STATLIB_FILE := $(CMAKE_LIB)/libg3logger.a
 
-RECKLESS_DIR := $(GIT_SUBMODULES_DIR)/reckless
-
-RECKLESS_STATLIB_FILE := $(RECKLESS_DIR)/reckless/lib/libreckless.a
-
-NANOLOG_DIR := $(GIT_SUBMODULES_DIR)/nanolog
-
-# Updated vars
-INCLUDE_DIRS := $(TOP)/include $(CMAKE_INCLUDE) $(SPDLOG_INCLUDE) $(NANOLOG_DIR) $(RECKLESS_DIR)/boost $(RECKLESS_DIR)/reckless/include
-EXTRA_CLEAN_DIRS := $(CMAKE_DIR)
+NANOLOG_DIR := $(BENCHMARK_PROJECTS_DIR)/nanolog
 
 # Verbose fix
 ifeq ($(VERBOSE), 1)
@@ -44,11 +37,36 @@ else
 	SILENT_REDIRECTION := >/dev/null
 endif
 
+TARGET_MACH := $(shell $(CC) -dumpmachine)
+
+ifeq ($(WITH_RECKLESS), 1)
+	RECKLESS_DIR := $(BENCHMARK_PROJECTS_DIR)/reckless
+	RECKLESS_STATLIB_FILE := $(RECKLESS_DIR)/reckless/lib/libreckless.a
+	RECKLESS_INCLUDE_ADD := $(RECKLESS_DIR)/boost $(RECKLESS_DIR)/reckless/include
+	RECKLESS_LDFLAGS  := -L$(RECKLESS_DIR)/reckless/lib
+	RECKLESS_LDLIB  := -lreckless
+	CPPFLAGS        += -DWITH_RECKLESS
+endif
+
+ifeq ($(WITH_MALC), 1)
+	MALC_STATLIB_FILE := $(CMAKE_LIB)/$(TARGET_MACH)/libmalc.a
+	MALC_LDLIB        := -lmalc -lbl-nonblock -lbl-base
+	CPPFLAGS          += -DWITH_MALC
+ifeq ($(DEBUG), 1)
+	MALC_BUILDTYPE    := debug
+else
+	MALC_BUILDTYPE    := release
+endif
+endif
+
+# Updated vars
+INCLUDE_DIRS := $(TOP)/include $(CMAKE_INCLUDE) $(SPDLOG_INCLUDE) $(NANOLOG_DIR) $(RECKLESS_INCLUDE_ADD)
+EXTRA_CLEAN_DIRS := $(CMAKE_DIR)
+
 # Compiler setup
 CXXFLAGS += -std=c++0x -fmessage-length=0
-LDLIBS   += -Wl,-Bstatic -lglog -lg3logger -lreckless -Wl,-Bdynamic  -lpthread -lrt
-LDFLAGS  += -L$(CMAKE_LIB)
-LDFLAGS  += -L$(RECKLESS_DIR)/reckless/lib
+LDLIBS   += -Wl,-Bstatic -lglog -lg3logger $(RECKLESS_LDLIB) $(MALC_LDLIB) -Wl,-Bdynamic  -lpthread -lrt
+LDFLAGS  += -L$(CMAKE_LIB) -L$(CMAKE_LIB)/$(TARGET_MACH) $(RECKLESS_LDFLAGS)
 LD       := $(CXX)
 
 include build.mk
@@ -63,7 +81,11 @@ $(G3LOG_STATLIB_FILE):
 	@echo "CMake Build g3log"
 	$(CMDPRINT)$(THIS_FILE_DIR)/build_cmake_benchmark_submodule.sh g3log $(SILENT_REDIRECTION)
 
+$(MALC_STATLIB_FILE):
+	@echo "Meson build malc"
+	$(CMDPRINT)$(THIS_FILE_DIR)/build_meson_benchmark_submodule.sh "mini-async-log-c" $(MALC_BUILDTYPE) $(SILENT_REDIRECTION)
+
 $(RECKLESS_STATLIB_FILE):
 	$(MAKE) -C $(RECKLESS_DIR)
 
-$(OBJ)/example/benchmark/main.cpp.o : $(GLOG_STATLIB_FILE) $(G3LOG_STATLIB_FILE) $(RECKLESS_STATLIB_FILE)
+$(OBJ)/example/benchmark/main.cpp.o : $(GLOG_STATLIB_FILE) $(G3LOG_STATLIB_FILE) $(RECKLESS_STATLIB_FILE) $(MALC_STATLIB_FILE)

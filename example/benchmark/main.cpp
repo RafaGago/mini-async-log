@@ -42,8 +42,16 @@
                          busy looping each 50us when the other tests are
                          running. */
 
-#include <reckless/severity_log.hpp>
-#include <reckless/file_writer.hpp>
+#ifdef WITH_RECKLESS
+    #include <reckless/severity_log.hpp>
+    #include <reckless/file_writer.hpp>
+#endif
+
+#ifdef WITH_MALC
+    #define MALC_NO_SHORT_LOG_MACROS
+    #include <malc/malc.h>
+    #include <bl/base/default_allocator.h>
+#endif
 
 #ifdef _WIN32
     #define DIR_SEP "\\"
@@ -60,6 +68,7 @@ static const unsigned big_queue_entries = big_queue_bytes / queue_entry_size;
 static const unsigned max_threads_log2  = 5; // (2 pow 5 = 32 threads)
 
 #define MAL_PATH      OUT_FOLDER DIR_SEP "mal"
+#define MALC_PATH     OUT_FOLDER DIR_SEP "malc"
 #define SPDLOG_PATH   OUT_FOLDER DIR_SEP "spdlog"
 #define RECKLESS_PATH OUT_FOLDER DIR_SEP "reckless"
 #define G3_PATH       OUT_FOLDER DIR_SEP "g3"
@@ -72,13 +81,18 @@ enum {
     mal_heap,
     mal_hybrid,
     nanolog,
+#ifdef WITH_RECKLESS
     reckless,
+#endif
     spdlog_async,
     mal_blocking,
     mal_bounded,
     g3log,
     spdlog_sync,
     glog,
+#ifdef WITH_MALC
+    malc,
+#endif
     count,
 };
 //------------------------------------------------------------------------------
@@ -86,26 +100,36 @@ static char const* names[] {
     "mal-heap",
     "mal-hybrid",
     "nanolog",
+#ifdef WITH_RECKLESS
     "reckless",
+#endif
     "spdlog-async",
     "mal-blocking",
     "mal-bounded",
     "g3log",
     "spdlog-sync",
     "glog",
+#ifdef WITH_MALC
+    "malc-tls",
+#endif
 };
 //------------------------------------------------------------------------------
 static char const* paths[] {
     MAL_PATH,
     MAL_PATH,
     NANOLOG_PATH,
+#ifdef WITH_RECKLESS
     RECKLESS_PATH,
+#endif
     SPDLOG_PATH,
     MAL_PATH,
     MAL_PATH,
     G3_PATH,
     SPDLOG_PATH,
     GLOG_PATH,
+#ifdef WITH_MALC
+    MALC_PATH,
+#endif
 };
 //------------------------------------------------------------------------------
 } //namespace loggers
@@ -517,15 +541,30 @@ private:
         if (thread_count > 1) {
             threads.reset (new th::thread [thread_count - 1]);
         }
-        auto init = wall_clock_now_us();
+        auto init          = wall_clock_now_us();
+        m_init = 0;
         for (unsigned i = 0; i < (thread_count - 1); ++i) {
             threads[i] = th::thread ([=, &resvector]()
             {
                 set_thread_cpu (i);
+                static_cast<derived&> (*this).thread_init (i, thread_count);
+                uword count = m_init.fetch_add (1, mo_relaxed);
+                while (count != thread_count) {
+                    th::this_thread::yield();
+                    count = m_init.load (mo_relaxed);
+                }
                 resvector[i] = (this->*threadfn) (msgs / thread_count);
             });
         }
         set_thread_cpu (thread_count - 1);
+        static_cast<derived&> (*this).thread_init(
+            thread_count - 1, thread_count
+            );
+        uword count = m_init.fetch_add (1, mo_relaxed);
+        while (count != thread_count) {
+            th::this_thread::yield();
+            count = m_init.load (mo_relaxed);
+        }
         resvector[thread_count - 1] =
             (this->*threadfn)(msgs / thread_count);
 
@@ -641,6 +680,7 @@ private:
     //--------------------------------------------------------------------------
     mal::u64                   m_total_ns;
     mal::at::atomic<unsigned>  m_faults;
+    mal::at::atomic<unsigned>  m_init;
     std::vector<latency_data>  m_latency_results;
     std::vector<time_interval> m_throughput_results;
 };
@@ -665,7 +705,7 @@ public:
 private:
     friend class perf_test<mal_perf_test>;
     //--------------------------------------------------------------------------
-    void create()  { m_fe.construct(); }
+    void create() { m_fe.construct(); }
     //--------------------------------------------------------------------------
     void destroy() {  m_fe.destruct_if(); }
     //--------------------------------------------------------------------------
@@ -687,6 +727,8 @@ private:
 
         return m_fe->init_backend (mal_cfg) == frontend::init_ok;
     }
+    //--------------------------------------------------------------------------
+    void thread_init (unsigned thread_id, unsigned thread_count) {}
     //--------------------------------------------------------------------------
     int log_one (unsigned i)
     {
@@ -743,6 +785,8 @@ private:
         return true;
     }
     //--------------------------------------------------------------------------
+    void thread_init (unsigned thread_id, unsigned thread_count) {}
+    //--------------------------------------------------------------------------
     int log_one (unsigned i)
     {
         LOG (ERROR) << log_fileline TEST_LITERAL << i;
@@ -795,6 +839,8 @@ private:
         m_logger.reset();
     }
     //--------------------------------------------------------------------------
+    void thread_init (unsigned thread_id, unsigned thread_count) {}
+    //--------------------------------------------------------------------------
     int log_one (unsigned i)
     {
         m_logger->info (log_fileline TEST_LITERAL, i);
@@ -811,6 +857,7 @@ private:
     std::shared_ptr<spdlog::logger> m_logger;
 };
 //------------------------------------------------------------------------------
+#ifdef WITH_RECKLESS
 class reckless_perf_test: public perf_test<reckless_perf_test>
 {
 public:
@@ -836,6 +883,8 @@ private:
         m_fwriter.reset();
     }
     //--------------------------------------------------------------------------
+    void thread_init (unsigned thread_id, unsigned thread_count) {}
+    //--------------------------------------------------------------------------
     int log_one (unsigned i)
     {
         m_logger->info (log_fileline TEST_LITERAL " %d", (int) i);
@@ -858,6 +907,7 @@ private:
     std::shared_ptr<reckless_logger>       m_logger;
     std::shared_ptr<reckless::file_writer> m_fwriter;
 };
+#endif
 //------------------------------------------------------------------------------
 class nanolog_perf_test: public perf_test<nanolog_perf_test>
 {
@@ -882,6 +932,8 @@ private:
     //--------------------------------------------------------------------------
     void destroy() {}
     //--------------------------------------------------------------------------
+    void thread_init (unsigned thread_id, unsigned thread_count) {}
+    //--------------------------------------------------------------------------
     int log_one (unsigned i)
     {
         LOG_INFO << log_fileline TEST_LITERAL << i;
@@ -897,7 +949,7 @@ private:
     //--------------------------------------------------------------------------
 };
 //------------------------------------------------------------------------------
-// HACK. I don't feel like refactoring all this big file .But gelog has macro
+// HACK. I don't feel like refactoring all this big file .But g3log has macro
 // clashes with glog (Who uses two loggers in one program?). Bruteforcing the
 // warnings.
 
@@ -937,6 +989,8 @@ private:
         m_sink.reset();
     }
     //--------------------------------------------------------------------------
+    void thread_init (unsigned thread_id, unsigned thread_count) {}
+    //--------------------------------------------------------------------------
     int log_one (unsigned i)
     {
         LOGF (INFO, log_fileline TEST_LITERAL " %u", i);
@@ -951,6 +1005,78 @@ private:
     std::unique_ptr<g3::LogWorker>      m_worker;
     std::unique_ptr<g3::FileSinkHandle> m_sink;
 };
+//------------------------------------------------------------------------------
+#ifdef WITH_MALC
+class malc_perf_test: public perf_test<malc_perf_test>
+{
+public:
+    ~malc_perf_test()
+    {
+        destroy();
+    }
+private:
+    friend class perf_test<malc_perf_test>;
+    //--------------------------------------------------------------------------
+    void create()
+    {
+        m_logger = (malc*) new u8[malc_get_size()];
+        m_alloc  = get_default_alloc();
+    }
+    //--------------------------------------------------------------------------
+    void destroy()
+    {
+        if (m_logger) {
+            malc_destroy (m_logger);
+            delete[] (u8*) m_logger;
+            m_logger = nullptr;
+        }
+    }
+    //--------------------------------------------------------------------------
+    bool configure()
+    {
+        malc_cfg cfg;
+        bl_err err = malc_create (m_logger, &m_alloc);
+        if (err) {
+            return false;
+        }
+        err = malc_get_cfg (m_logger, &cfg);
+        if (err) {
+            return false;
+        }
+        err = malc_init (m_logger, &cfg);
+        return err == bl_ok;
+    }
+    //--------------------------------------------------------------------------
+    void thread_init (unsigned thread_id, unsigned thread_count)
+    {
+        bl_err err = malc_producer_thread_local_init(
+            m_logger, big_queue_bytes / thread_count
+            );
+        if (err && err != bl_locked) {
+            /* bl_locked can be returned, as the main thread is reused too*/
+            throw std::runtime_error ("malc: bad tls init");
+        }
+    }
+    //--------------------------------------------------------------------------
+    int log_one (unsigned i)
+    {
+        bl_err e;
+        malc_error_i (e, m_logger, log_fileline TEST_LITERAL "{}", i);
+        return (int) (e != bl_ok);
+    }
+    //--------------------------------------------------------------------------
+    bool wait_until_work_completion()
+    {
+        malc_terminate (m_logger);
+        /* TODO: this is temporary, as there is no consumer thread */
+        while (malc_run_consume_task (m_logger, 0) != bl_nothing_to_do);
+        return true;
+    }
+    //--------------------------------------------------------------------------
+    malc*     m_logger;
+    alloc_tbl m_alloc;
+};
+#endif
 //------------------------------------------------------------------------------
 template <class T>
 void run_all_tests(
@@ -1005,8 +1131,13 @@ struct test_suites {
     google_perf_test   glog;
     mal_perf_test      mal;
     nanolog_perf_test  nanolog;
+#ifdef WITH_RECKLESS
     reckless_perf_test reckless;
+#endif
     g3log_perf_test    g3log;
+#ifdef WITH_MALC
+    malc_perf_test     malc;
+#endif
 };
 //------------------------------------------------------------------------------
 void display_results(
@@ -1140,11 +1271,13 @@ void run_test_dispatch(
             ts.spdlog, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
             );
         break;
+#ifdef WITH_RECKLESS
     case loggers::reckless:
         run_all_tests(
             ts.reckless, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
             );
         break;
+#endif
     case loggers::spdlog_sync:
     ts.spdlog.set_params (false);
         run_all_tests(
@@ -1166,6 +1299,13 @@ void run_test_dispatch(
             ts.glog, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
             );
         break;
+#ifdef WITH_MALC
+    case loggers::malc:
+        run_all_tests(
+            ts.malc, c_rate, c_wall, c_cpu, thr, msgs, logger, delete_logs
+            );
+        break;
+#endif
     default:
         break;
     }
@@ -1215,10 +1355,15 @@ void print_usage()
 "       spdlog:       Adds all \"spdlog\"variants.\n"
 "       spdlog-async: Adds \"spdlog\" async.\n"
 "       spdlog-sync:  Adds \"spdlog\" sync.\n"
+#ifdef WITH_RECKLESS
 "       reckless:     Adds \"reckless\".\n"
+#endif
 "       g3log:        Adds \"g3log\".\n"
 "       glog:         Adds \"Google log\".\n"
 "       nanolog:      Adds \"nanolog\".\n"
+#ifdef WITH_MALC
+"       malc-tls:     Adds \"mal C11 with TLS \".\n"
+#endif
 "\n"
 " usage examples:\n"
 " > mal-benchmark 100000 10 glog nanolog spdlog\n"
