@@ -523,6 +523,7 @@ private:
             heap_node::strict_total_size (sz), std::nothrow
             )) {
             pp.set (n->storage(), pos);
+            n->pos = pos;
         }
     }
     //--------------------------------------------------------------------------
