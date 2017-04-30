@@ -241,7 +241,7 @@ private:
     {
         uword bsz = c.queue.bounded_q_block_size;
         uword esz = c.queue.bounded_q_entry_size;
-        if (((!bsz || !esz)) && !c.queue.can_use_heap_q) {
+        if ((!bsz || !esz) && !c.queue.can_use_heap_q) {
             std::cerr << "[logger] alloc cfg values can't be 0\n";
             assert (false && "alloc cfg invalid");
             return false;

@@ -391,7 +391,7 @@ private:
         auto fmt_prev = m_fmt;
         while (m_fmt != nullptr) {
             auto found = std::strchr (m_fmt, fmt::placeholder_open);
-            if (found && (found + 1) != 0) {
+            if (found && found[1] != 0) {
                 m_fmt       = found + 1;
                 m_fmt_modif = *m_fmt;
             }

@@ -260,7 +260,7 @@ public:
     //--------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------
-    inline bool is_tagged (mpsc_node_hook* p)
+    inline bool is_tagged (mpsc_node_hook* const p)
     {
         return (((uword) p) & 1) ? true : false;
     }

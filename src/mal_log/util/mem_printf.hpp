@@ -80,7 +80,7 @@ inline int mem_printf (char* mem, int mem_size, const char* fmt, ...)
 //------------------------------------------------------------------------------
 inline uword mem_printf_written (int ret)
 {
-    return ret & ~((-1) >> 1);
+    return ret & ~(-2);
 }
 //------------------------------------------------------------------------------
 
