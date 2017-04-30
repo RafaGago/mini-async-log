@@ -141,7 +141,7 @@ template <class T>
 inline
 bool is_multiple_safe (T candidate, T value)
 {
-    return candidate && candidate && is_multiple (candidate, value);
+    return candidate && value && is_multiple (candidate, value);
 };
 //------------------------------------------------------------------------------
 template <class T>
