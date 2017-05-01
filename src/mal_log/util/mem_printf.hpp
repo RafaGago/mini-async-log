@@ -46,9 +46,9 @@ namespace mal {
 
 // This function just returns the bytes written excluding the null character,
 // the value is positive when not truncated and negative when truncated.
-// 
+//
 // The trailing null is always appended inside the passed buffer.
-// 
+//
 // It is just used to standarize behavior and remove warnings. The Windows
 // documentation is confusing too.
 
@@ -78,12 +78,6 @@ inline int mem_printf (char* mem, int mem_size, const char* fmt, ...)
     return 0;
 }
 //------------------------------------------------------------------------------
-inline uword mem_printf_written (int ret)
-{
-    return ret & ~(-2);
-}
-//------------------------------------------------------------------------------
-
 }
 
 #endif /* MAL_MAL_MEM_PRINTF_HPP_ */
