@@ -81,10 +81,6 @@ either expressed or implied, of Rafael Gago Castano.
     #if _MSC_VER >= 1700
         #define MAL_ALIGNED_STORAGE_DEFAULTS_MAX_ALIGN
     #endif
-
-    namespace mal {
-        const char fs_separator = '\\';
-    }
 #endif
 
 #ifndef MAL_DYN_LIB_CALL
@@ -117,7 +113,7 @@ either expressed or implied, of Rafael Gago Castano.
 #else
     namespace mal {
         const char fs_separator = '\\';
-    }
+        }
 #endif
 
 namespace mal {

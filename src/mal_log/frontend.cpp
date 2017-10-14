@@ -34,8 +34,8 @@ either expressed or implied, of Rafael Gago Castano.
 --------------------------------------------------------------------------------
 */
 
-#ifndef MAL_LOG_LOG_FRONTEND_DEF_HPP_
-#define MAL_LOG_LOG_FRONTEND_DEF_HPP_
+#ifndef MAL_LOG_LOG_FRONTEND_CPP_
+#define MAL_LOG_LOG_FRONTEND_CPP_
 
 #include <utility>
 #include <cassert>
@@ -355,4 +355,4 @@ void MAL_LIB_EXPORTED_CLASS frontend::on_termination()
 //------------------------------------------------------------------------------
 } //namespace
 
-#endif /* MAL_LOG_LOG_FRONTEND_DEF_HPP_ */
+#endif /* MAL_LOG_LOG_FRONTEND_CPP_ */

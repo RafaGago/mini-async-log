@@ -1,3 +1,11 @@
 *~
 build/linux/build
 *mal_benchmarks_log*
+*.tlog
+*.lastbuildstate
+*.opensdf
+*.props
+*.sdf
+*.vcxproj
+*.vcxproj
+*.vcxproj
