@@ -41,7 +41,7 @@ either expressed or implied, of Rafael Gago Castano.
   #ifndef __STDC_FORMAT_MACROS
     #define __STDC_FORMAT_MACROS 1 /* this is required for some compilers */
   #endif
-  #include <inttypes.h>
+  #include "mal_log/inttypes.h"
 #else
   #include <boost/cstdint.hpp>
 #endif

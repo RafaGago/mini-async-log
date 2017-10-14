@@ -115,9 +115,11 @@ either expressed or implied, of Rafael Gago Castano.
         const char fs_separator = '/';
     }
 #else
-    namespace mal {
-        const char fs_separator = '\\';
-    }
+	#ifndef _MSC_VER
+		namespace mal {
+			const char fs_separator = '\\';
+		}
+	#endif
 #endif
 
 namespace mal {
