@@ -191,13 +191,14 @@ everything under /src in your project.
 
 Otherwise you can use cmake.
 
-On Linux there are GNU makefiles in the "/build/linux" folder too. They respect
-the GNU makefile conventions. "DESTDIR", "prefix", "includedir" and "libdir"
-can be used.
+On Linux there are Legacy GNU makefiles in the "/build/linux" folder too. They
+respect the GNU makefile conventions. "DESTDIR", "prefix", "includedir" and
+"libdir" can be used. These are mainly left there because the examples were not
+ported to CMake.
 
-REMEMBER (legacy uses that use boost): That the if the library is compiled with
+REMEMBER (for legacy users that use boost): If the library is compiled with
 e.g. the "MAL_USE_BOOST_THREAD" and "MAL_USE_BOOST_CHRONO" preprocessor
-variables the client code must define them too.
+variables the client code must define them too. TODO: config.h.in
 
 ## Windows compilation ##
 
@@ -216,68 +217,23 @@ too.
 
 ## Performace ##
 
-These are some tests I have done for fun to see how this code is aging.
+It used to be some benchmark code here but the results were reported as being
+off with what some users where getting (out of date versions?).
 
-> [Here is the benchmark code.](https://github.com/RafaGago/mini-async-log/blob/master/example/benchmark/main.cpp).
+The tests also had the problem that they were assuming a normal distribution for
+the latencies.
 
-To build them on Linux you don't need to install any of the libraries, all of
-them are downloaded and build for you by the makefile, just run:
+It was also ugly that this code was depending on submodules on this project, so
+if CMake's ExternalProjects was used from some user's code they were cloning
+a lot of repositories.
 
-> make -f build/linux/Makefile.examples.benchmark
+Because all of these reasons I have created a separate repository with some
+benchmark code. It uses CMake to compile everything and build a static linked
+executable, so it's very easy to build and run.
 
-You can "make install" or search for the executable under
-"build/linux/build/stage"
+If you are writing a logger and want to add it or have some suggestions about
+how to improve the bencmark code Pull Requests are welcome.
 
-### Test methodology ###
-
-It consists on enqueueing either 1 million or 100K messages distributing them
-evenly accross a variying number of threads (1, 2, 4, 8, 16) for each test. Each
-test is run 75 times and then averaged (best and worst latencies aren't
-averaged, the best and worst of all runs is taken).
-
-The different message counts (1M and 100K) are intended to show the behavior
-of the bounded queue loggers. On the 100K msgs tests the bounded queue loggers
-(spdlog and some mal variants) have a big enough queue to contain all the
-messages. On the 1M msgs test its queue will get full and they will need to
-back-off.
-
-On the latency tests the mean, standard deviation, best and worst case is shown.
-The standard deviation gives an idea of the jitter. The less the better.
-
-The latency tests are measured with both a thread clock and a wall clock. The
-thread clock shows only cycles spent on the thread, not when the thread is
-suspended. The wall clock gives an idea of the "real" timing of the logger when
-the OS scheduler puts threads to sleep, so the different loggers will show its
-worst case in a more realistic way.
-
-Keep in mind that measuring latencies has its caveats. The OS clocks aren't
-good enough for measuring individual calls at the nanosecond scale. I do these
-latency tests because I can see value in seeing latency standard deviations for
-very long runs and the worst latencies allow to detect blocked/starved producers
-(e.g.due to backoff unfairness).
-
-The "average latency" column shown on the latency tests is the one measured on
-individual calls (mostly unreliable). The "average latency" column shown on the
-throughput tests is taken just using two clock meaurements for the whole batch
-of messages (reliable).
-
-The test is run in a system using Ubuntu 16.04 server, no X server and having
-all the network interfaces disabled. The machine is a downclocked and
-undervolted AMD Phenom x4 965 with an SSD disk. Expect more performance with a
-modern machine.
-
-The code is compiled with gcc -O3. Compiling with -Os has a lot of impact (re-
-duction) in raw performance.
-
-The test takes some hours to run.
-
-UPDATE: The results that were here where reported as off compared to what some
-users where getting, so they have been removed.
-
-The latency measurement code can be improved by reporting percentiles instead
-(TODO-contributions welcome). The little time I have for coding is being spent
-[here](https://github.com/RafaGago/mini-async-log-c) now.
-
-
+> [Here is the benchmark project.](https://github.com/RafaGago/logger-bench).
 
 > Written with [StackEdit](https://stackedit.io/).
