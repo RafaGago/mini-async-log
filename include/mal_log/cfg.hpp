@@ -99,12 +99,12 @@ struct file_config {
       the fixed-sized bucket has to be logged the logger can use the heap
       instead of reporting a failed operation.
 
-   bounded_q_entry_size: total queue byte size
-
-   bounded_q_block_size: max size for each log entry. (number of log entries =
-      fixed_block_size / fixed_entry_size). If you are setting
+   bounded_q_entry_size: max size for each log entry. (number of log entries =
+      bounded_q_block_size / bounded_q_entry_size). If you are setting
       "use_heap_if_required" to "false" this value needs to have room for
       serializing the biggest log entry that you are planning to log.
+
+   bounded_q_block_size: total queue byte size
 
    bounded_q_blocking_sev: when "can_use_heap_q" is "false", severities equal
       and above the value here will block the producer when the queue is full.
