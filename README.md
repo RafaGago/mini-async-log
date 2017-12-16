@@ -218,14 +218,13 @@ too.
 ## Performace ##
 
 It used to be some benchmark code here but the results were reported as being
-off with what some users where getting (out of date versions?).
+off compared with what some users where getting (out of date versions?).
 
 The tests also had the problem that they were assuming a normal distribution for
 the latencies.
 
-It was also ugly that this code was depending on submodules on this project, so
-if CMake's ExternalProjects was used from some user's code they were cloning
-a lot of repositories.
+It was not very nice to add a lot of submodules to this project just for
+building the benchmarks.
 
 Because all of these reasons I have created a separate repository with some
 benchmark code. It uses CMake to compile everything and build a static linked
